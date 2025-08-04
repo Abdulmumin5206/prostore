@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import CategorySection from '../components/CategorySection';
+import { AppleProductTitle, AppleProductSubtitle, AppleProductDescription, ApplePrice } from '../components/Typography';
+import Button from '../components/Button';
 
 interface HeroSlide {
   id: string;
@@ -16,6 +19,7 @@ interface HeroSlide {
 const HomePage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const autoPlayRef = useRef<number | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -75,31 +79,40 @@ const HomePage = () => {
   ];
 
   const nextSlide = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    setTimeout(() => setIsTransitioning(false), 700);
   };
 
   const prevSlide = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+    setTimeout(() => setIsTransitioning(false), 700);
   };
 
   const goToSlide = (index: number) => {
+    if (isTransitioning || index === currentSlide) return;
+    setIsTransitioning(true);
     setCurrentSlide(index);
+    setTimeout(() => setIsTransitioning(false), 700);
   };
 
   // Auto-play functionality
   useEffect(() => {
-    if (isAutoPlaying) {
-      autoPlayRef.current = setInterval(() => {
+    if (isAutoPlaying && !isTransitioning) {
+      autoPlayRef.current = window.setTimeout(() => {
         nextSlide();
       }, 5000);
     }
 
     return () => {
       if (autoPlayRef.current) {
-        clearInterval(autoPlayRef.current);
+        clearTimeout(autoPlayRef.current);
       }
     };
-  }, [isAutoPlaying, currentSlide]);
+  }, [isAutoPlaying, currentSlide, isTransitioning]);
 
   // Pause auto-play on hover
   const handleMouseEnter = () => setIsAutoPlaying(false);
@@ -116,7 +129,7 @@ const HomePage = () => {
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || isTransitioning) return;
     
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -131,10 +144,10 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Hero Carousel Section */}
       <section 
-        className="relative h-screen overflow-hidden"
+        className="relative h-[70vh] overflow-hidden"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onTouchStart={onTouchStart}
@@ -143,85 +156,103 @@ const HomePage = () => {
       >
         {/* Carousel Container */}
         <div className="relative h-full">
-          {heroSlides.map((slide, index) => (
-            <div
-              key={slide.id}
-              className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                index === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
-              }`}
-            >
-              {/* Background Gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} opacity-10`} />
-              
-              {/* Content Container */}
-              <div className="relative h-full flex items-center justify-center px-4">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                  {/* Text Content */}
-                  <div className="text-center lg:text-left space-y-6">
-                    <div className="space-y-2">
-                      <h1 className="text-5xl md:text-7xl font-bold text-gray-900 dark:text-white tracking-tight">
-                        {slide.title}
-                      </h1>
-                      <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 font-light">
-                        {slide.subtitle}
-                      </p>
-                    </div>
-                    
-                    <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-lg">
-                      {slide.description}
-                    </p>
-
-                    {/* Price and Discount */}
-                    {(slide.price || slide.discount) && (
-                      <div className="flex flex-col sm:flex-row items-center gap-4 text-lg">
-                        {slide.price && (
-                          <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                            {slide.price}
-                          </span>
-                        )}
-                        {slide.discount && (
-                          <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            {slide.discount}
-                          </span>
-                        )}
+          {heroSlides.map((slide, index) => {
+            // Calculate position for each slide
+            let position = index - currentSlide;
+            if (position < 0 && Math.abs(position) > Math.floor(heroSlides.length / 2)) {
+              position += heroSlides.length;
+            } else if (position > 0 && position > Math.floor(heroSlides.length / 2)) {
+              position -= heroSlides.length;
+            }
+            
+            return (
+              <div
+                key={slide.id}
+                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                  position === 0 
+                    ? 'opacity-100 translate-x-0 z-10' 
+                    : position < 0 
+                      ? 'opacity-0 -translate-x-full z-0' 
+                      : 'opacity-0 translate-x-full z-0'
+                }`}
+                aria-hidden={position !== 0}
+              >
+                {/* Background Gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} opacity-10`} />
+                
+                {/* Content Container */}
+                <div className="relative h-full flex items-center justify-center px-4">
+                  <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    {/* Text Content */}
+                    <div className="text-center lg:text-left space-y-6">
+                      <div className="space-y-2">
+                        <AppleProductTitle>
+                          {slide.title}
+                        </AppleProductTitle>
+                        <AppleProductSubtitle>
+                          {slide.subtitle}
+                        </AppleProductSubtitle>
                       </div>
-                    )}
+                      
+                      <AppleProductDescription className="max-w-lg">
+                        {slide.description}
+                      </AppleProductDescription>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                      <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
-                        {slide.primaryButton}
-                      </button>
-                      <button className="border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white px-8 py-4 rounded-full text-lg font-medium transition-all duration-200 transform hover:scale-105">
-                        {slide.secondaryButton}
-                      </button>
-                    </div>
-                  </div>
+                      {/* Price and Discount */}
+                      {(slide.price || slide.discount) && (
+                        <div className="flex flex-col sm:flex-row items-center gap-4 text-lg">
+                          {slide.price && (
+                            <ApplePrice>
+                              {slide.price}
+                            </ApplePrice>
+                          )}
+                          {slide.discount && (
+                            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                              {slide.discount}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-                  {/* Product Image */}
-                  <div className="flex justify-center lg:justify-end">
-                    <div className="relative">
-                      <div className="w-80 h-80 md:w-96 md:h-96 rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500">
-                        <img
-                          src={slide.image}
-                          alt={slide.title}
-                          className="w-full h-full object-cover"
-                        />
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <Button variant="primary" size="large">
+                          {slide.primaryButton}
+                        </Button>
+                        <Button variant="outline" size="large">
+                          {slide.secondaryButton}
+                        </Button>
                       </div>
-                      {/* Glow effect */}
-                      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${slide.color} opacity-20 blur-xl -z-10`} />
+                    </div>
+
+                    {/* Product Image */}
+                    <div className="flex justify-center lg:justify-end">
+                      <div className="relative">
+                        <div className="w-80 h-80 md:w-96 md:h-96 rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500">
+                          <img
+                            src={slide.image}
+                            alt={slide.title}
+                            className="w-full h-full object-cover"
+                            loading={index === currentSlide ? "eager" : "lazy"}
+                          />
+                        </div>
+                        {/* Glow effect */}
+                        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${slide.color} opacity-20 blur-xl -z-10`} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Navigation Arrows */}
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 z-10"
+          disabled={isTransitioning}
+          className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
+          aria-label="Previous slide"
         >
           <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -230,7 +261,9 @@ const HomePage = () => {
 
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 z-10"
+          disabled={isTransitioning}
+          className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
+          aria-label="Next slide"
         >
           <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -238,31 +271,35 @@ const HomePage = () => {
         </button>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10">
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-4 z-20">
           {heroSlides.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              disabled={isTransitioning}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 currentSlide === index 
-                  ? 'bg-white dark:bg-gray-200 scale-125' 
-                  : 'bg-white/50 dark:bg-gray-600/50 hover:bg-white/75 dark:hover:bg-gray-600/75'
-              }`}
+                  ? 'bg-white dark:bg-white scale-125 shadow-lg' 
+                  : 'bg-white/30 dark:bg-gray-600 hover:bg-white/75 dark:hover:bg-gray-400'
+              } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={currentSlide === index ? 'true' : 'false'}
             />
           ))}
         </div>
 
         {/* Auto-play indicator */}
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-20">
           <button
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
               isAutoPlaying 
                 ? 'bg-green-500 text-white' 
-                : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
+            aria-label={isAutoPlaying ? 'Pause slideshow' : 'Play slideshow'}
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               {isAutoPlaying ? (
                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
               ) : (
@@ -272,6 +309,9 @@ const HomePage = () => {
           </button>
         </div>
       </section>
+      
+      {/* Category Section */}
+      <CategorySection />
     </div>
   );
 };

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { H1, Text, AppleHeadline, AppleLink, AppleProductTitle } from '../components/Typography';
+import Button from '../components/Button';
 
 interface MacProduct {
   id: string;
@@ -13,6 +15,9 @@ interface MacProduct {
 
 const MacPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const slidesPerView = 3;
+  const maxSlides = useRef(0);
 
   const macProducts: MacProduct[] = [
     {
@@ -62,43 +67,78 @@ const MacPage = () => {
     }
   ];
 
+  // Calculate max slides based on window width
+  useEffect(() => {
+    const calculateSlidesPerView = () => {
+      if (window.innerWidth < 640) {
+        return 1;
+      } else if (window.innerWidth < 1024) {
+        return 2;
+      } else {
+        return 3;
+      }
+    };
+
+    const handleResize = () => {
+      const visibleSlides = calculateSlidesPerView();
+      maxSlides.current = Math.max(0, macProducts.length - visibleSlides);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [macProducts.length]);
+
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.max(1, macProducts.length - 3));
+    if (isTransitioning || maxSlides.current === 0) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => Math.min(prev + 1, maxSlides.current));
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.max(1, macProducts.length - 3)) % Math.max(1, macProducts.length - 3));
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => Math.max(prev - 1, 0));
+    setTimeout(() => setIsTransitioning(false), 500);
+  };
+
+  const goToSlide = (index: number) => {
+    if (isTransitioning || index === currentSlide) return;
+    setIsTransitioning(true);
+    setCurrentSlide(index);
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Header Section */}
-      <div className="bg-white dark:bg-gray-900 py-12 px-4 transition-colors duration-300">
+      <div className="bg-[#f5f5f7] dark:bg-black py-12 px-4 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-start mb-16">
-            <h1 className="text-5xl font-semibold text-black dark:text-white transition-colors duration-300">Shop Mac</h1>
+            <H1>Shop Mac</H1>
             <div className="text-right">
               <div className="flex items-center text-blue-600 dark:text-blue-400 mb-2 transition-colors duration-300">
                 <div className="w-6 h-6 bg-blue-600 dark:bg-blue-500 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">?</span>
                 </div>
-                <span className="text-sm">Need shopping help?</span>
+                <Text size="sm">Need shopping help?</Text>
               </div>
-              <a href="#" className="text-blue-600 dark:text-blue-400 text-sm hover:underline transition-colors duration-300">Ask a Mac Specialist ↗</a>
+              <AppleLink href="#">Ask a Mac Specialist ↗</AppleLink>
               
               <div className="flex items-center text-gray-700 dark:text-gray-300 mt-4 transition-colors duration-300">
                 <div className="w-6 h-6 bg-gray-700 dark:bg-gray-600 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">⌾</span>
                 </div>
-                <span className="text-sm">Visit an Apple Store</span>
+                <Text size="sm">Visit an Apple Store</Text>
               </div>
-              <a href="#" className="text-blue-600 dark:text-blue-400 text-sm hover:underline transition-colors duration-300">Find one near you ↗</a>
+              <AppleLink href="#">Find one near you ↗</AppleLink>
             </div>
           </div>
 
           {/* Navigation Tabs */}
           <nav className="border-b border-gray-200 dark:border-gray-700 mb-16 transition-colors duration-300">
-            <ul className="flex space-x-8">
+            <ul className="flex space-x-8 overflow-x-auto scrollbar-hide">
               {[
                 'All Models',
                 'Shopping Guides',
@@ -112,7 +152,7 @@ const MacPage = () => {
                 <li key={tab}>
                   <a
                     href="#"
-                    className={`block py-4 text-sm transition-colors duration-200 ${
+                    className={`block py-4 text-sm whitespace-nowrap transition-colors duration-200 ${
                       index === 0
                         ? 'text-black dark:text-white border-b-2 border-black dark:border-white font-medium'
                         : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
@@ -127,8 +167,8 @@ const MacPage = () => {
 
           {/* Products Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-semibold text-black dark:text-white mb-2 transition-colors duration-300">All models.</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 transition-colors duration-300">Take your pick.</p>
+            <AppleHeadline className="mb-2">All models.</AppleHeadline>
+            <Text size="xl" className="text-gray-600 dark:text-gray-400">Take your pick.</Text>
           </div>
 
           {/* Product Carousel */}
@@ -136,8 +176,12 @@ const MacPage = () => {
             <div className="flex items-center">
               <button
                 onClick={prevSlide}
-                className="absolute left-0 z-10 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-200"
+                disabled={isTransitioning || currentSlide === 0}
+                className={`absolute left-0 z-10 w-12 h-12 bg-white dark:bg-gray-900 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-200 ${
+                  isTransitioning || currentSlide === 0 ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'
+                }`}
                 style={{ transform: 'translateX(-50%)' }}
+                aria-label="Previous products"
               >
                 <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300 transition-colors duration-300" />
               </button>
@@ -145,28 +189,31 @@ const MacPage = () => {
               <div className="overflow-hidden mx-8">
                 <div
                   className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}
+                  style={{ transform: `translateX(-${currentSlide * (100 / slidesPerView)}%)` }}
                 >
-                  {macProducts.map((product) => (
-                    <div key={product.id} className="w-1/3 flex-shrink-0 px-4">
-                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300">
-                        <h3 className="text-2xl font-semibold text-black dark:text-white mb-8 transition-colors duration-300">{product.name}</h3>
+                  {macProducts.map((product, index) => (
+                    <div key={product.id} className={`w-full sm:w-1/2 lg:w-1/3 flex-shrink-0 px-4 transition-opacity duration-300 ${
+                      index < currentSlide ? 'opacity-0' : 'opacity-100'
+                    }`}>
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300">
+                        <AppleProductTitle className="mb-8">{product.name}</AppleProductTitle>
                         
                         <div className="mb-8 flex justify-center">
                           <img
                             src={product.image}
                             alt={product.name}
                             className="w-48 h-32 object-cover rounded-lg"
+                            loading={index < currentSlide + slidesPerView ? "eager" : "lazy"}
                           />
                         </div>
 
                         {/* Color Options */}
                         <div className="flex justify-center space-x-2 mb-8">
-                          {product.colors.map((color, index) => (
+                          {product.colors.map((color, colorIndex) => (
                             <div
-                              key={index}
+                              key={colorIndex}
                               className={`w-4 h-4 rounded-full border-2 ${
-                                index === 0 ? 'border-gray-400' : 'border-gray-200'
+                                colorIndex === 0 ? 'border-gray-400' : 'border-gray-200'
                               }`}
                               style={{ backgroundColor: color }}
                             />
@@ -174,12 +221,12 @@ const MacPage = () => {
                         </div>
 
                         <div className="text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 transition-colors duration-300">
+                          <Text size="sm" className="mb-4">
                             From {product.priceFrom} or {product.monthlyFrom}
-                          </p>
-                          <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors duration-200">
+                          </Text>
+                          <Button variant="primary" size="small">
                             Buy
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -189,8 +236,12 @@ const MacPage = () => {
 
               <button
                 onClick={nextSlide}
-                className="absolute right-0 z-10 w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-200"
+                disabled={isTransitioning || currentSlide >= maxSlides.current}
+                className={`absolute right-0 z-10 w-12 h-12 bg-white dark:bg-gray-900 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-200 ${
+                  isTransitioning || currentSlide >= maxSlides.current ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'
+                }`}
                 style={{ transform: 'translateX(50%)' }}
+                aria-label="Next products"
               >
                 <ChevronRight className="w-6 h-6 text-gray-600 dark:text-gray-300 transition-colors duration-300" />
               </button>
@@ -198,13 +249,16 @@ const MacPage = () => {
 
             {/* Slide Indicators */}
             <div className="flex justify-center mt-8 space-x-2">
-              {Array.from({ length: Math.max(1, macProducts.length - 2) }).map((_, index) => (
+              {Array.from({ length: maxSlides.current + 1 }).map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                    currentSlide === index ? 'bg-gray-800 dark:bg-gray-200' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                  onClick={() => goToSlide(index)}
+                  disabled={isTransitioning}
+                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                    currentSlide === index ? 'bg-gray-800 dark:bg-gray-200 scale-125' : 'bg-gray-300 dark:bg-gray-600'
+                  } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  aria-label={`Go to product set ${index + 1}`}
+                  aria-current={currentSlide === index ? 'true' : 'false'}
                 />
               ))}
             </div>

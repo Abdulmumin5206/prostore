@@ -21,7 +21,7 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-black dark:bg-gray-900 text-white sticky top-0 z-50 transition-colors duration-300">
+    <header className="bg-black dark:bg-black text-white sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
         <nav className="flex items-center justify-between h-12">
           <Link to="/" className="flex items-center">
@@ -33,7 +33,7 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-xs font-normal hover:text-gray-300 dark:hover:text-gray-200 transition-colors duration-200 ${
+                className={`text-xs font-normal tracking-tight hover:text-gray-300 dark:hover:text-gray-200 transition-colors duration-200 ${
                   location.pathname === item.href ? 'text-white dark:text-gray-100' : 'text-gray-300 dark:text-gray-400'
                 }`}
               >
