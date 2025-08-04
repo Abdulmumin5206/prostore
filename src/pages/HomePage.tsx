@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CategorySection from '../components/CategorySection';
+import BestOffersSection from '../components/BestOffersSection';
+import AppleNotebooksOffersSection from '../components/AppleNotebooksOffersSection';
+import PromotionalBanner from '../components/PromotionalBanner';
 import { AppleProductTitle, AppleProductSubtitle, AppleProductDescription, ApplePrice } from '../components/Typography';
 import Button from '../components/Button';
 
@@ -309,6 +312,15 @@ const HomePage = () => {
           </button>
         </div>
       </section>
+      
+      {/* Best Offers Section */}
+      <BestOffersSection />
+      
+      {/* Promotional Banner */}
+      <PromotionalBanner />
+      
+      {/* Apple Notebooks Offers Section */}
+      <AppleNotebooksOffersSection />
       
       {/* Category Section */}
       <CategorySection />

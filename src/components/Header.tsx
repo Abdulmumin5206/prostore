@@ -10,7 +10,7 @@ const Header = () => {
     { name: 'Store', href: '/store' },
     { name: 'Mac', href: '/mac' },
     { name: 'iPad', href: '/ipad' },
-    { name: 'iPhone', href: '/' },
+    { name: 'iPhone', href: '/iphone' },
     { name: 'Watch', href: '/watch' },
     { name: 'Vision', href: '/vision' },
     { name: 'AirPods', href: '/airpods' },

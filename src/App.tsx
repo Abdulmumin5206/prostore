@@ -10,7 +10,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
+        <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300 overflow-x-hidden">
           <Header />
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -18,6 +18,7 @@ function App() {
             {/* Placeholder routes for other pages */}
             <Route path="/store" element={<StorePage />} />
             <Route path="/ipad" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPad Page Coming Soon</div>} />
+            <Route path="/iphone" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPhone Page Coming Soon</div>} />
             <Route path="/watch" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Watch Page Coming Soon</div>} />
             <Route path="/vision" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Vision Page Coming Soon</div>} />
             <Route path="/airpods" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirPods Page Coming Soon</div>} />

@@ -89,7 +89,7 @@ const CategorySection: React.FC = () => {
           </AppleSubheadline>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 overflow-x-auto pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {categories.map((category) => (
             <Link 
               key={category.id} 
@@ -104,7 +104,7 @@ const CategorySection: React.FC = () => {
                   loading="lazy"
                 />
               </div>
-              <span className="text-sm font-medium text-gray-800 dark:text-white">
+              <span className="text-sm font-medium text-gray-800 dark:text-white text-center">
                 {category.name}
               </span>
             </Link>
