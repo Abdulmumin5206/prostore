@@ -36,6 +36,19 @@ export default {
         wider: '0.05em',
         widest: '0.1em',
       },
+      spacing: {
+        // Standardized spacing system (reduced values)
+        'section-y': '2.5rem',    // 40px - Standard vertical padding for sections (reduced from 4rem)
+        'section-y-sm': '2rem',   // 32px - Smaller vertical padding for sections (reduced from 3rem)
+        'section-y-lg': '3rem',   // 48px - Larger vertical padding for sections (reduced from 5rem)
+        'section-x': '1rem',      // 16px - Standard horizontal padding for sections (unchanged)
+        'content-y': '1.5rem',    // 24px - Vertical spacing between content blocks (reduced from 2.5rem)
+        'content-y-sm': '1rem',   // 16px - Smaller vertical spacing between content blocks (reduced from 1.5rem)
+        'content-y-lg': '2rem',   // 32px - Larger vertical spacing between content blocks (reduced from 3.5rem)
+        'element-y': '0.75rem',   // 12px - Vertical spacing between elements (reduced from 1rem)
+        'element-y-sm': '0.375rem', // 6px - Smaller vertical spacing between elements (reduced from 0.5rem)
+        'element-y-lg': '1rem',   // 16px - Larger vertical spacing between elements (reduced from 1.5rem)
+      },
     },
   },
   plugins: [],

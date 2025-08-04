@@ -56,43 +56,43 @@ export const Text: React.FC<TypographyProps & { size?: 'xs' | 'sm' | 'base' | 'l
 
 // Apple-specific text styles
 export const AppleHeadline: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <h2 className={`text-4xl md:text-5xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
+  <h2 className={`text-3xl md:text-4xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
     {children}
   </h2>
 );
 
 export const AppleSubheadline: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <p className={`text-2xl md:text-3xl font-light tracking-tight text-gray-600 dark:text-gray-300 ${className}`}>
-    {children}
-  </p>
-);
-
-export const AppleProductTitle: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <h3 className={`text-3xl md:text-4xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
-    {children}
-  </h3>
-);
-
-export const AppleProductSubtitle: React.FC<TypographyProps> = ({ children, className = '' }) => (
   <p className={`text-xl md:text-2xl font-light tracking-tight text-gray-600 dark:text-gray-300 ${className}`}>
     {children}
   </p>
 );
 
+export const AppleProductTitle: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <h3 className={`text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
+    {children}
+  </h3>
+);
+
+export const AppleProductSubtitle: React.FC<TypographyProps> = ({ children, className = '' }) => (
+  <p className={`text-lg md:text-xl font-light tracking-tight text-gray-600 dark:text-gray-300 ${className}`}>
+    {children}
+  </p>
+);
+
 export const AppleProductDescription: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <p className={`text-base md:text-lg tracking-tight text-gray-600 dark:text-gray-400 ${className}`}>
+  <p className={`text-sm md:text-base tracking-tight text-gray-600 dark:text-gray-400 ${className}`}>
     {children}
   </p>
 );
 
 export const AppleCaption: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <p className={`text-sm tracking-tight text-gray-500 dark:text-gray-500 ${className}`}>
+  <p className={`text-xs tracking-tight text-gray-500 dark:text-gray-500 ${className}`}>
     {children}
   </p>
 );
 
 export const ApplePrice: React.FC<TypographyProps> = ({ children, className = '' }) => (
-  <span className={`text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
+  <span className={`text-xl md:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white ${className}`}>
     {children}
   </span>
 );

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AppleHeadline, AppleSubheadline } from './Typography';
+import Section from './Section';
+import ContentBlock from './ContentBlock';
+import Spacing from './Spacing';
 
 interface Category {
   id: string;
@@ -80,23 +83,24 @@ const CategorySection: React.FC = () => {
   ];
 
   return (
-    <section className="py-16 px-4 bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-12">
-          <AppleHeadline>Store.</AppleHeadline>
-          <AppleSubheadline>
-            The best way to buy the products you love.
-          </AppleSubheadline>
-        </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+    <Section background="light" size="sm">
+      <ContentBlock spacing="md">
+        <AppleHeadline>Store.</AppleHeadline>
+        <Spacing size="sm" />
+        <AppleSubheadline>
+          The best way to buy the products you love.
+        </AppleSubheadline>
+      </ContentBlock>
+      
+      <ContentBlock spacing="none">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {categories.map((category) => (
             <Link 
               key={category.id} 
               to={category.link}
               className="flex flex-col items-center group"
             >
-              <div className="w-full aspect-square mb-4 flex items-center justify-center bg-white dark:bg-gray-900 rounded-xl overflow-hidden transition-transform duration-300 group-hover:scale-105 shadow-sm">
+              <div className="w-full aspect-square mb-2 flex items-center justify-center bg-white dark:bg-gray-900 rounded-xl overflow-hidden transition-transform duration-300 group-hover:scale-105 shadow-sm">
                 <img 
                   src={category.image} 
                   alt={category.name} 
@@ -110,8 +114,8 @@ const CategorySection: React.FC = () => {
             </Link>
           ))}
         </div>
-      </div>
-    </section>
+      </ContentBlock>
+    </Section>
   );
 };
 

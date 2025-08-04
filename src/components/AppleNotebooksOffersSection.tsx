@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, ApplePrice } from './Typography';
+import { AppleHeadline, AppleSubheadline, ApplePrice } from './Typography';
 
 interface NotebookOffer {
   id: string;
@@ -150,10 +150,10 @@ const AppleNotebooksOffersSection: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div className="space-y-2">
-            <AppleHeadline>Apple Notebooks</AppleHeadline>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
+            <AppleHeadline>Laptops.</AppleHeadline>
+            <AppleSubheadline>
               Discover the perfect Mac for your needs
-            </p>
+            </AppleSubheadline>
           </div>
           
           <div className="flex flex-wrap gap-2">

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, ApplePrice } from './Typography';
+import { AppleHeadline, ApplePrice, AppleSubheadline } from './Typography';
+import Section from './Section';
+import ContentBlock from './ContentBlock';
+import Spacing from './Spacing';
 
 interface ProductOffer {
   id: string;
@@ -133,17 +136,23 @@ const BestOffersSection: React.FC = () => {
     : filteredProducts.slice(0, 8);
   
   return (
-    <section className="py-16 px-4 bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <AppleHeadline>Best Offers</AppleHeadline>
+    <Section background="light" size="sm">
+      <ContentBlock spacing="sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <AppleHeadline>Offers.</AppleHeadline>
+            <Spacing size="sm" />
+            <AppleSubheadline>
+              Discover exceptional deals on premium products
+            </AppleSubheadline>
+          </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mt-3 sm:mt-0">
             {filterTags.map(tag => (
               <button
                 key={tag.id}
                 onClick={() => setActiveFilter(activeFilter === tag.id ? null : tag.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   activeFilter === tag.id
                     ? 'bg-black text-white dark:bg-white dark:text-black'
                     : 'bg-gray-200 dark:bg-black text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-900'
@@ -154,16 +163,18 @@ const BestOffersSection: React.FC = () => {
             ))}
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      </ContentBlock>
+      
+      <ContentBlock spacing="sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {displayedProducts.map((product) => (
             <Link 
               key={product.id}
               to={product.link}
               className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group"
             >
-              <div className="p-4">
-                <div className="aspect-square flex items-center justify-center mb-4 overflow-hidden">
+              <div className="p-3">
+                <div className="aspect-square flex items-center justify-center mb-3 overflow-hidden">
                   <img 
                     src={product.image} 
                     alt={product.name} 
@@ -172,7 +183,7 @@ const BestOffersSection: React.FC = () => {
                   />
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
                     {product.name}
                   </h3>
@@ -190,19 +201,19 @@ const BestOffersSection: React.FC = () => {
             </Link>
           ))}
         </div>
-        
-        <div className="mt-8 text-center">
-          {filteredProducts.length > 8 && (
-            <button 
-              onClick={() => setShowMore(!showMore)}
-              className="px-6 py-3 mb-4 bg-gray-200 dark:bg-black text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-900 transition-colors"
-            >
-              {showMore ? 'Show Less' : 'Show More Products'}
-            </button>
-          )}
-        </div>
-      </div>
-    </section>
+      </ContentBlock>
+      
+      {filteredProducts.length > 8 && (
+        <ContentBlock spacing="none" className="text-center">
+          <button 
+            onClick={() => setShowMore(!showMore)}
+            className="px-5 py-2 bg-gray-200 dark:bg-black text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-900 transition-colors"
+          >
+            {showMore ? 'Show Less' : 'Show More Products'}
+          </button>
+        </ContentBlock>
+      )}
+    </Section>
   );
 };
 
