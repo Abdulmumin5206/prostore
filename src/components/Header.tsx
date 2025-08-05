@@ -1,11 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Apple, Search, ShoppingBag } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
-import TopPromotionalSection from './TopPromotionalSection';
 
 const Header = () => {
   const location = useLocation();
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Handle scroll events with throttling
+  useEffect(() => {
+    let ticking = false;
+    
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Make header sticky when scrolling past the banner (40px height)
+          setIsSticky(window.scrollY > 40);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial state
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const navItems = [
     { name: 'Store', href: '/store' },
@@ -22,8 +45,11 @@ const Header = () => {
   ];
 
   return (
-    <header className="bg-black dark:bg-black text-white sticky top-0 z-50 transition-colors duration-300">
-      <TopPromotionalSection />
+    <header 
+      className={`bg-black dark:bg-black text-white w-full z-50 ${
+        isSticky ? 'fixed top-0 shadow-md' : 'absolute top-10'
+      }`}
+    >
       <div className="max-w-laptop mx-auto px-section-x">
         <nav className="flex items-center justify-between h-12">
           <Link to="/" className="flex items-center">

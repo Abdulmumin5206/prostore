@@ -6,12 +6,14 @@ import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import MacPage from './pages/MacPage';
 import StorePage from './pages/StorePage';
+import TopPromotionalSection from './components/TopPromotionalSection';
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300 overflow-x-hidden flex flex-col">
+          <TopPromotionalSection />
           <Header />
           <main className="flex-1">
             <Routes>
