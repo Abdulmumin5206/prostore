@@ -5,8 +5,8 @@ import { H1, AppleHeadline, AppleLink, Text } from '../components/Typography';
 const StorePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
-      <div className="pt-8 px-4">
-        <div className="max-w-7xl mx-auto">
+      <div className="pt-8 px-section-x">
+        <div className="max-w-laptop mx-auto">
           <div className="flex justify-between items-start mb-16">
             <H1>Store</H1>
             <div className="text-right">
@@ -32,8 +32,8 @@ const StorePage: React.FC = () => {
       
       <CategorySection />
       
-      <section className="py-16 px-4 bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-16 px-section-x bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
+        <div className="max-w-laptop mx-auto">
           <AppleHeadline className="mb-8">
             The latest. <span className="text-gray-600 dark:text-gray-400">Take a look at what's new right now.</span>
           </AppleHeadline>

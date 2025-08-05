@@ -184,8 +184,8 @@ const HomePage = () => {
                 <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} opacity-10`} />
                 
                 {/* Content Container */}
-                <div className="relative h-full flex items-center justify-center px-4">
-                  <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="relative h-full flex items-center justify-center px-section-x">
+                  <div className="max-w-laptop mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     {/* Text Content */}
                     <div className="text-center lg:text-left space-y-6">
                       <div className="space-y-2">

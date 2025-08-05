@@ -36,18 +36,26 @@ export default {
         wider: '0.05em',
         widest: '0.1em',
       },
+      maxWidth: {
+        // Laptop-optimized container widths
+        'laptop': '1200px',      // Optimal for 1366px-1920px laptop screens
+        'laptop-sm': '1000px',   // For smaller laptop screens
+        'laptop-lg': '1400px',   // For larger laptop screens
+        'content': '900px',       // Optimal reading width for content
+        'content-lg': '1100px',   // Slightly wider content for larger screens
+      },
       spacing: {
-        // Standardized spacing system (reduced values)
-        'section-y': '2.5rem',    // 40px - Standard vertical padding for sections (reduced from 4rem)
-        'section-y-sm': '2rem',   // 32px - Smaller vertical padding for sections (reduced from 3rem)
-        'section-y-lg': '3rem',   // 48px - Larger vertical padding for sections (reduced from 5rem)
-        'section-x': '1rem',      // 16px - Standard horizontal padding for sections (unchanged)
-        'content-y': '1.5rem',    // 24px - Vertical spacing between content blocks (reduced from 2.5rem)
-        'content-y-sm': '1rem',   // 16px - Smaller vertical spacing between content blocks (reduced from 1.5rem)
-        'content-y-lg': '2rem',   // 32px - Larger vertical spacing between content blocks (reduced from 3.5rem)
-        'element-y': '0.75rem',   // 12px - Vertical spacing between elements (reduced from 1rem)
-        'element-y-sm': '0.375rem', // 6px - Smaller vertical spacing between elements (reduced from 0.5rem)
-        'element-y-lg': '1rem',   // 16px - Larger vertical spacing between elements (reduced from 1.5rem)
+        // Standardized spacing system (optimized for laptop screens)
+        'section-y': '2.5rem',    // 40px - Standard vertical padding for sections
+        'section-y-sm': '2rem',   // 32px - Smaller vertical padding for sections
+        'section-y-lg': '3rem',   // 48px - Larger vertical padding for sections
+        'section-x': '1.25rem',   // 20px - Standard horizontal padding for sections (increased for laptop)
+        'content-y': '1.5rem',    // 24px - Vertical spacing between content blocks
+        'content-y-sm': '1rem',   // 16px - Smaller vertical spacing between content blocks
+        'content-y-lg': '2rem',   // 32px - Larger vertical spacing between content blocks
+        'element-y': '0.75rem',   // 12px - Vertical spacing between elements
+        'element-y-sm': '0.375rem', // 6px - Smaller vertical spacing between elements
+        'element-y-lg': '1rem',   // 16px - Larger vertical spacing between elements
       },
     },
   },

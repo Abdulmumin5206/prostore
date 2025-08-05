@@ -22,7 +22,7 @@ const Header = () => {
 
   return (
     <header className="bg-black dark:bg-black text-white sticky top-0 z-50 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-laptop mx-auto px-section-x">
         <nav className="flex items-center justify-between h-12">
           <Link to="/" className="flex items-center">
             <Apple className="h-4 w-4" />

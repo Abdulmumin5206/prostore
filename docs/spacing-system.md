@@ -2,18 +2,30 @@
 
 ## Overview
 
-This document outlines our standardized spacing system designed to ensure consistent UI spacing throughout the application. The system is built on top of Tailwind CSS and provides reusable components and utility classes.
+This document outlines our standardized spacing system designed to ensure consistent UI spacing throughout the application. The system is built on top of Tailwind CSS and provides reusable components and utility classes, optimized for professional laptop screen usage.
+
+## Container Widths
+
+Our system includes laptop-optimized container widths for professional usage:
+
+| Token | Size | Description |
+|-------|------|-------------|
+| `max-w-laptop` | 1200px | Optimal for 1366px-1920px laptop screens |
+| `max-w-laptop-sm` | 1000px | For smaller laptop screens |
+| `max-w-laptop-lg` | 1400px | For larger laptop screens |
+| `max-w-content` | 900px | Optimal reading width for content |
+| `max-w-content-lg` | 1100px | Slightly wider content for larger screens |
 
 ## Spacing Scale
 
-Our spacing system is built on a consistent scale:
+Our spacing system is built on a consistent scale optimized for laptop screens:
 
 | Token | Size | Description |
 |-------|------|-------------|
 | `section-y` | 2.5rem (40px) | Standard vertical padding for sections |
 | `section-y-sm` | 2rem (32px) | Smaller vertical padding for sections |
 | `section-y-lg` | 3rem (48px) | Larger vertical padding for sections |
-| `section-x` | 1rem (16px) | Standard horizontal padding for sections |
+| `section-x` | 1.25rem (20px) | Standard horizontal padding for sections (increased for laptop) |
 | `content-y` | 1.5rem (24px) | Vertical spacing between content blocks |
 | `content-y-sm` | 1rem (16px) | Smaller vertical spacing between content blocks |
 | `content-y-lg` | 2rem (32px) | Larger vertical spacing between content blocks |
@@ -25,13 +37,13 @@ Our spacing system is built on a consistent scale:
 
 ### Section Component
 
-The `Section` component provides consistent outer container spacing and background colors.
+The `Section` component provides consistent outer container spacing and background colors, optimized for laptop screens.
 
 ```jsx
 <Section 
   size="md"               // 'sm' | 'md' | 'lg'
   background="light"      // 'white' | 'light' | 'dark' | 'black'
-  containerWidth="xl"     // 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  containerWidth="laptop" // 'sm' | 'md' | 'lg' | 'xl' | 'laptop' | 'laptop-sm' | 'laptop-lg' | 'content' | 'content-lg' | 'full'
   className="custom-class"
 >
   {/* Section content */}
@@ -61,9 +73,10 @@ The `Spacing` component adds vertical space between elements.
 
 ## Usage Guidelines
 
-1. **Sections**: Use the `Section` component for all major page sections
+1. **Sections**: Use the `Section` component for all major page sections with `containerWidth="laptop"` for optimal laptop display
 2. **Content Blocks**: Use the `ContentBlock` component for grouping related content within sections
 3. **Element Spacing**: Use the `Spacing` component or utility classes for spacing between individual elements
+4. **Laptop Optimization**: Use `max-w-laptop` for main containers and `max-w-content` for text-heavy content
 
 ## Best Practices
 
@@ -71,13 +84,14 @@ The `Spacing` component adds vertical space between elements.
 2. Use the provided components rather than custom spacing values
 3. For special cases, extend the system rather than creating one-off solutions
 4. Use the appropriate size variant based on the visual hierarchy of the content
+5. Prioritize laptop screen optimization while maintaining mobile responsiveness
 
 ## Examples
 
 ### Page Structure Example
 
 ```jsx
-<Section size="md" background="light">
+<Section size="md" background="light" containerWidth="laptop">
   <ContentBlock spacing="lg">
     <AppleHeadline>Main Heading</AppleHeadline>
     <AppleSubheadline>Subheading text</AppleSubheadline>
@@ -89,6 +103,17 @@ The `Spacing` component adds vertical space between elements.
   
   <ContentBlock spacing="none">
     {/* Footer content with no bottom margin */}
+  </ContentBlock>
+</Section>
+```
+
+### Content-Heavy Section Example
+
+```jsx
+<Section size="md" background="white" containerWidth="content">
+  <ContentBlock spacing="md">
+    <h2>Article Title</h2>
+    <p>Long-form content optimized for reading width...</p>
   </ContentBlock>
 </Section>
 ```

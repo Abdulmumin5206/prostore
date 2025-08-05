@@ -5,18 +5,19 @@ interface SectionProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   background?: 'white' | 'light' | 'dark' | 'black';
-  containerWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  containerWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'laptop' | 'laptop-sm' | 'laptop-lg' | 'content' | 'content-lg' | 'full';
 }
 
 /**
  * Section component for consistent spacing and layout across the application
+ * Optimized for laptop screens with professional width usage
  */
 const Section: React.FC<SectionProps> = ({
   children,
   className = '',
   size = 'md',
   background = 'light',
-  containerWidth = 'xl',
+  containerWidth = 'laptop',
 }) => {
   // Size classes (vertical padding)
   const sizeClasses = {
@@ -33,12 +34,17 @@ const Section: React.FC<SectionProps> = ({
     black: 'bg-black dark:bg-black text-white',
   };
 
-  // Container width classes
+  // Container width classes (laptop-optimized)
   const containerClasses = {
     sm: 'max-w-3xl',
     md: 'max-w-5xl',
-    xl: 'max-w-7xl',
     lg: 'max-w-6xl',
+    xl: 'max-w-7xl',
+    'laptop': 'max-w-laptop',
+    'laptop-sm': 'max-w-laptop-sm',
+    'laptop-lg': 'max-w-laptop-lg',
+    'content': 'max-w-content',
+    'content-lg': 'max-w-content-lg',
     full: 'w-full',
   };
 

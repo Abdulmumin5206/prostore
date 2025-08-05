@@ -113,8 +113,8 @@ const MacPage = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Header Section */}
-      <div className="bg-[#f5f5f7] dark:bg-black py-12 px-4 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
+      <div className="bg-[#f5f5f7] dark:bg-black py-12 px-section-x transition-colors duration-300">
+        <div className="max-w-laptop mx-auto">
           <div className="flex justify-between items-start mb-16">
             <H1>Shop Mac</H1>
             <div className="text-right">
