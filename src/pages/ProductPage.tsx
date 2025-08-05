@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
+  H1, H2, H3, H4,
+  Text, Caption, Label,
   AppleHeadline,
   AppleSubheadline,
   AppleProductDescription, 
   ApplePrice, 
-  Text 
+  AppleProductTitle
 } from '../components/Typography';
 import Button from '../components/Button';
 import Section from '../components/Section';
@@ -131,14 +133,26 @@ const ProductPage: React.FC = () => {
     <div className="min-h-screen pb-20 bg-white dark:bg-gray-950 transition-colors duration-300">
       {/* Breadcrumb navigation - simplified and more subtle */}
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
-        <nav className="flex items-center text-xs text-gray-400 dark:text-gray-500">
-          <Link to="/" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Home</Link>
-          <span className="mx-1.5">›</span>
-          <Link to="/store" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Store</Link>
-          <span className="mx-1.5">›</span>
-          <Link to="/iphone" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">iPhone</Link>
-          <span className="mx-1.5">›</span>
-          <span className="text-gray-600 dark:text-gray-300">{product.name}</span>
+        <nav className="flex items-center">
+          <Link to="/" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <Text size="xs" color="tertiary">Home</Text>
+          </Link>
+          <span className="mx-1.5">
+            <Text size="xs" color="tertiary">›</Text>
+          </span>
+          <Link to="/store" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <Text size="xs" color="tertiary">Store</Text>
+          </Link>
+          <span className="mx-1.5">
+            <Text size="xs" color="tertiary">›</Text>
+          </span>
+          <Link to="/iphone" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <Text size="xs" color="tertiary">iPhone</Text>
+          </Link>
+          <span className="mx-1.5">
+            <Text size="xs" color="tertiary">›</Text>
+          </span>
+          <Text size="xs" color="secondary">{product.name}</Text>
         </nav>
       </div>
       
@@ -156,7 +170,7 @@ const ProductPage: React.FC = () => {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full w-full">
-                    <Text>Image not available</Text>
+                    <Text color="tertiary">Image not available</Text>
                   </div>
                 )}
               </div>
@@ -187,13 +201,13 @@ const ProductPage: React.FC = () => {
             <div className="flex flex-col">
               {/* Product title - simplified header */}
               <div className="mb-8">
-                <AppleHeadline className="text-4xl font-medium">{product.name}</AppleHeadline>
+                <AppleProductTitle className="text-4xl">{product.name}</AppleProductTitle>
               </div>
               
               {/* Color options */}
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-8">
-                  <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Color</Text>
+                  <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color, index) => (
                       <button
@@ -213,14 +227,14 @@ const ProductPage: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  <Text className="text-sm text-gray-500 dark:text-gray-400 mt-2">{currentColor}</Text>
+                  <Text size="sm" color="tertiary" className="mt-2">{currentColor}</Text>
                 </div>
               )}
               
               {/* Storage options */}
               {product.storage && product.storage.length > 0 && (
                 <div className="mb-8">
-                  <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Storage</Text>
+                  <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Storage</Label>
                   <div className="flex flex-wrap gap-2">
                     {product.storage.map((option, index) => {
                       const basePrice = product.storage[0].price;
@@ -250,7 +264,7 @@ const ProductPage: React.FC = () => {
               
               {/* Payment Options - cleaner design */}
               <div className="mb-10">
-                <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Payment Options</Text>
+                <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Payment Options</Label>
                 <div className="flex space-x-3 mb-8">
                   <button
                     onClick={() => setSelectedPaymentType('full')}
@@ -260,7 +274,12 @@ const ProductPage: React.FC = () => {
                         : 'border-gray-200 dark:border-gray-800'
                     }`}
                   >
-                    <Text className={`text-center ${selectedPaymentType === 'full' ? 'font-medium text-blue-600 dark:text-blue-400' : ''}`}>
+                    <Text 
+                      size="sm" 
+                      weight={selectedPaymentType === 'full' ? "medium" : "normal"}
+                      color={selectedPaymentType === 'full' ? "accent" : "inherit"}
+                      align="center"
+                    >
                       Full Payment
                     </Text>
                   </button>
@@ -273,7 +292,12 @@ const ProductPage: React.FC = () => {
                         : 'border-gray-200 dark:border-gray-800'
                     }`}
                   >
-                    <Text className={`text-center ${selectedPaymentType === 'nasiya' ? 'font-medium text-blue-600 dark:text-blue-400' : ''}`}>
+                    <Text 
+                      size="sm" 
+                      weight={selectedPaymentType === 'nasiya' ? "medium" : "normal"}
+                      color={selectedPaymentType === 'nasiya' ? "accent" : "inherit"}
+                      align="center"
+                    >
                       Nasiya
                     </Text>
                   </button>
@@ -283,13 +307,13 @@ const ProductPage: React.FC = () => {
                 {selectedPaymentType === 'full' ? (
                   <div className="mb-8">
                     <ApplePrice className="text-3xl">${totalPrice}</ApplePrice>
-                    <Text size="sm" className="text-gray-500 dark:text-gray-400 mt-1">One-time payment</Text>
+                    <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
                   </div>
                 ) : (
                   <div className="mb-8">
                     {/* Installment plan selection */}
                     <div className="mb-4">
-                      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">Select payment period:</Text>
+                      <Text size="xs" color="tertiary" className="mb-2">Select payment period:</Text>
                       <div className="flex space-x-2">
                         {[6, 12, 24].map((months) => (
                           <button
@@ -301,28 +325,30 @@ const ProductPage: React.FC = () => {
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {months} months
+                            <Text size="xs" color="inherit">
+                              {months} months
+                            </Text>
                           </button>
                         ))}
                       </div>
                     </div>
                     
                     <ApplePrice className="text-3xl">${totalMonthlyPayment}</ApplePrice>
-                    <Text size="sm" className="text-gray-500 dark:text-gray-400 mt-1">
+                    <Text size="sm" color="tertiary" className="mt-1">
                       per month for {selectedInstallmentPlan} months
                     </Text>
                     <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-500 dark:text-gray-400">Base price:</span>
-                        <span className="text-gray-700 dark:text-gray-300">${totalPrice}</span>
+                        <Text size="xs" color="tertiary">Base price:</Text>
+                        <Text size="xs" color="secondary">${totalPrice}</Text>
                       </div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-500 dark:text-gray-400">Nasiya markup (30%):</span>
-                        <span className="text-gray-700 dark:text-gray-300">+${totalNasiyaPrice - totalPrice}</span>
+                        <Text size="xs" color="tertiary">Nasiya markup (30%):</Text>
+                        <Text size="xs" color="secondary">+${totalNasiyaPrice - totalPrice}</Text>
                       </div>
                       <div className="flex justify-between text-xs font-medium pt-1 border-t border-gray-200 dark:border-gray-800">
-                        <span className="text-gray-700 dark:text-gray-300">Total cost:</span>
-                        <span className="text-gray-900 dark:text-gray-100">${totalNasiyaPrice}</span>
+                        <Text size="xs" color="secondary" weight="medium">Total cost:</Text>
+                        <Text size="xs" color="primary" weight="medium">${totalNasiyaPrice}</Text>
                       </div>
                     </div>
                   </div>
@@ -343,33 +369,33 @@ const ProductPage: React.FC = () => {
             <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
               <button
                 onClick={() => setActiveTab('description')}
-                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                className={`px-6 py-3 transition-colors ${
                   activeTab === 'description'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                Description
+                <Text size="sm" weight="medium" color="inherit">Description</Text>
               </button>
               <button
                 onClick={() => setActiveTab('characteristics')}
-                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                className={`px-6 py-3 transition-colors ${
                   activeTab === 'characteristics'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                Characteristics
+                <Text size="sm" weight="medium" color="inherit">Characteristics</Text>
               </button>
               <button
                 onClick={() => setActiveTab('nasiya')}
-                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                className={`px-6 py-3 transition-colors ${
                   activeTab === 'nasiya'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                Nasiya Details
+                <Text size="sm" weight="medium" color="inherit">Nasiya Details</Text>
               </button>
             </div>
             
@@ -378,56 +404,56 @@ const ProductPage: React.FC = () => {
               {activeTab === 'description' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">About This Product</h3>
-                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+                    <H3 className="mb-4">About This Product</H3>
+                    <AppleProductDescription className="mb-6">
                       {product.description}
-                    </Text>
+                    </AppleProductDescription>
                     
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Key Features</h4>
+                    <H4 className="mb-3">Key Features</H4>
                     <ul className="space-y-2 mb-6">
                       {product.features.map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                          <Text className="text-gray-700 dark:text-gray-300">{feature}</Text>
+                          <Text color="secondary">{feature}</Text>
                         </li>
                       ))}
                     </ul>
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Product Overview</h3>
-                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <H3 className="mb-4">Product Overview</H3>
+                    <AppleProductDescription>
                       Experience the future of mobile technology with the iPhone 16. This revolutionary device combines cutting-edge innovation with timeless design, delivering an unparalleled user experience that adapts to your lifestyle.
-                    </Text>
+                    </AppleProductDescription>
                   </div>
                   
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">What's New</h4>
+                    <H4 className="mb-3">What's New</H4>
                     <ul className="space-y-2">
                       <li className="flex items-start">
                         <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text className="text-gray-700 dark:text-gray-300">Revolutionary A18 Bionic chip for lightning-fast performance</Text>
+                        <Text color="secondary">Revolutionary A18 Bionic chip for lightning-fast performance</Text>
                       </li>
                       <li className="flex items-start">
                         <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text className="text-gray-700 dark:text-gray-300">Advanced camera system with AI-powered photography</Text>
+                        <Text color="secondary">Advanced camera system with AI-powered photography</Text>
                       </li>
                       <li className="flex items-start">
                         <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text className="text-gray-700 dark:text-gray-300">All-day battery life that keeps up with your busy schedule</Text>
+                        <Text color="secondary">All-day battery life that keeps up with your busy schedule</Text>
                       </li>
                       <li className="flex items-start">
                         <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text className="text-gray-700 dark:text-gray-300">Enhanced security with Face ID and advanced encryption</Text>
+                        <Text color="secondary">Enhanced security with Face ID and advanced encryption</Text>
                       </li>
                     </ul>
                   </div>
                   
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Perfect For</h4>
-                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <H4 className="mb-3">Perfect For</H4>
+                    <AppleProductDescription>
                       Whether you're a creative professional, a business executive, or someone who simply appreciates the best technology has to offer, the iPhone 16 is designed to exceed your expectations. Its powerful capabilities make it perfect for photography, gaming, productivity, and everyday use.
-                    </Text>
+                    </AppleProductDescription>
                   </div>
                 </div>
               )}
@@ -436,32 +462,32 @@ const ProductPage: React.FC = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Display</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.display}</Text>
+                      <H4 className="mb-3">Display</H4>
+                      <Text color="secondary">{product.characteristics?.display}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Processor</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.processor}</Text>
+                      <H4 className="mb-3">Processor</H4>
+                      <Text color="secondary">{product.characteristics?.processor}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Camera</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.camera}</Text>
+                      <H4 className="mb-3">Camera</H4>
+                      <Text color="secondary">{product.characteristics?.camera}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Battery</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.battery}</Text>
+                      <H4 className="mb-3">Battery</H4>
+                      <Text color="secondary">{product.characteristics?.battery}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Storage</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.storage}</Text>
+                      <H4 className="mb-3">Storage</H4>
+                      <Text color="secondary">{product.characteristics?.storage}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Connectivity</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.connectivity}</Text>
+                      <H4 className="mb-3">Connectivity</H4>
+                      <Text color="secondary">{product.characteristics?.connectivity}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Security</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.security}</Text>
+                      <H4 className="mb-3">Security</H4>
+                      <Text color="secondary">{product.characteristics?.security}</Text>
                     </div>
                   </div>
                 </div>
@@ -470,42 +496,54 @@ const ProductPage: React.FC = () => {
               {activeTab === 'nasiya' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Nasiya Payment Information</h3>
-                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <H3 className="mb-4">Nasiya Payment Information</H3>
+                    <AppleProductDescription>
                       We offer flexible payment options through our trusted nasiya partners, making premium technology accessible to everyone.
-                    </Text>
+                    </AppleProductDescription>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Eligibility</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.eligibility}</Text>
+                      <H4 className="mb-3">Eligibility</H4>
+                      <Text color="secondary">{product.nasiyaDetails?.eligibility}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Requirements</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.requirements}</Text>
+                      <H4 className="mb-3">Requirements</H4>
+                      <Text color="secondary">{product.nasiyaDetails?.requirements}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Required Documents</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.documents}</Text>
+                      <H4 className="mb-3">Required Documents</H4>
+                      <Text color="secondary">{product.nasiyaDetails?.documents}</Text>
                     </div>
                     <div>
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Application Process</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.process}</Text>
+                      <H4 className="mb-3">Application Process</H4>
+                      <Text color="secondary">{product.nasiyaDetails?.process}</Text>
                     </div>
                     <div className="md:col-span-2">
-                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Benefits</h4>
-                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.benefits}</Text>
+                      <H4 className="mb-3">Benefits</H4>
+                      <Text color="secondary">{product.nasiyaDetails?.benefits}</Text>
                     </div>
                   </div>
                   
                   <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-4">
-                    <h4 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">Important Notes</h4>
-                    <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                      <li>• 30% markup applies to all nasiya payments</li>
-                      <li>• Early repayment available with no penalties</li>
-                      <li>• Insurance coverage included for device protection</li>
-                      <li>• 24/7 customer support for payment-related queries</li>
+                    <H4 className="text-blue-900 dark:text-blue-100 mb-2">Important Notes</H4>
+                    <ul className="space-y-1">
+                      <li className="flex items-start">
+                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
+                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">30% markup applies to all nasiya payments</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
+                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">Early repayment available with no penalties</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
+                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">Insurance coverage included for device protection</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
+                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">24/7 customer support for payment-related queries</Text>
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -532,10 +570,10 @@ const ProductPage: React.FC = () => {
             
             {/* Product info summary */}
             <div>
-              <Text className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text size="sm" weight="medium" color="primary">{product.name}</Text>
+              <Caption>
                 {currentColor}{currentStorage ? ` • ${currentStorage}` : ''}
-              </Text>
+              </Caption>
             </div>
             
             {/* Quantity selector */}
@@ -562,9 +600,9 @@ const ProductPage: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Price summary */}
             <div className="text-right hidden sm:block">
-              <Text className="font-medium text-gray-900 dark:text-white text-sm">{currentPriceDisplay}</Text>
+              <Text size="sm" weight="medium" color="primary">{currentPriceDisplay}</Text>
               {selectedPaymentType === 'nasiya' && (
-                <Text className="text-xs text-gray-500 dark:text-gray-400">Total: ${totalNasiyaPrice}</Text>
+                <Caption>Total: ${totalNasiyaPrice}</Caption>
               )}
             </div>
             

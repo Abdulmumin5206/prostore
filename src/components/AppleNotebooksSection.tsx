@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, AppleSubheadline, AppleProductTitle, AppleProductDescription, ApplePrice } from './Typography';
+import { Text, AppleHeadline, AppleSubheadline, AppleProductTitle, AppleProductDescription, ApplePrice } from './Typography';
 import Section from './Section';
 import ContentBlock from './ContentBlock';
 import Spacing from './Spacing';
@@ -86,9 +86,11 @@ const AppleNotebooksSection: React.FC = () => {
                   
                   <div className="space-y-2">
                     {product.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                      <div key={index} className="flex items-center">
                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
-                        {feature}
+                        <Text size="xs" color="tertiary">
+                          {feature}
+                        </Text>
                       </div>
                     ))}
                   </div>

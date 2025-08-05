@@ -8,6 +8,7 @@ import MacPage from './pages/MacPage';
 import StorePage from './pages/StorePage';
 import ProductPage from './pages/ProductPage';
 import TopPromotionalSection from './components/TopPromotionalSection';
+import TypographyGuide from './components/TypographyGuide';
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
               <Route path="/support" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Support Page Coming Soon</div>} />
               <Route path="/gift-card" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Gift Card Page Coming Soon</div>} />
               <Route path="/airtag" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirTag Page Coming Soon</div>} />
+              {/* Typography Guide Route */}
+              <Route path="/typography" element={<TypographyGuide />} />
             </Routes>
           </main>
           <Footer />

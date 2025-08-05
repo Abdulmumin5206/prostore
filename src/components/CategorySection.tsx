@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, AppleSubheadline } from './Typography';
+import { Text, AppleHeadline, AppleSubheadline } from './Typography';
 import Section from './Section';
 import ContentBlock from './ContentBlock';
 import Spacing from './Spacing';
@@ -108,9 +108,9 @@ const CategorySection: React.FC = () => {
                   loading="lazy"
                 />
               </div>
-              <span className="text-sm font-medium text-gray-800 dark:text-white text-center">
+              <Text size="sm" weight="medium" color="primary" align="center">
                 {category.name}
-              </span>
+              </Text>
             </Link>
           ))}
         </div>

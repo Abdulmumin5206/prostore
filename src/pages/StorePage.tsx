@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import CategorySection from '../components/CategorySection';
-import { H1, AppleHeadline, AppleLink, Text } from '../components/Typography';
+import { H1, AppleHeadline, AppleLink, Text, AppleProductTitle, ApplePrice } from '../components/Typography';
 
 const StorePage: React.FC = () => {
   return (
@@ -15,7 +15,7 @@ const StorePage: React.FC = () => {
                 <div className="w-6 h-6 bg-blue-600 dark:bg-blue-500 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">?</span>
                 </div>
-                <Text size="sm">Need shopping help?</Text>
+                <Text size="sm" color="accent">Need shopping help?</Text>
               </div>
               <AppleLink href="#">Ask a Specialist ↗</AppleLink>
               
@@ -23,7 +23,7 @@ const StorePage: React.FC = () => {
                 <div className="w-6 h-6 bg-gray-700 dark:bg-gray-600 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">⌾</span>
                 </div>
-                <Text size="sm">Visit an Apple Store</Text>
+                <Text size="sm" color="secondary">Visit an Apple Store</Text>
               </div>
               <AppleLink href="#">Find one near you ↗</AppleLink>
             </div>
@@ -36,7 +36,7 @@ const StorePage: React.FC = () => {
       <section className="py-16 px-section-x bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
         <div className="max-w-laptop mx-auto">
           <AppleHeadline className="mb-8">
-            The latest. <span className="text-gray-600 dark:text-gray-400">Take a look at what's new right now.</span>
+            The latest. <Text size="lg" color="secondary" className="inline">Take a look at what's new right now.</Text>
           </AppleHeadline>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -49,15 +49,15 @@ const StorePage: React.FC = () => {
                   className="h-full object-contain"
                 />
               </div>
-              <Text className="text-xl text-gray-800 dark:text-gray-200 font-medium">iPhone 16 Black</Text>
-              <Text className="text-blue-600 dark:text-blue-400 mt-2">From $1,299</Text>
+              <AppleProductTitle className="text-xl">iPhone 16 Black</AppleProductTitle>
+              <ApplePrice className="mt-2">From $1,299</ApplePrice>
             </Link>
             
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 h-80 flex items-center justify-center shadow-sm">
-              <Text className="text-xl text-gray-800 dark:text-gray-200">Latest Product Coming Soon</Text>
+              <Text size="xl" color="primary" weight="medium">Latest Product Coming Soon</Text>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 h-80 flex items-center justify-center shadow-sm">
-              <Text className="text-xl text-gray-800 dark:text-gray-200">Latest Product Coming Soon</Text>
+              <Text size="xl" color="primary" weight="medium">Latest Product Coming Soon</Text>
             </div>
           </div>
         </div>

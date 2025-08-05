@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import { H1, Text, AppleHeadline, AppleLink, AppleProductTitle } from '../components/Typography';
+import { H1, H2, Text, AppleHeadline, AppleLink, AppleProductTitle, AppleSubheadline, Caption } from '../components/Typography';
 import Button from '../components/Button';
 
 interface MacProduct {
@@ -122,7 +122,7 @@ const MacPage = () => {
                 <div className="w-6 h-6 bg-blue-600 dark:bg-blue-500 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">?</span>
                 </div>
-                <Text size="sm">Need shopping help?</Text>
+                <Text size="sm" color="accent">Need shopping help?</Text>
               </div>
               <AppleLink href="#">Ask a Mac Specialist ↗</AppleLink>
               
@@ -130,7 +130,7 @@ const MacPage = () => {
                 <div className="w-6 h-6 bg-gray-700 dark:bg-gray-600 rounded-full mr-2 flex items-center justify-center transition-colors duration-300">
                   <span className="text-white text-xs">⌾</span>
                 </div>
-                <Text size="sm">Visit an Apple Store</Text>
+                <Text size="sm" color="secondary">Visit an Apple Store</Text>
               </div>
               <AppleLink href="#">Find one near you ↗</AppleLink>
             </div>
@@ -152,13 +152,19 @@ const MacPage = () => {
                 <li key={tab}>
                   <a
                     href="#"
-                    className={`block py-4 text-sm whitespace-nowrap transition-colors duration-200 ${
+                    className={`block py-4 whitespace-nowrap transition-colors duration-200 ${
                       index === 0
-                        ? 'text-black dark:text-white border-b-2 border-black dark:border-white font-medium'
+                        ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                     }`}
                   >
-                    {tab}
+                    <Text 
+                      size="sm" 
+                      weight={index === 0 ? "medium" : "normal"}
+                      color="inherit"
+                    >
+                      {tab}
+                    </Text>
                   </a>
                 </li>
               ))}
@@ -168,7 +174,7 @@ const MacPage = () => {
           {/* Products Section */}
           <div className="mb-8">
             <AppleHeadline className="mb-2">All models.</AppleHeadline>
-            <Text size="xl" className="text-gray-600 dark:text-gray-400">Take your pick.</Text>
+            <AppleSubheadline>Take your pick.</AppleSubheadline>
           </div>
 
           {/* Product Carousel */}
@@ -221,7 +227,7 @@ const MacPage = () => {
                         </div>
 
                         <div className="text-center">
-                          <Text size="sm" className="mb-4">
+                          <Text size="sm" color="secondary" className="mb-4">
                             From {product.priceFrom} or {product.monthlyFrom}
                           </Text>
                           <Button variant="primary" size="small">

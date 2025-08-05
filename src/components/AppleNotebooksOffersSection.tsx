@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, AppleSubheadline, ApplePrice } from './Typography';
+import { Text, Caption, AppleHeadline, AppleSubheadline, ApplePrice } from './Typography';
 
 interface NotebookOffer {
   id: string;
@@ -167,7 +167,9 @@ const AppleNotebooksOffersSection: React.FC = () => {
                     : 'bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700'
                 }`}
               >
-                {tag.name}
+                <Text size="sm" color="inherit" className="m-0 p-0">
+                  {tag.name}
+                </Text>
               </button>
             ))}
           </div>
@@ -191,22 +193,22 @@ const AppleNotebooksOffersSection: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+                  <Text size="sm" weight="medium" color="primary" truncate>
                     {product.name}
-                  </h3>
+                  </Text>
                   
                   {product.description && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                    <Text size="xs" color="tertiary" truncate>
                       {product.description}
-                    </p>
+                    </Text>
                   )}
                   
                   <div className="flex items-center">
                     <ApplePrice className="text-lg">{product.price}</ApplePrice>
                     {product.originalPrice && (
-                      <span className="text-xs text-gray-500 line-through ml-2">
+                      <Caption className="line-through ml-2">
                         {product.originalPrice}
-                      </span>
+                      </Caption>
                     )}
                   </div>
                 </div>
@@ -221,7 +223,9 @@ const AppleNotebooksOffersSection: React.FC = () => {
               onClick={() => setShowMore(!showMore)}
               className="px-6 py-3 mb-4 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
             >
-              {showMore ? 'Show Less' : 'Show More Notebooks'}
+              <Text size="sm" color="inherit">
+                {showMore ? 'Show Less' : 'Show More Notebooks'}
+              </Text>
             </button>
           )}
         </div>

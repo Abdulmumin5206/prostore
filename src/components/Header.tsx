@@ -4,6 +4,7 @@ import { Apple, Search, ShoppingBag } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import NavDropdown from './NavDropdown';
 import NavOverlay from './NavOverlay';
+import { Text } from './Typography';
 
 const Header = () => {
   const location = useLocation();
@@ -117,11 +118,18 @@ const Header = () => {
                 >
                   <Link
                     to={item.href}
-                    className={`text-xs font-normal tracking-tight hover:text-gray-300 dark:hover:text-gray-200 transition-colors duration-200 ${
+                    className={`transition-colors duration-200 ${
                       location.pathname === item.href ? 'text-white dark:text-gray-100' : 'text-gray-300 dark:text-gray-400'
                     }`}
                   >
-                    {item.name}
+                    <Text 
+                      size="xs" 
+                      weight={activeDropdown === item.name ? "medium" : "normal"} 
+                      color="inherit"
+                      className="hover:text-gray-300 dark:hover:text-gray-200"
+                    >
+                      {item.name}
+                    </Text>
                   </Link>
                 </div>
               ))}

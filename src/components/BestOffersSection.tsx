@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppleHeadline, ApplePrice, AppleSubheadline } from './Typography';
+import { H2, Text, AppleHeadline, ApplePrice, AppleSubheadline, Caption } from './Typography';
 import Section from './Section';
 import ContentBlock from './ContentBlock';
 import Spacing from './Spacing';
@@ -158,7 +158,9 @@ const BestOffersSection: React.FC = () => {
                     : 'bg-gray-200 dark:bg-black text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-900'
                 }`}
               >
-                {tag.name}
+                <Text size="sm" color="inherit" className="m-0 p-0">
+                  {tag.name}
+                </Text>
               </button>
             ))}
           </div>
@@ -184,16 +186,16 @@ const BestOffersSection: React.FC = () => {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+                  <Text size="sm" weight="medium" color="primary" truncate>
                     {product.name}
-                  </h3>
+                  </Text>
                   
                   <div className="flex items-center">
                     <ApplePrice className="text-lg">{product.price}</ApplePrice>
                     {product.originalPrice && (
-                      <span className="text-xs text-gray-500 line-through ml-2">
+                      <Caption className="line-through ml-2">
                         {product.originalPrice}
-                      </span>
+                      </Caption>
                     )}
                   </div>
                 </div>
@@ -209,7 +211,9 @@ const BestOffersSection: React.FC = () => {
             onClick={() => setShowMore(!showMore)}
             className="px-5 py-2 bg-gray-200 dark:bg-black text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-900 transition-colors"
           >
-            {showMore ? 'Show Less' : 'Show More Products'}
+            <Text size="sm" color="inherit">
+              {showMore ? 'Show Less' : 'Show More Products'}
+            </Text>
           </button>
         </ContentBlock>
       )}
