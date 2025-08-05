@@ -9,8 +9,10 @@ const Header = () => {
   const location = useLocation();
   const [isSticky, setIsSticky] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const navDropdownRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<number | null>(null);
   
   // Handle scroll events with throttling
   useEffect(() => {
@@ -38,7 +40,17 @@ const Header = () => {
   // Close dropdown when navigating to a different page
   useEffect(() => {
     setActiveDropdown(null);
+    setIsDropdownVisible(false);
   }, [location.pathname]);
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const navItems = [
     { name: 'Store', href: '/store' },
@@ -55,11 +67,27 @@ const Header = () => {
   ];
 
   const handleNavMouseEnter = (name: string) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
     setActiveDropdown(name);
+    setIsDropdownVisible(true);
   };
 
   const handleHeaderMouseLeave = () => {
-    setActiveDropdown(null);
+    // Add a small delay before closing to make it feel more natural
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsDropdownVisible(false);
+      // Keep the active dropdown name until the animation completes
+      setTimeout(() => {
+        if (!isDropdownVisible) {
+          setActiveDropdown(null);
+        }
+      }, 500);
+    }, 150);
   };
 
   return (
@@ -70,7 +98,7 @@ const Header = () => {
           isSticky ? 'fixed top-0 shadow-md' : 'absolute top-10'
         }`}
         onMouseLeave={handleHeaderMouseLeave}
-        style={{ borderBottom: activeDropdown ? 'none' : undefined }}
+        style={{ borderBottom: isDropdownVisible ? 'none' : undefined }}
       >
         <div className="max-w-laptop mx-auto px-section-x">
           <nav className="flex items-center justify-between h-12 relative">
@@ -82,7 +110,9 @@ const Header = () => {
               {navItems.map((item) => (
                 <div
                   key={item.name}
-                  className="relative h-12 flex items-center nav-item"
+                  className={`relative h-12 flex items-center nav-item ${
+                    activeDropdown === item.name ? 'font-medium' : ''
+                  }`}
                   onMouseEnter={() => handleNavMouseEnter(item.name)}
                 >
                   <Link
@@ -105,22 +135,30 @@ const Header = () => {
           </nav>
         </div>
         
-        {/* Dropdown menus */}
+        {/* Single dropdown container with dynamic content */}
         <div className="nav-dropdown" ref={navDropdownRef}>
-          {navItems.map((item) => (
+          {activeDropdown && (
             <NavDropdown
-              key={item.name}
-              name={item.name}
-              isVisible={activeDropdown === item.name}
+              key="dropdown"
+              name={activeDropdown}
+              isVisible={isDropdownVisible}
             />
-          ))}
+          )}
         </div>
       </header>
       
       {/* Background overlay */}
       <NavOverlay 
-        isVisible={activeDropdown !== null} 
-        onClick={() => setActiveDropdown(null)}
+        isVisible={isDropdownVisible} 
+        onClick={() => {
+          setIsDropdownVisible(false);
+          
+          // Clear any pending timeouts
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+          }
+        }}
       />
     </>
   );

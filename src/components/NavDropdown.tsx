@@ -303,22 +303,54 @@ interface NavDropdownProps {
 const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible }) => {
   const content = dropdownContents[name];
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [displayedName, setDisplayedName] = useState(name);
+  
+  // Update displayed content when name changes
+  useEffect(() => {
+    if (isVisible) {
+      // Simple update with a slight delay to allow height calculation
+      const timer = setTimeout(() => {
+        setDisplayedName(name);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      // Update immediately when dropdown is closed
+      setDisplayedName(name);
+    }
+  }, [name, isVisible]);
+  
+  // Measure content height
+  useEffect(() => {
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight);
+    }
+  }, [displayedName, isVisible]);
   
   if (!content) return null;
+  
+  const displayContent = dropdownContents[displayedName];
+  
+  if (!displayContent) return null;
   
   return (
     <div 
       ref={dropdownRef}
-      className={`absolute left-0 w-full bg-white backdrop-blur-md transition-opacity duration-300 ease-out overflow-hidden border-t border-gray-200 ${
-        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
+      className="absolute left-0 w-full bg-white backdrop-blur-md border-t border-gray-200 overflow-hidden transition-all duration-300 ease-out"
       style={{ 
-        top: '48px', // Ensure it's exactly at the bottom edge of header
-        marginTop: '-1px', // Remove the gap between header and dropdown
+        top: '48px',
+        marginTop: '-1px',
+        height: isVisible ? `${contentHeight}px` : '0px',
+        opacity: isVisible ? 1 : 0,
+        pointerEvents: isVisible ? 'auto' : 'none',
       }}
     >
-      <div className="max-w-laptop mx-auto px-section-x py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {content.sections.map((section, index) => (
+      <div 
+        ref={contentRef} 
+        className="max-w-laptop mx-auto px-section-x py-8 grid grid-cols-1 md:grid-cols-3 gap-8 transition-opacity duration-200"
+      >
+        {displayContent.sections.map((section, index) => (
           <div key={index}>
             <h3 className="text-gray-500 text-xs font-medium mb-2">{section.title}</h3>
             <ul className="space-y-2">
