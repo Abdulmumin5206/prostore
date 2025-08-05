@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import MacPage from './pages/MacPage';
 import StorePage from './pages/StorePage';
+import ProductPage from './pages/ProductPage';
 import TopPromotionalSection from './components/TopPromotionalSection';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
               <Route path="/mac" element={<MacPage />} />
               {/* Placeholder routes for other pages */}
               <Route path="/store" element={<StorePage />} />
+              <Route path="/store/:productId" element={<ProductPage />} />
               <Route path="/ipad" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPad Page Coming Soon</div>} />
               <Route path="/iphone" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPhone Page Coming Soon</div>} />
               <Route path="/watch" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Watch Page Coming Soon</div>} />

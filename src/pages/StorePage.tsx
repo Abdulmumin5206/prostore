@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import CategorySection from '../components/CategorySection';
 import { H1, AppleHeadline, AppleLink, Text } from '../components/Typography';
 
@@ -39,10 +40,19 @@ const StorePage: React.FC = () => {
           </AppleHeadline>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Placeholder for latest products */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 h-80 flex items-center justify-center shadow-sm">
-              <Text className="text-xl text-gray-800 dark:text-gray-200">Latest Product Coming Soon</Text>
-            </div>
+            {/* Featured Product with Link */}
+            <Link to="/store/iphone-16-black" className="bg-white dark:bg-gray-900 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="h-40 w-full flex items-center justify-center mb-4">
+                <img 
+                  src="https://placehold.co/300x400/222/white?text=iPhone+16" 
+                  alt="iPhone 16 Black" 
+                  className="h-full object-contain"
+                />
+              </div>
+              <Text className="text-xl text-gray-800 dark:text-gray-200 font-medium">iPhone 16 Black</Text>
+              <Text className="text-blue-600 dark:text-blue-400 mt-2">From $1,299</Text>
+            </Link>
+            
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 h-80 flex items-center justify-center shadow-sm">
               <Text className="text-xl text-gray-800 dark:text-gray-200">Latest Product Coming Soon</Text>
             </div>
