@@ -8,15 +8,7 @@ import Button from '../components/Button';
 
 interface HeroSlide {
   id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  primaryButton: string;
-  secondaryButton: string;
   image: string;
-  color: string;
-  price?: string;
-  discount?: string;
 }
 
 const HomePage = () => {
@@ -32,52 +24,20 @@ const HomePage = () => {
 
   const heroSlides: HeroSlide[] = [
     {
-      id: 'iphone-16-pro',
-      title: 'iPhone 16 Pro',
-      subtitle: 'Pro. Beyond.',
-      description: 'Experience the most advanced iPhone ever with A18 Pro chip, titanium design, and revolutionary camera system.',
-      primaryButton: 'Buy from $999',
-      secondaryButton: 'Learn more',
-      image: 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=800',
-      color: 'from-purple-500 to-pink-500',
-      price: '$999',
-      discount: 'Save $100'
+      id: 'slide-1',
+      image: '/hero/blue gradient electronic sale promotion banner.webp'
     },
     {
-      id: 'macbook-air',
-      title: 'MacBook Air',
-      subtitle: 'Powerful. Portable.',
-      description: 'The most versatile Mac with M3 chip, all-day battery life, and stunning Liquid Retina display.',
-      primaryButton: 'Buy from $1,099',
-      secondaryButton: 'Compare',
-      image: 'https://images.pexels.com/photos/812264/pexels-photo-812264.jpeg?auto=compress&cs=tinysrgb&w=800',
-      color: 'from-blue-500 to-cyan-500',
-      price: '$1,099',
-      discount: 'Free AirPods'
+      id: 'slide-2',
+      image: 'https://images.pexels.com/photos/1647976/pexels-photo-1647976.jpeg?auto=compress&cs=tinysrgb&w=800'
     },
     {
-      id: 'ipad-pro',
-      title: 'iPad Pro',
-      subtitle: 'Your next computer is not a computer.',
-      description: 'The ultimate iPad experience with M4 chip, stunning Liquid Retina XDR display, and Apple Pencil Pro.',
-      primaryButton: 'Buy from $799',
-      secondaryButton: 'Watch the film',
-      image: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-      color: 'from-green-500 to-emerald-500',
-      price: '$799',
-      discount: 'Trade in up to $400'
+      id: 'slide-3',
+      image: 'https://images.pexels.com/photos/812264/pexels-photo-812264.jpeg?auto=compress&cs=tinysrgb&w=800'
     },
     {
-      id: 'apple-watch',
-      title: 'Apple Watch Series 10',
-      subtitle: 'Smarter. Brighter. Mightier.',
-      description: 'The most advanced Apple Watch with breakthrough health innovations and stunning new design.',
-      primaryButton: 'Buy from $399',
-      secondaryButton: 'Order now',
-      image: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-      color: 'from-red-500 to-orange-500',
-      price: '$399',
-      discount: 'Free engraving'
+      id: 'slide-4',
+      image: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800'
     }
   ];
 
@@ -180,70 +140,14 @@ const HomePage = () => {
                 }`}
                 aria-hidden={position !== 0}
               >
-                {/* Background Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} opacity-10`} />
-                
-                {/* Content Container */}
-                <div className="relative h-full flex items-center justify-center px-section-x">
-                  <div className="max-w-laptop mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    {/* Text Content */}
-                    <div className="text-center lg:text-left space-y-6">
-                      <div className="space-y-2">
-                        <AppleProductTitle>
-                          {slide.title}
-                        </AppleProductTitle>
-                        <AppleProductSubtitle>
-                          {slide.subtitle}
-                        </AppleProductSubtitle>
-                      </div>
-                      
-                      <AppleProductDescription className="max-w-lg">
-                        {slide.description}
-                      </AppleProductDescription>
-
-                      {/* Price and Discount */}
-                      {(slide.price || slide.discount) && (
-                        <div className="flex flex-col sm:flex-row items-center gap-4 text-lg">
-                          {slide.price && (
-                            <ApplePrice>
-                              {slide.price}
-                            </ApplePrice>
-                          )}
-                          {slide.discount && (
-                            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                              {slide.discount}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <Button variant="primary" size="large">
-                          {slide.primaryButton}
-                        </Button>
-                        <Button variant="outline" size="large">
-                          {slide.secondaryButton}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Product Image */}
-                    <div className="flex justify-center lg:justify-end">
-                      <div className="relative">
-                        <div className="w-80 h-80 md:w-96 md:h-96 rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500">
-                          <img
-                            src={slide.image}
-                            alt={slide.title}
-                            className="w-full h-full object-cover"
-                            loading={index === currentSlide ? "eager" : "lazy"}
-                          />
-                        </div>
-                        {/* Glow effect */}
-                        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${slide.color} opacity-20 blur-xl -z-10`} />
-                      </div>
-                    </div>
-                  </div>
+                {/* Static Image */}
+                <div className="relative h-full">
+                  <img
+                    src={slide.image}
+                    alt={`Slide ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading={index === currentSlide ? "eager" : "lazy"}
+                  />
                 </div>
               </div>
             );
@@ -274,15 +178,15 @@ const HomePage = () => {
         </button>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-4 z-20">
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
           {heroSlides.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
               disabled={isTransitioning}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 currentSlide === index 
-                  ? 'bg-white dark:bg-white scale-125 shadow-lg' 
+                  ? 'bg-white dark:bg-white scale-110 shadow-lg' 
                   : 'bg-white/30 dark:bg-gray-600 hover:bg-white/75 dark:hover:bg-gray-400'
               } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
               aria-label={`Go to slide ${index + 1}`}
@@ -291,26 +195,7 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* Auto-play indicator */}
-        <div className="absolute top-4 right-4 z-20">
-          <button
-            onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-              isAutoPlaying 
-                ? 'bg-green-500 text-white' 
-                : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-            }`}
-            aria-label={isAutoPlaying ? 'Pause slideshow' : 'Play slideshow'}
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              {isAutoPlaying ? (
-                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-              ) : (
-                <path d="M8 5v14l11-7z"/>
-              )}
-            </svg>
-          </button>
-        </div>
+
       </section>
       
       {/* Best Offers Section */}

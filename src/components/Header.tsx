@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Apple, Search, ShoppingBag } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import TopPromotionalSection from './TopPromotionalSection';
 
 const Header = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const Header = () => {
 
   return (
     <header className="bg-black dark:bg-black text-white sticky top-0 z-50 transition-colors duration-300">
+      <TopPromotionalSection />
       <div className="max-w-laptop mx-auto px-section-x">
         <nav className="flex items-center justify-between h-12">
           <Link to="/" className="flex items-center">
