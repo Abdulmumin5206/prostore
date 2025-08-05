@@ -42,7 +42,23 @@ const productData = {
       { size: '256GB', price: 1399 },
       { size: '512GB', price: 1599 },
       { size: '1TB', price: 1799 }
-    ]
+    ],
+    characteristics: {
+      display: '6.7-inch Super Retina XDR display with ProMotion technology',
+      processor: 'A18 Bionic chip with 6-core CPU and 5-core GPU',
+      camera: 'Pro camera system with 48MP main camera, 12MP ultra-wide, and 12MP telephoto',
+      battery: 'Up to 28 hours of video playback',
+      storage: '128GB, 256GB, 512GB, or 1TB options',
+      connectivity: '5G capable, Wi-Fi 6E, Bluetooth 5.3',
+      security: 'Face ID, Touch ID, and advanced encryption'
+    },
+    nasiyaDetails: {
+      eligibility: 'Available for all customers with valid ID and proof of income',
+      requirements: 'Minimum 3 months employment, clean credit history',
+      documents: 'Passport, employment certificate, bank statement',
+      process: 'Online application with instant approval, delivery within 24 hours',
+      benefits: 'No hidden fees, flexible payment schedules, early repayment options'
+    }
   }
 };
 
@@ -54,6 +70,7 @@ const ProductPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedStorage, setSelectedStorage] = useState(0);
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
+  const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
   
   // Fallback product data if the ID doesn't match
   const product = productData[productId as keyof typeof productData] || {
@@ -64,7 +81,9 @@ const ProductPage: React.FC = () => {
     features: [],
     images: [],
     colors: [],
-    storage: []
+    storage: [],
+    characteristics: {},
+    nasiyaDetails: {}
   };
 
   // Get current price based on selected storage option
@@ -203,20 +222,28 @@ const ProductPage: React.FC = () => {
                 <div className="mb-8">
                   <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Storage</Text>
                   <div className="flex flex-wrap gap-2">
-                    {product.storage.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedStorage(index)}
-                        className={`px-4 py-2 rounded-lg border transition-all ${
-                          selectedStorage === index 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
-                            : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{option.size}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">${option.price}</div>
-                      </button>
-                    ))}
+                    {product.storage.map((option, index) => {
+                      const basePrice = product.storage[0].price;
+                      const priceDifference = option.price - basePrice;
+                      const isSelected = selectedStorage === index;
+                      
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedStorage(index)}
+                          className={`px-4 py-2 rounded-lg border transition-all ${
+                            isSelected 
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                              : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <div className="text-sm font-medium">{option.size}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {index === 0 ? '+$0' : `+$${priceDifference}`}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -301,45 +328,188 @@ const ProductPage: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Quantity selector - minimal design */}
-                <div className="mb-8">
-                  <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Quantity</Text>
-                  <div className="flex items-center">
-                    <button 
-                      onClick={decreaseQuantity}
-                      className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                      disabled={quantity <= 1}
-                    >
-                      <span className="text-lg">-</span>
-                    </button>
-                    <span className="mx-4 w-6 text-center text-gray-800 dark:text-gray-200 font-medium">
-                      {quantity}
-                    </span>
-                    <button 
-                      onClick={increaseQuantity}
-                      className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                    >
-                      <span className="text-lg">+</span>
-                    </button>
-                  </div>
-                </div>
               </div>
               
-              {/* Product description and features - moved to bottom */}
-              <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
-                <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">About This Product</Text>
-                <AppleProductDescription className="text-base mb-8 max-w-md">{product.description}</AppleProductDescription>
-                
-                <Text className="text-sm uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Key Features</Text>
-                <ul className="space-y-3">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <div className="w-1 h-1 bg-blue-500 dark:bg-blue-400 rounded-full mr-3"></div>
-                      <Text className="text-gray-700 dark:text-gray-300">{feature}</Text>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            </div>
+          </div>
+        </ContentBlock>
+      </Section>
+      
+      {/* Detailed Description Section */}
+      <Section background="light" size="lg">
+        <ContentBlock spacing="md">
+          <div className="py-8">
+            {/* Tab Navigation */}
+            <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
+              <button
+                onClick={() => setActiveTab('description')}
+                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'description'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Description
+              </button>
+              <button
+                onClick={() => setActiveTab('characteristics')}
+                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'characteristics'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Characteristics
+              </button>
+              <button
+                onClick={() => setActiveTab('nasiya')}
+                className={`px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'nasiya'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Nasiya Details
+              </button>
+            </div>
+            
+            {/* Tab Content */}
+            <div className="max-w-4xl">
+              {activeTab === 'description' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">About This Product</h3>
+                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+                      {product.description}
+                    </Text>
+                    
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Key Features</h4>
+                    <ul className="space-y-2 mb-6">
+                      {product.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
+                          <Text className="text-gray-700 dark:text-gray-300">{feature}</Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Product Overview</h3>
+                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Experience the future of mobile technology with the iPhone 16. This revolutionary device combines cutting-edge innovation with timeless design, delivering an unparalleled user experience that adapts to your lifestyle.
+                    </Text>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">What's New</h4>
+                    <ul className="space-y-2">
+                      <li className="flex items-start">
+                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
+                        <Text className="text-gray-700 dark:text-gray-300">Revolutionary A18 Bionic chip for lightning-fast performance</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
+                        <Text className="text-gray-700 dark:text-gray-300">Advanced camera system with AI-powered photography</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
+                        <Text className="text-gray-700 dark:text-gray-300">All-day battery life that keeps up with your busy schedule</Text>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
+                        <Text className="text-gray-700 dark:text-gray-300">Enhanced security with Face ID and advanced encryption</Text>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Perfect For</h4>
+                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Whether you're a creative professional, a business executive, or someone who simply appreciates the best technology has to offer, the iPhone 16 is designed to exceed your expectations. Its powerful capabilities make it perfect for photography, gaming, productivity, and everyday use.
+                    </Text>
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'characteristics' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Display</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.display}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Processor</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.processor}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Camera</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.camera}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Battery</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.battery}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Storage</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.storage}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Connectivity</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.connectivity}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Security</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.characteristics?.security}</Text>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'nasiya' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Nasiya Payment Information</h3>
+                    <Text className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                      We offer flexible payment options through our trusted nasiya partners, making premium technology accessible to everyone.
+                    </Text>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Eligibility</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.eligibility}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Requirements</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.requirements}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Required Documents</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.documents}</Text>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Application Process</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.process}</Text>
+                    </div>
+                    <div className="md:col-span-2">
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Benefits</h4>
+                      <Text className="text-gray-700 dark:text-gray-300">{product.nasiyaDetails?.benefits}</Text>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-4">
+                    <h4 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">Important Notes</h4>
+                    <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
+                      <li>• 30% markup applies to all nasiya payments</li>
+                      <li>• Early repayment available with no penalties</li>
+                      <li>• Insurance coverage included for device protection</li>
+                      <li>• 24/7 customer support for payment-related queries</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </ContentBlock>
@@ -364,8 +534,28 @@ const ProductPage: React.FC = () => {
             <div>
               <Text className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</Text>
               <Text className="text-xs text-gray-500 dark:text-gray-400">
-                {currentColor}{currentStorage ? ` • ${currentStorage}` : ''} • Qty: {quantity}
+                {currentColor}{currentStorage ? ` • ${currentStorage}` : ''}
               </Text>
+            </div>
+            
+            {/* Quantity selector */}
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={decreaseQuantity}
+                className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                disabled={quantity <= 1}
+              >
+                <span className="text-sm">-</span>
+              </button>
+              <span className="w-4 text-center text-gray-800 dark:text-gray-200 font-medium text-sm">
+                {quantity}
+              </span>
+              <button 
+                onClick={increaseQuantity}
+                className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+              >
+                <span className="text-sm">+</span>
+              </button>
             </div>
           </div>
           
