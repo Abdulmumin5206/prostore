@@ -40,12 +40,12 @@ const AboutUsSection: React.FC = () => {
     <>
       {/* Store Locations Section */}
       <Section background="light" size="lg">
-        <ContentBlock spacing="md">
+        <ContentBlock spacing="md" className="max-w-7xl mx-auto">
           <AppleHeadline>Stores in United States</AppleHeadline>
         </ContentBlock>
         
-        <ContentBlock spacing="md">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <ContentBlock spacing="md" className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {storeCards.map((store) => (
               <div 
                 key={store.id} 
@@ -88,19 +88,19 @@ const AboutUsSection: React.FC = () => {
 
       {/* Apple Vision Pro Demo Section */}
       <Section background="light" size="lg">
-        <ContentBlock spacing="md">
-          <div className="text-center mb-12">
+        <ContentBlock spacing="md" className="max-w-5xl mx-auto">
+          <div className="mb-12">
             <AppleHeadline>Come see the best of Apple at our stores.</AppleHeadline>
             <AppleSubheadline className="mt-4">Shop our products and get expert advice in person.</AppleSubheadline>
           </div>
         </ContentBlock>
         
-        <ContentBlock spacing="md">
-          <div className="max-w-6xl mx-auto">
+        <ContentBlock spacing="md" className="max-w-5xl mx-auto">
+          <div>
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group">
               <div className="flex flex-col lg:flex-row">
                 {/* Left Section - Text Content */}
-                <div className="lg:w-1/2 p-12 flex flex-col justify-center">
+                <div className="lg:w-1/2 p-16 flex flex-col justify-center">
                   <Text size="sm" color="secondary" className="mb-4">
                     Only at Apple
                   </Text>
@@ -133,8 +133,8 @@ const AboutUsSection: React.FC = () => {
 
       {/* Two Cards Section */}
       <Section background="light" size="lg">
-        <ContentBlock spacing="md">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        <ContentBlock spacing="md" className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* College Offer Card */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group">
               <div className="flex flex-col h-full">
@@ -148,7 +148,7 @@ const AboutUsSection: React.FC = () => {
                 </div>
                 
                 {/* Card Content */}
-                <div className="p-8 flex flex-col flex-grow">
+                <div className="p-12 flex flex-col flex-grow">
                   <Text size="sm" color="secondary" className="mb-3">
                     Limited-Time Offer
                   </Text>
@@ -178,7 +178,7 @@ const AboutUsSection: React.FC = () => {
                 </div>
                 
                 {/* Card Content */}
-                <div className="p-8 flex flex-col flex-grow">
+                <div className="p-12 flex flex-col flex-grow">
                   <Text size="sm" color="secondary" className="mb-3">
                     Today at Apple
                   </Text>
