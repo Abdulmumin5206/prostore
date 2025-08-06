@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CategorySection from '../components/CategorySection';
 import IPhoneCategoriesSection from '../components/IPhoneCategoriesSection';
+import MacBookCategoriesSection from '../components/MacBookCategoriesSection';
+import HotDealsCategoriesSection from '../components/HotDealsCategoriesSection';
 
 interface HeroSlide {
   id: string;
@@ -194,6 +196,12 @@ const HomePage = () => {
       
       {/* iPhone Categories Section */}
       <IPhoneCategoriesSection />
+      
+      {/* MacBook Categories Section */}
+      <MacBookCategoriesSection />
+      
+      {/* Hot Deals Categories Section */}
+      <HotDealsCategoriesSection />
       
       {/* Category Section */}
       <CategorySection />
