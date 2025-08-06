@@ -191,7 +191,7 @@ const IPhoneCategoriesSection: React.FC = () => {
           </AppleSubheadline>
         </div>
         
-        <div className="relative">
+        <div className="mt-4 md:mt-5 lg:mt-6 relative">
           {/* Left scroll button */}
           <button 
             onClick={scrollLeft}
@@ -222,7 +222,7 @@ const IPhoneCategoriesSection: React.FC = () => {
                   className="flex-shrink-0 w-[280px] sm:w-[300px] md:w-[320px] xl:w-[340px] 2xl:w-[380px] 3xl:w-[420px] mr-5 md:mr-6 2xl:mr-8"
                 >
                   {category.id === 'see-all' ? (
-                    <div className="flex flex-col items-center justify-center h-full space-y-6 cursor-pointer transition-all duration-500 ease-out transform hover:scale-[1.03]">
+                    <div className="flex flex-col items-center justify-center h-full space-y-6 cursor-pointer transition-all duration-500 ease-out transform hover:scale-[1.02]">
                       <div className="w-24 h-24 2xl:w-28 2xl:h-28 3xl:w-32 3xl:h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
                         <ArrowRight className="w-12 h-12 2xl:w-14 2xl:h-14 3xl:w-16 3xl:h-16 text-white" />
                       </div>
@@ -233,7 +233,7 @@ const IPhoneCategoriesSection: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm transition-all duration-500 ease-out overflow-hidden h-full flex flex-col transform hover:scale-[1.03] hover:shadow-md">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm transition-all duration-500 ease-out overflow-hidden h-full flex flex-col transform hover:scale-[1.02] hover:shadow-md">
                       {/* Card Header - Apple Intelligence Tag */}
                       <div className="px-5 2xl:px-6 pt-4 2xl:pt-5 pb-2">
                         <AppleCaption transform="uppercase" weight="medium" className="tracking-wider 2xl:text-base">
