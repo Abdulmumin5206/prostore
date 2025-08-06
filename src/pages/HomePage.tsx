@@ -3,6 +3,8 @@ import CategorySection from '../components/CategorySection';
 import IPhoneCategoriesSection from '../components/IPhoneCategoriesSection';
 import MacBookCategoriesSection from '../components/MacBookCategoriesSection';
 import HotDealsCategoriesSection from '../components/HotDealsCategoriesSection';
+import PromotionalBannerSection from '../components/PromotionalBannerSection';
+import AboutUsSection from '../components/AboutUsSection';
 
 interface HeroSlide {
   id: string;
@@ -200,11 +202,17 @@ const HomePage = () => {
       {/* MacBook Categories Section */}
       <MacBookCategoriesSection />
       
+      {/* Promotional Banner Section */}
+      <PromotionalBannerSection />
+      
       {/* Hot Deals Categories Section */}
       <HotDealsCategoriesSection />
       
       {/* Category Section */}
       <CategorySection />
+      
+      {/* About Us Section */}
+      <AboutUsSection />
     </div>
   );
 };

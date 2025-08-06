@@ -13,6 +13,7 @@ interface Category {
 }
 
 const CategorySection: React.FC = () => {
+  // Limiting to 8 categories (2 rows of 4)
   const categories: Category[] = [
     {
       id: 'mac',
@@ -24,7 +25,7 @@ const CategorySection: React.FC = () => {
       id: 'iphone',
       name: 'iPhone',
       image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/store-card-13-iphone-nav-202309?wid=200&hei=130&fmt=png-alpha&.v=1692971740452',
-      link: '/'
+      link: '/iphone'
     },
     {
       id: 'ipad',
@@ -61,24 +62,6 @@ const CategorySection: React.FC = () => {
       name: 'Apple TV 4K',
       image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/store-card-13-appletv-nav-202210?wid=200&hei=130&fmt=png-alpha&.v=1664628458484',
       link: '/tv-home'
-    },
-    {
-      id: 'homepod',
-      name: 'HomePod',
-      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/store-card-13-homepod-nav-202301?wid=200&hei=130&fmt=png-alpha&.v=1670389216654',
-      link: '/tv-home'
-    },
-    {
-      id: 'accessories',
-      name: 'Accessories',
-      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/store-card-13-accessories-nav-202309?wid=200&hei=130&fmt=png-alpha&.v=1692803114952',
-      link: '/accessories'
-    },
-    {
-      id: 'gift-card',
-      name: 'Apple Gift Card',
-      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/store-card-13-giftcards-nav-202209?wid=200&hei=130&fmt=png-alpha&.v=1660329772099',
-      link: '/gift-card'
     }
   ];
 
@@ -93,14 +76,14 @@ const CategorySection: React.FC = () => {
       </ContentBlock>
       
       <ContentBlock spacing="none">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {categories.map((category) => (
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
+          {categories.slice(0, 8).map((category) => (
             <Link 
               key={category.id} 
               to={category.link}
               className="flex flex-col items-center group"
             >
-              <div className="w-full aspect-square mb-2 flex items-center justify-center bg-white dark:bg-gray-900 rounded-xl overflow-hidden transition-transform duration-300 group-hover:scale-105 shadow-sm">
+              <div className="w-full aspect-square mb-3 flex items-center justify-center bg-white dark:bg-gray-900 rounded-xl overflow-hidden transition-transform duration-300 group-hover:scale-105 shadow-sm">
                 <img 
                   src={category.image} 
                   alt={category.name} 
