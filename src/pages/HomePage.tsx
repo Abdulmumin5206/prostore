@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CategorySection from '../components/CategorySection';
-import BestOffersSection from '../components/BestOffersSection';
-import AppleNotebooksOffersSection from '../components/AppleNotebooksOffersSection';
-import PromotionalBanner from '../components/PromotionalBanner';
-import { AppleProductTitle, AppleProductSubtitle, AppleProductDescription, ApplePrice } from '../components/Typography';
-import Button from '../components/Button';
+import IPhoneCategoriesSection from '../components/IPhoneCategoriesSection';
 
 interface HeroSlide {
   id: string;
@@ -194,18 +190,10 @@ const HomePage = () => {
             />
           ))}
         </div>
-
-
       </section>
       
-      {/* Best Offers Section */}
-      <BestOffersSection />
-      
-      {/* Promotional Banner */}
-      <PromotionalBanner />
-      
-      {/* Apple Notebooks Offers Section */}
-      <AppleNotebooksOffersSection />
+      {/* iPhone Categories Section */}
+      <IPhoneCategoriesSection />
       
       {/* Category Section */}
       <CategorySection />
