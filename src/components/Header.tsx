@@ -55,6 +55,7 @@ const Header = () => {
 
   const navItems = [
     { name: 'Store', href: '/store' },
+    { name: 'Products', href: '/products' },
     { name: 'Mac', href: '/mac' },
     { name: 'iPad', href: '/ipad' },
     { name: 'iPhone', href: '/iphone' },

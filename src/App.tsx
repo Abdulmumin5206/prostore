@@ -4,10 +4,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
-import MacPage from './pages/MacPage';
-import StorePage from './pages/StorePage';
 import ProductPage from './pages/ProductPage';
 import IPhonePage from './pages/iPhonePage';
+import ProductsPage from './pages/ProductsPage';
 import TopPromotionalSection from './components/TopPromotionalSection';
 import TypographyGuide from './components/TypographyGuide';
 
@@ -21,10 +20,9 @@ function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/mac" element={<MacPage />} />
               {/* Placeholder routes for other pages */}
-              <Route path="/store" element={<StorePage />} />
               <Route path="/store/:productId" element={<ProductPage />} />
+              <Route path="/products" element={<ProductsPage />} />
               <Route path="/ipad" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPad Page Coming Soon</div>} />
               <Route path="/iphone" element={<IPhonePage />} />
               <Route path="/watch" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Watch Page Coming Soon</div>} />
