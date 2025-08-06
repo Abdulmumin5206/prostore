@@ -1,0 +1,76 @@
+import React from 'react';
+import { AppleProductTitle, Text, Label } from './Typography';
+import Button from './Button';
+
+interface ProductCardProps {
+  id: string;
+  category: string;
+  name: string;
+  image: string;
+  colors: string[];
+  priceFrom: string;
+  monthlyFrom: string;
+  buyLink?: string;
+  className?: string;
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({
+  category,
+  name,
+  image,
+  colors,
+  priceFrom,
+  monthlyFrom,
+  className = '',
+}) => {
+  return (
+    <div className={`bg-white dark:bg-gray-800 rounded-2xl p-6 h-full flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300 ${className}`}>
+      {/* Category Label */}
+      <Label className="mb-2 uppercase text-xs tracking-wider">{category}</Label>
+      
+      {/* Product Name */}
+      <AppleProductTitle className="mb-6">{name}</AppleProductTitle>
+      
+      {/* Product Image */}
+      <div className="mb-6 flex-grow flex items-center justify-center">
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-48 object-contain"
+          loading="lazy"
+        />
+      </div>
+      
+      {/* Color Options */}
+      <div className="flex justify-center space-x-2 mb-6">
+        {colors.map((color, colorIndex) => (
+          <div
+            key={colorIndex}
+            className={`w-4 h-4 rounded-full border ${
+              colorIndex === 0 ? 'border-gray-400' : 'border-gray-200 dark:border-gray-600'
+            }`}
+            style={{ backgroundColor: color }}
+            aria-label={`Color option ${colorIndex + 1}`}
+          />
+        ))}
+      </div>
+      
+      {/* Pricing */}
+      <div className="text-center mb-6">
+        <Text weight="semibold" className="mb-1">From {priceFrom}</Text>
+        <Text size="sm" color="tertiary" className="mb-4">or {monthlyFrom}</Text>
+      </div>
+      
+      {/* Buy Button */}
+      <Button 
+        variant="primary" 
+        size="small" 
+        className="mx-auto bg-blue-600 hover:bg-blue-700"
+      >
+        Buy
+      </Button>
+    </div>
+  );
+};
+
+export default ProductCard; 

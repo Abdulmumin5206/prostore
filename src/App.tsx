@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import MacPage from './pages/MacPage';
 import StorePage from './pages/StorePage';
 import ProductPage from './pages/ProductPage';
+import IPhonePage from './pages/iPhonePage';
 import TopPromotionalSection from './components/TopPromotionalSection';
 import TypographyGuide from './components/TypographyGuide';
 
@@ -25,7 +26,7 @@ function App() {
               <Route path="/store" element={<StorePage />} />
               <Route path="/store/:productId" element={<ProductPage />} />
               <Route path="/ipad" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPad Page Coming Soon</div>} />
-              <Route path="/iphone" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPhone Page Coming Soon</div>} />
+              <Route path="/iphone" element={<IPhonePage />} />
               <Route path="/watch" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Watch Page Coming Soon</div>} />
               <Route path="/vision" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Vision Page Coming Soon</div>} />
               <Route path="/airpods" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirPods Page Coming Soon</div>} />
