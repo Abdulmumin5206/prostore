@@ -120,20 +120,77 @@ const sampleProducts: Product[] = [
   }
 ];
 
-// Available filters
-const categories = ['All', 'iPhone', 'Mac', 'iPad', 'Watch', 'AirPods'];
-const tags = ['All', 'new', 'pro', 'laptop'];
+// Available filters with subcategories
+const categories = [
+  { name: 'All', subcategories: [] },
+  { 
+    name: 'iPhone', 
+    subcategories: ['iPhone 15 Pro', 'iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone SE', 'Compare']
+  },
+  { 
+    name: 'Mac', 
+    subcategories: ['MacBook Pro', 'MacBook Air', 'iMac', 'Mac mini', 'Mac Studio', 'Mac Pro', 'Compare']
+  },
+  { 
+    name: 'iPad', 
+    subcategories: ['iPad Pro', 'iPad Air', 'iPad', 'iPad mini', 'Compare']
+  },
+  { 
+    name: 'Watch', 
+    subcategories: ['Apple Watch Series 9', 'Apple Watch Ultra 2', 'Apple Watch SE', 'Compare']
+  },
+  { 
+    name: 'AirPods', 
+    subcategories: ['AirPods Pro', 'AirPods Max', 'AirPods (3rd generation)', 'Compare']
+  },
+  { 
+    name: 'TV & Home', 
+    subcategories: ['Apple TV 4K', 'HomePod mini', 'HomePod', 'Siri Remote']
+  },
+  { 
+    name: 'Accessories', 
+    subcategories: ['Cases & Protection', 'Charging', 'Audio', 'Storage', 'Cables & Adapters']
+  },
+  { 
+    name: 'Services', 
+    subcategories: ['AppleCare+', 'Apple One', 'Apple Music', 'iCloud+', 'Apple TV+', 'Apple Fitness+']
+  }
+];
+
+const tags = [
+  'All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
+  'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
+  'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education'
+];
+const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
 
 const ProductsPage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(sampleProducts);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('default');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [visibleProducts, setVisibleProducts] = useState<number>(12); // Show 3 rows of 4 products initially
+  const [cartItems, setCartItems] = useState<string[]>([]);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  
+  // Price range filters
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 3000 });
+  const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 3000 });
+  
+  // Additional filters
+  const [selectedBrand, setSelectedBrand] = useState<string>('All');
+  const [selectedCondition, setSelectedCondition] = useState<string>('All');
+  const [selectedAvailability, setSelectedAvailability] = useState<string>('All');
+  const [selectedStorage, setSelectedStorage] = useState<string>('All');
+  const [selectedColor, setSelectedColor] = useState<string>('All');
+  const [selectedWarranty, setSelectedWarranty] = useState<string>('All');
 
   // Apply filters when dependencies change
   useEffect(() => {
@@ -149,9 +206,106 @@ const ProductsPage: React.FC = () => {
         result = result.filter(product => product.category === selectedCategory);
       }
 
+      // Filter by subcategory
+      if (selectedSubcategory) {
+        result = result.filter(product => 
+          product.name.toLowerCase().includes(selectedSubcategory.toLowerCase())
+        );
+      }
+
       // Filter by tag
       if (selectedTag !== 'All') {
         result = result.filter(product => product.tags.includes(selectedTag));
+      }
+
+      // Filter by price range
+      if (selectedPriceRange.min > 0 || selectedPriceRange.max < 3000) {
+        result = result.filter(product => {
+          const price = parseFloat(product.priceFrom.replace('$', ''));
+          return price >= selectedPriceRange.min && price <= selectedPriceRange.max;
+        });
+      }
+
+      // Filter by brand
+      if (selectedBrand !== 'All') {
+        result = result.filter(product => product.category === selectedBrand);
+      }
+
+      // Filter by condition
+      if (selectedCondition !== 'All') {
+        // Simulate condition filtering
+        if (selectedCondition === 'New') {
+          result = result.filter(product => product.tags.includes('new'));
+        } else if (selectedCondition === 'Refurbished') {
+          result = result.filter((_, index) => index % 4 === 0);
+        } else if (selectedCondition === 'Used') {
+          result = result.filter((_, index) => index % 3 === 0);
+        }
+      }
+
+      // Filter by availability
+      if (selectedAvailability !== 'All') {
+        // Simulate availability filtering
+        if (selectedAvailability === 'In Stock') {
+          result = result.filter((_, index) => index % 2 === 0);
+        } else if (selectedAvailability === 'Pre-order') {
+          result = result.filter((_, index) => index % 5 === 0);
+        }
+      }
+
+      // Filter by storage
+      if (selectedStorage !== 'All') {
+        result = result.filter(product => 
+          product.name.toLowerCase().includes(selectedStorage.toLowerCase())
+        );
+      }
+
+      // Filter by color
+      if (selectedColor !== 'All') {
+        result = result.filter(product => 
+          product.colors.some(color => {
+            const colorMap: { [key: string]: string[] } = {
+              'Black': ['#1c1c1e', '#555555'],
+              'White': ['#f5f5f7', '#f1f2ed'],
+              'Gold': ['#e3d0c0', '#f9e5c9', '#e3ccb4'],
+              'Blue': ['#bfd0dd'],
+              'Silver': ['#7e808e', '#7d7e80']
+            };
+            return colorMap[selectedColor]?.includes(color);
+          })
+        );
+      }
+
+      // Filter by warranty
+      if (selectedWarranty !== 'All') {
+        if (selectedWarranty === 'AppleCare+') {
+          result = result.filter(product => product.tags.includes('AppleCare+'));
+        }
+      }
+
+      // Filter by quick filter
+      if (selectedQuickFilter) {
+        switch (selectedQuickFilter) {
+          case 'Deals':
+            // Simulate deals by filtering products under $600
+            result = result.filter(product => 
+              parseFloat(product.priceFrom.replace('$', '')) < 600
+            );
+            break;
+          case 'New':
+            result = result.filter(product => product.tags.includes('new'));
+            break;
+          case 'Second Hand':
+            // Simulate second hand by taking random products (in a real app, you'd have a property for this)
+            result = result.filter((_, index) => index % 3 === 0);
+            break;
+          case 'Bestsellers':
+            // Simulate bestsellers (in a real app, you'd have a property for this)
+            result = result.filter((_, index) => index % 4 === 0 || index % 5 === 0);
+            break;
+          default:
+            break;
+        }
       }
 
       // Filter by search query
@@ -173,18 +327,56 @@ const ProductsPage: React.FC = () => {
       }
 
       setFilteredProducts(result);
+      setVisibleProducts(12); // Reset pagination when filters change
       setIsLoading(false);
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [selectedCategory, selectedTag, searchQuery, sortBy]);
+  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty]);
 
   // Reset filters
   const resetFilters = () => {
     setSelectedCategory('All');
+    setSelectedSubcategory('');
     setSelectedTag('All');
+    setSelectedQuickFilter(null);
     setSearchQuery('');
     setSortBy('default');
+    setExpandedCategory(null);
+    setSelectedPriceRange({ min: 0, max: 3000 });
+    setSelectedBrand('All');
+    setSelectedCondition('All');
+    setSelectedAvailability('All');
+    setSelectedStorage('All');
+    setSelectedColor('All');
+    setSelectedWarranty('All');
+  };
+
+  // Handle category click
+  const handleCategoryClick = (categoryName: string) => {
+    if (selectedCategory === categoryName) {
+      setSelectedCategory('All');
+      setSelectedSubcategory('');
+      setExpandedCategory(null);
+    } else {
+      setSelectedCategory(categoryName);
+      setSelectedSubcategory('');
+      setExpandedCategory(categoryName);
+    }
+  };
+
+  // Handle subcategory click
+  const handleSubcategoryClick = (subcategory: string) => {
+    setSelectedSubcategory(subcategory);
+  };
+
+  // Handle quick filter click
+  const handleQuickFilterClick = (filter: string) => {
+    if (selectedQuickFilter === filter) {
+      setSelectedQuickFilter(null);
+    } else {
+      setSelectedQuickFilter(filter);
+    }
   };
 
   // Handle product click
@@ -193,39 +385,44 @@ const ProductsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Add to cart
+  const handleAddToCart = (productId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCartItems(prev => [...prev, productId]);
+    // Show a brief notification or animation here if desired
+  };
+
   // Close modal
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
-  // Toggle sidebar
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  // Show more products
+  const handleShowMore = () => {
+    setVisibleProducts(prev => Math.min(prev + 12, filteredProducts.length));
+  };
+
+  // Handle price range change
+  const handlePriceRangeChange = (type: 'min' | 'max', value: number) => {
+    setSelectedPriceRange(prev => ({
+      ...prev,
+      [type]: value
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-white/90 dark:bg-black/90 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <button 
-              onClick={toggleSidebar}
-              className="mr-4 p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <H1 className="text-xl font-medium">Store</H1>
-          </div>
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-[#f5f5f7]/90 dark:bg-black/90 border-b border-gray-200 dark:border-gray-800 pt-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+          <H1 className="text-xl font-medium">Store</H1>
           <div className="relative w-full max-w-xs ml-4">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products"
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border-none text-gray-900 dark:text-white focus:outline-none focus:ring-0"
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-none text-gray-900 dark:text-white focus:outline-none focus:ring-0"
             />
             <div className="absolute left-3 top-2.5 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -236,40 +433,222 @@ const ProductsPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className={`${isSidebarOpen ? 'block' : 'hidden'} w-64 border-r border-gray-200 dark:border-gray-800 h-[calc(100vh-60px)] overflow-y-auto sticky top-[60px]`}>
-          <div className="p-6">
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Categories</h3>
-              <div className="space-y-2">
+      <div className="flex max-w-6xl mx-auto">
+        {/* Sidebar - Always visible but narrower */}
+        <aside className="w-56 pr-4 py-8 overflow-y-auto max-h-[calc(100vh-120px)]">
+          <div className="space-y-8">
+            {/* Categories */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Categories</h3>
+              <div className="space-y-1">
                 {categories.map((category) => (
+                  <div key={category.name}>
+                    <button
+                      onClick={() => handleCategoryClick(category.name)}
+                      className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        selectedCategory === category.name 
+                          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{category.name}</span>
+                        {category.subcategories.length > 0 && (
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className={`h-3 w-3 transition-transform ${expandedCategory === category.name ? 'rotate-90' : ''}`} 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                    
+                    {/* Subcategories */}
+                    {expandedCategory === category.name && category.subcategories.length > 0 && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {category.subcategories.map((subcategory) => (
+                          <button
+                            key={subcategory}
+                            onClick={() => handleSubcategoryClick(subcategory)}
+                            className={`block w-full text-left px-2 py-1 rounded-md text-xs ${
+                              selectedSubcategory === subcategory 
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 font-medium' 
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {subcategory}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Price Range</h3>
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={selectedPriceRange.min || ''}
+                    onChange={(e) => handlePriceRangeChange('min', Number(e.target.value))}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  <span className="text-gray-500 self-center text-xs">-</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={selectedPriceRange.max || ''}
+                    onChange={(e) => handlePriceRangeChange('max', Number(e.target.value))}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  ${selectedPriceRange.min} - ${selectedPriceRange.max}
+                </div>
+              </div>
+            </div>
+
+            {/* Brand */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Brand</h3>
+              <div className="space-y-2">
+                {['All', 'Apple', 'Beats', 'Belkin', 'Logitech'].map((brand) => (
                   <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`block w-full text-left px-2 py-1.5 rounded-md ${
-                      selectedCategory === category 
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    key={brand}
+                    onClick={() => setSelectedBrand(brand)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedBrand === brand 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
                     }`}
                   >
-                    {category}
+                    {brand}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Tags</h3>
+            {/* Condition */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Condition</h3>
+              <div className="space-y-2">
+                {['All', 'New', 'Refurbished', 'Used'].map((condition) => (
+                  <button
+                    key={condition}
+                    onClick={() => setSelectedCondition(condition)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedCondition === condition 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {condition}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Availability</h3>
+              <div className="space-y-2">
+                {['All', 'In Stock', 'Pre-order', 'Out of Stock'].map((availability) => (
+                  <button
+                    key={availability}
+                    onClick={() => setSelectedAvailability(availability)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedAvailability === availability 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {availability}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Storage */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Storage</h3>
+              <div className="space-y-2">
+                {['All', '128GB', '256GB', '512GB', '1TB', '2TB'].map((storage) => (
+                  <button
+                    key={storage}
+                    onClick={() => setSelectedStorage(storage)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedStorage === storage 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {storage}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Color</h3>
+              <div className="space-y-2">
+                {['All', 'Black', 'White', 'Gold', 'Blue', 'Silver'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedColor === color 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Warranty */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Warranty</h3>
+              <div className="space-y-2">
+                {['All', 'AppleCare+', 'Standard', 'Extended'].map((warranty) => (
+                  <button
+                    key={warranty}
+                    onClick={() => setSelectedWarranty(warranty)}
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      selectedWarranty === warranty 
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {warranty}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tags</h3>
               <div className="space-y-2">
                 {tags.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => setSelectedTag(tag)}
-                    className={`block w-full text-left px-2 py-1.5 rounded-md ${
+                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
                       selectedTag === tag 
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
                     }`}
                   >
                     {tag}
@@ -278,33 +657,9 @@ const ProductsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Sort By</h3>
-              <div className="space-y-2">
-                {[
-                  { value: 'default', label: 'Featured' },
-                  { value: 'price-low', label: 'Price: Low to High' },
-                  { value: 'price-high', label: 'Price: High to Low' },
-                  { value: 'name', label: 'Name' }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    className={`block w-full text-left px-2 py-1.5 rounded-md ${
-                      sortBy === option.value 
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button
               onClick={resetFilters}
-              className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors"
             >
               Reset All Filters
             </button>
@@ -312,112 +667,294 @@ const ProductsPage: React.FC = () => {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-0' : 'ml-0'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Active Filters */}
-            {(selectedCategory !== 'All' || selectedTag !== 'All' || searchQuery) && (
-              <div className="mb-6 flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Active filters:</span>
-                {selectedCategory !== 'All' && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                    {selectedCategory}
-                    <button 
-                      onClick={() => setSelectedCategory('All')} 
-                      className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-                {selectedTag !== 'All' && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                    {selectedTag}
-                    <button 
-                      onClick={() => setSelectedTag('All')} 
-                      className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-                {searchQuery && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-                    "{searchQuery}"
-                    <button 
-                      onClick={() => setSearchQuery('')} 
-                      className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Results Count */}
-            <div className="mb-6">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                Showing {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-              </Text>
+        <main className="flex-1 py-8 px-4">
+          {/* Quick Filters and Sort */}
+          <div className="mb-6 flex flex-wrap justify-between items-center">
+            {/* Quick Filter Buttons */}
+            <div className="flex flex-wrap gap-2 mb-4 sm:mb-0">
+              {quickFilters.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => handleQuickFilterClick(filter)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedQuickFilter === filter
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
             </div>
 
-            {/* Products Grid */}
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500"></div>
-              </div>
-            ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                className="flex items-center px-4 py-2 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium shadow-sm"
+              >
+                <span className="mr-1">Sort By: </span>
+                <span className="font-medium">
+                  {sortBy === 'default' && 'Featured'}
+                  {sortBy === 'price-low' && 'Price: Low to High'}
+                  {sortBy === 'price-high' && 'Price: High to Low'}
+                  {sortBy === 'name' && 'Name'}
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isSortDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1" role="menu" aria-orientation="vertical">
+                    {[
+                      { value: 'default', label: 'Featured' },
+                      { value: 'price-low', label: 'Price: Low to High' },
+                      { value: 'price-high', label: 'Price: High to Low' },
+                      { value: 'name', label: 'Name' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSortBy(option.value);
+                          setIsSortDropdownOpen(false);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          sortBy === option.value
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                        role="menuitem"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Active Filters */}
+          {(selectedCategory !== 'All' || selectedSubcategory || selectedTag !== 'All' || selectedQuickFilter || searchQuery || selectedPriceRange.min > 0 || selectedPriceRange.max < 3000 || selectedBrand !== 'All' || selectedCondition !== 'All' || selectedAvailability !== 'All' || selectedStorage !== 'All' || selectedColor !== 'All' || selectedWarranty !== 'All') && (
+            <div className="mb-6 flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Active filters:</span>
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
+                  {selectedCategory}
+                  <button 
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setSelectedSubcategory('');
+                      setExpandedCategory(null);
+                    }} 
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedSubcategory && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                  {selectedSubcategory}
+                  <button 
+                    onClick={() => setSelectedSubcategory('')} 
+                    className="ml-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {(selectedPriceRange.min > 0 || selectedPriceRange.max < 3000) && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200">
+                  ${selectedPriceRange.min} - ${selectedPriceRange.max}
+                  <button 
+                    onClick={() => setSelectedPriceRange({ min: 0, max: 3000 })} 
+                    className="ml-1 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedBrand !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200">
+                  {selectedBrand}
+                  <button 
+                    onClick={() => setSelectedBrand('All')} 
+                    className="ml-1 text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedCondition !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200">
+                  {selectedCondition}
+                  <button 
+                    onClick={() => setSelectedCondition('All')} 
+                    className="ml-1 text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedAvailability !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-teal-100 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200">
+                  {selectedAvailability}
+                  <button 
+                    onClick={() => setSelectedAvailability('All')} 
+                    className="ml-1 text-teal-500 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedStorage !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200">
+                  {selectedStorage}
+                  <button 
+                    onClick={() => setSelectedStorage('All')} 
+                    className="ml-1 text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedColor !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-900/20 text-pink-800 dark:text-pink-200">
+                  {selectedColor}
+                  <button 
+                    onClick={() => setSelectedColor('All')} 
+                    className="ml-1 text-pink-500 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedWarranty !== 'All' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200">
+                  {selectedWarranty}
+                  <button 
+                    onClick={() => setSelectedWarranty('All')} 
+                    className="ml-1 text-yellow-500 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
+                  "{searchQuery}"
+                  <button 
+                    onClick={() => setSearchQuery('')} 
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Results Count */}
+          <div className="mb-6">
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
+              Showing {Math.min(visibleProducts, filteredProducts.length)} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+            </Text>
+          </div>
+
+          {/* Products Grid */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500"></div>
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredProducts.slice(0, visibleProducts).map((product) => (
                   <div 
                     key={product.id} 
-                    onClick={() => handleProductClick(product)}
-                    className="cursor-pointer group"
+                    className="flex flex-col h-full relative group rounded-2xl overflow-hidden"
                   >
-                    <div className="overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-900 aspect-square mb-4 transition-transform duration-300 group-hover:scale-[1.02]">
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div>
-                      <Text size="xs" color="secondary" className="mb-1">{product.category}</Text>
-                      <Text size="base" className="font-medium mb-1">{product.name}</Text>
-                      <div className="flex space-x-2 mb-2">
-                        {product.colors.map((color, index) => (
-                          <div 
-                            key={index} 
-                            className="w-4 h-4 rounded-full border border-gray-200 dark:border-gray-700" 
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
+                    <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
+                    <div 
+                      onClick={() => handleProductClick(product)}
+                      className="cursor-pointer flex-grow relative z-10"
+                    >
+                      <div className="overflow-hidden rounded-xl aspect-square mb-4 transition-transform duration-300 group-hover:scale-[1.02]">
+                        <img 
+                          src={product.image} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </div>
-                      <Text className="font-medium">{product.priceFrom}</Text>
-                      <Text size="xs" color="secondary">{product.monthlyFrom}</Text>
+                      <div className="px-3 mb-2">
+                        <Text size="xs" color="secondary" className="mb-1">{product.category}</Text>
+                        <Text size="base" className="font-medium mb-2 text-black dark:text-white">{product.name}</Text>
+                        <Text className="font-medium mb-1 text-black dark:text-white">{product.priceFrom}</Text>
+                        <Text size="xs" color="secondary" className="mb-1">{product.monthlyFrom}</Text>
+                      </div>
+                    </div>
+                    <div className="px-3 pb-3 relative z-10">
+                      <button
+                        onClick={(e) => handleAddToCart(product.id, e)}
+                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        Add to Cart
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-20">
-                <Text size="lg" className="mb-4">No products found matching your criteria.</Text>
-                <button
-                  onClick={resetFilters}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            )}
-          </div>
+              
+              {/* Show More Button */}
+              {visibleProducts < filteredProducts.length && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={handleShowMore}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    Show More
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <Text size="lg" className="mb-4">No products found matching your criteria.</Text>
+              <button
+                onClick={resetFilters}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Reset Filters
+              </button>
+            </div>
+          )}
         </main>
       </div>
       
