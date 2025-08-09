@@ -23,6 +23,7 @@ function App() {
               {/* Placeholder routes for other pages */}
               <Route path="/store/:productId" element={<ProductPage />} />
               <Route path="/products" element={<ProductsPage />} />
+              <Route path="/mac" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Mac Page Coming Soon</div>} />
               <Route path="/ipad" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">iPad Page Coming Soon</div>} />
               <Route path="/iphone" element={<IPhonePage />} />
               <Route path="/watch" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Watch Page Coming Soon</div>} />
@@ -32,6 +33,7 @@ function App() {
               <Route path="/entertainment" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Entertainment Page Coming Soon</div>} />
               <Route path="/accessories" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Accessories Page Coming Soon</div>} />
               <Route path="/support" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Support Page Coming Soon</div>} />
+              <Route path="/contact" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Contact Us Page Coming Soon</div>} />
               <Route path="/gift-card" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">Gift Card Page Coming Soon</div>} />
               <Route path="/airtag" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirTag Page Coming Soon</div>} />
               {/* Typography Guide Route */}

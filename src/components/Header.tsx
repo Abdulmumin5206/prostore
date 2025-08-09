@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Apple, Search, ShoppingBag } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import NavDropdown from './NavDropdown';
+import { dropdownContents } from './NavDropdown';
 import NavOverlay from './NavOverlay';
 import { Text } from './Typography';
 
@@ -54,29 +55,29 @@ const Header = () => {
   }, []);
 
   const navItems = [
-    { name: 'Store', href: '/store' },
-    { name: 'Products', href: '/products' },
+    { name: 'Store', href: '/products' },
     { name: 'Mac', href: '/mac' },
     { name: 'iPad', href: '/ipad' },
     { name: 'iPhone', href: '/iphone' },
     { name: 'Watch', href: '/watch' },
-    { name: 'Vision', href: '/vision' },
     { name: 'AirPods', href: '/airpods' },
-    { name: 'TV & Home', href: '/tv-home' },
-    { name: 'Entertainment', href: '/entertainment' },
     { name: 'Accessories', href: '/accessories' },
-    { name: 'Support', href: '/support' },
+    { name: 'Contact Us', href: '/contact' },
   ];
 
   const handleNavMouseEnter = (name: string) => {
-    // Clear any existing timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
-    
-    setActiveDropdown(name);
-    setIsDropdownVisible(true);
+
+    if (dropdownContents[name]) {
+      setActiveDropdown(name);
+      setIsDropdownVisible(true);
+    } else {
+      setActiveDropdown(null);
+      setIsDropdownVisible(false);
+    }
   };
 
   const handleHeaderMouseLeave = () => {

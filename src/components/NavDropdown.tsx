@@ -300,6 +300,110 @@ interface NavDropdownProps {
   isVisible: boolean;
 }
 
+type StoreCard = {
+  title: string;
+  href: string;
+  imagePath: string;
+};
+
+const storeCards: StoreCard[] = [
+  {
+    title: 'MacBook Air',
+    href: '/mac/macbook-air',
+    imagePath: '/header/store/macbook%20air.jpg',
+  },
+  {
+    title: 'MacBook Pro',
+    href: '/mac/macbook-pro',
+    imagePath: '/header/store/macbook%20pro.jpg',
+  },
+  {
+    title: 'iPhone 16',
+    href: '/iphone/iphone-16',
+    imagePath: '/header/store/iphone_16e.jpg',
+  },
+  {
+    title: 'iPhone 16 Pro / Pro Max',
+    href: '/iphone/iphone-16-pro',
+    imagePath: '/header/store/iphone_16pro_promax.jpg',
+  },
+  {
+    title: 'iPhone 16 Plus',
+    href: '/iphone/iphone-16-plus',
+    imagePath: '/header/store/iphone_16_plus.jpg',
+  },
+  {
+    title: 'AirPods',
+    href: '/airpods',
+    imagePath: '/header/store/airpods4.jpg',
+  },
+  {
+    title: 'Apple Watch Ultra 2',
+    href: '/watch/ultra-2',
+    imagePath: '/header/store/applewatchultra2.jpg',
+  },
+  {
+    title: 'iPad',
+    href: '/ipad',
+    imagePath: '/header/store/Ipad.jpg',
+  },
+];
+
+type NavCard = {
+  title: string;
+  href: string;
+  imagePath: string;
+};
+
+const macCards: NavCard[] = [
+  { title: 'MacBook Air 13"', href: '/mac/macbook-air', imagePath: '/header/mac/macbook%20air%2013.jpg' },
+  { title: 'MacBook Air 15"', href: '/mac/macbook-air', imagePath: '/header/mac/macbook%20air%2015.jpg' },
+  { title: 'MacBook Pro 14"', href: '/mac/macbook-pro', imagePath: '/header/mac/macbook%20pro%2014.jpg' },
+  { title: 'MacBook Pro 16"', href: '/mac/macbook-pro', imagePath: '/header/mac/macbook%20pro%2016.jpg' },
+];
+
+const iPhoneCards: NavCard[] = [
+  { title: 'iPhone 16', href: '/iphone/iphone-16', imagePath: '/header/iPhone/iphone_16e.jpg' },
+  { title: 'iPhone 16 Pro / Pro Max', href: '/iphone/iphone-16-pro', imagePath: '/header/iPhone/iphone_16pro_promax.jpg' },
+  { title: 'iPhone 16 Plus', href: '/iphone/iphone-16-plus', imagePath: '/header/iPhone/iphone_16_plus.jpg' },
+  { title: 'iPhone 15 Plus', href: '/iphone/iphone-15-plus', imagePath: '/header/iPhone/iphone_15_plus.jpg' },
+];
+
+const iPadCards: NavCard[] = [
+  { title: 'iPad Pro', href: '/ipad/ipad-pro', imagePath: '/header/Ipad/ipad-card-40-pro-202405.jpg' },
+  { title: 'iPad Air', href: '/ipad/ipad-air', imagePath: '/header/Ipad/ipad-card-40-air-202405.jpg' },
+  { title: 'iPad', href: '/ipad/ipad', imagePath: '/header/Ipad/ipad-card-40-ipad-202410.jpg' },
+  { title: 'iPad mini', href: '/ipad/ipad-mini', imagePath: '/header/Ipad/ipad-card-40-ipad-mini-202410.jpg' },
+];
+
+const watchCards: NavCard[] = [
+  { title: 'Apple Watch Series 10', href: '/watch/s10', imagePath: '/header/Iwatch/watch-card-40-s10-202409.jpg' },
+  { title: 'Apple Watch Ultra 2', href: '/watch/ultra-2', imagePath: '/header/Iwatch/watch-card-40-ultra2-202409.jpg' },
+  { title: 'Apple Watch SE', href: '/watch/se', imagePath: '/header/Iwatch/watch-card-40-se-202503.jpg' },
+];
+
+const airPodsCards: NavCard[] = [
+  { title: 'AirPods Pro (2nd gen)', href: '/airpods-pro', imagePath: '/header/AirPods/airpods-pro-2-hero-select-202409.png' },
+  { title: 'AirPods (4th gen, ANC)', href: '/airpods-4', imagePath: '/header/AirPods/airpods-4-anc-select-202409.png' },
+  { title: 'AirPods Max', href: '/airpods-max', imagePath: '/header/AirPods/airpods-max-hero-select-202409.jpg' },
+];
+
+const accessoriesCards: NavCard[] = [
+  { title: 'All Accessories', href: '/shop/accessories', imagePath: '/header/accesoires/ipad-card-50-all-accessories-202405.jpg' },
+  { title: 'iPhone Accessories', href: '/shop/accessories/iphone', imagePath: '/header/accesoires/iphone-card-40-accessories-202503.jpg' },
+  { title: 'Watch Accessories', href: '/shop/accessories/watch', imagePath: '/header/accesoires/watch-card-40-acc-202503.jpg' },
+];
+
+const cardGrids: Record<string, NavCard[]> = {
+  Store: storeCards,
+  Mac: macCards,
+  iPad: iPadCards,
+  iPhone: iPhoneCards,
+  Watch: watchCards,
+  AirPods: airPodsCards,
+  Accessories: accessoriesCards,
+};
+
 const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible }) => {
   const content = dropdownContents[name];
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -348,25 +452,49 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible }) => {
     >
       <div 
         ref={contentRef} 
-        className="max-w-laptop mx-auto px-section-x py-8 grid grid-cols-1 md:grid-cols-3 gap-8 transition-opacity duration-200"
+        className="max-w-laptop mx-auto px-section-x pt-4 pb-8 transition-opacity duration-200"
       >
-        {displayContent.sections.map((section, index) => (
-          <div key={index}>
-            <h3 className="text-gray-500 text-xs font-medium mb-2">{section.title}</h3>
-            <ul className="space-y-2">
-              {section.items.map((item, itemIndex) => (
-                <li key={itemIndex}>
-                  <Link 
-                    to={item.href} 
-                    className="text-xs font-normal text-gray-800 hover:text-gray-600 transition-colors duration-200"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+        {cardGrids[displayedName] ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {cardGrids[displayedName].map((card) => (
+              <Link key={card.title} to={card.href} className="group focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700 rounded-lg">
+                <div className="overflow-hidden rounded-lg bg-[#fafafa] dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 shadow-sm transition-colors duration-200">
+                  <div className="aspect-[16/9] w-full overflow-hidden bg-white dark:bg-black">
+                    <img
+                      src={card.imagePath}
+                      alt={card.title}
+                      className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="px-3 py-2 text-center border-t border-gray-200 dark:border-gray-800">
+                    <div className="text-[11px] font-medium text-gray-900 dark:text-gray-100">{card.title}</div>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {displayContent.sections.map((section, index) => (
+              <div key={index}>
+                <h3 className="text-gray-500 text-xs font-medium mb-2">{section.title}</h3>
+                <ul className="space-y-2">
+                  {section.items.map((item, itemIndex) => (
+                    <li key={itemIndex}>
+                      <Link 
+                        to={item.href} 
+                        className="text-xs font-normal text-gray-800 hover:text-gray-600 transition-colors duration-200"
+                      >
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
