@@ -78,6 +78,10 @@ function App() {
               }
             />
 
+            {/* Auth pages with standalone layout */}
+            <Route path="/login" element={<SignInPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+
             {/* Storefront layout for everything else */}
             <Route
               path="*"
@@ -106,10 +110,6 @@ function App() {
                       <Route path="/airtag" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirTag Page Coming Soon</div>} />
                       {/* Typography Guide Route */}
                       <Route path="/typography" element={<TypographyGuide />} />
-
-                      {/* Auth routes */}
-                      <Route path="/login" element={<SignInPage />} />
-                      <Route path="/signup" element={<SignUpPage />} />
                     </Routes>
                   </main>
                   <Footer />
