@@ -6,9 +6,11 @@ import NavDropdown from './NavDropdown';
 import { dropdownContents } from './NavDropdown';
 import NavOverlay from './NavOverlay';
 import { Text } from './Typography';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -71,7 +73,7 @@ const Header = () => {
       hoverTimeoutRef.current = null;
     }
 
-    if (dropdownContents[name]) {
+    if ((dropdownContents as any)[name]) {
       setActiveDropdown(name);
       setIsDropdownVisible(true);
     } else {
@@ -82,10 +84,10 @@ const Header = () => {
 
   const handleHeaderMouseLeave = () => {
     // Add a small delay before closing to make it feel more natural
-    hoverTimeoutRef.current = setTimeout(() => {
+    hoverTimeoutRef.current = window.setTimeout(() => {
       setIsDropdownVisible(false);
       // Keep the active dropdown name until the animation completes
-      setTimeout(() => {
+      window.setTimeout(() => {
         if (!isDropdownVisible) {
           setActiveDropdown(null);
         }
@@ -141,6 +143,20 @@ const Header = () => {
               <ThemeToggle />
               <Search className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
               <ShoppingBag className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
+              {!user && (
+                <div className="hidden md:flex items-center space-x-3">
+                  <Link to="/login" className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 text-xs">Login</Link>
+                  <Link to="/signup" className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 text-xs">Sign up</Link>
+                </div>
+              )}
+              {user && (
+                <div className="hidden md:flex items-center space-x-3">
+                  {user.role === 'admin' && (
+                    <Link to="/admin" className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 text-xs">Admin</Link>
+                  )}
+                  <button onClick={logout} className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 text-xs">Logout</button>
+                </div>
+              )}
             </div>
           </nav>
         </div>
