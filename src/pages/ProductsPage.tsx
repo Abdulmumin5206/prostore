@@ -3,6 +3,7 @@ import { Text, H1 } from '../components/Typography';
 import ProductCard from '../components/ProductCard';
 import FilterTag from '../components/FilterTag';
 import ProductModal from '../components/ProductModal';
+import { supabase } from '../lib/supabaseClient';
 
 // Product data interface
 interface Product {
@@ -18,205 +19,14 @@ interface Product {
 }
 
 // Sample product data
-const sampleProducts: Product[] = [
-  {
-    id: 'iphone-15-pro',
-    category: 'iPhone',
-    name: 'iPhone 15 Pro',
-    image: 'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7795634/pexels-photo-7795634.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#555555', '#e3d0c0', '#f1f2ed'],
-    priceFrom: '$999',
-    monthlyFrom: '$41.62/mo. for 24 mo.',
-    tags: ['iphone', 'new', 'pro']
-  },
-  {
-    id: 'iphone-15',
-    category: 'iPhone',
-    name: 'iPhone 15',
-    image: 'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7795634/pexels-photo-7795634.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f9e5c9', '#7e808e', '#6e3d33', '#bfd0dd'],
-    priceFrom: '$799',
-    monthlyFrom: '$33.29/mo. for 24 mo.',
-    tags: ['iphone', 'new']
-  },
-  {
-    id: 'macbook-pro-16',
-    category: 'Mac',
-    name: 'MacBook Pro 16"',
-    image: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7'],
-    priceFrom: '$2499',
-    monthlyFrom: '$208.25/mo. for 12 mo.',
-    tags: ['mac', 'laptop', 'pro']
-  },
-  {
-    id: 'macbook-air',
-    category: 'Mac',
-    name: 'MacBook Air',
-    image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#7d7e80', '#e3ccb4'],
-    priceFrom: '$999',
-    monthlyFrom: '$83.25/mo. for 12 mo.',
-    tags: ['mac', 'laptop']
-  },
-  {
-    id: 'ipad-pro',
-    category: 'iPad',
-    name: 'iPad Pro',
-    image: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1716659/pexels-photo-1716659.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7'],
-    priceFrom: '$799',
-    monthlyFrom: '$66.58/mo. for 12 mo.',
-    tags: ['ipad', 'pro']
-  },
-  {
-    id: 'ipad-air',
-    category: 'iPad',
-    name: 'iPad Air',
-    image: 'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1716659/pexels-photo-1716659.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#7d7e80', '#e3ccb4', '#bfd0dd'],
-    priceFrom: '$599',
-    monthlyFrom: '$49.91/mo. for 12 mo.',
-    tags: ['ipad']
-  },
-  {
-    id: 'apple-watch-9',
-    category: 'Watch',
-    name: 'Apple Watch Series 9',
-    image: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#e3ccb4', '#bfd0dd'],
-    priceFrom: '$399',
-    monthlyFrom: '$33.25/mo. for 12 mo.',
-    tags: ['watch', 'new']
-  },
-  {
-    id: 'apple-watch-ultra',
-    category: 'Watch',
-    name: 'Apple Watch Ultra 2',
-    image: 'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#7d7e80', '#f5f5f7'],
-    priceFrom: '$799',
-    monthlyFrom: '$66.58/mo. for 12 mo.',
-    tags: ['watch', 'pro', 'new']
-  },
-  {
-    id: 'airpods-pro',
-    category: 'AirPods',
-    name: 'AirPods Pro',
-    image: 'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#f5f5f7'],
-    priceFrom: '$249',
-    monthlyFrom: '$41.50/mo. for 6 mo.',
-    tags: ['airpods', 'pro']
-  },
-  {
-    id: 'airpods-max',
-    category: 'AirPods',
-    name: 'AirPods Max',
-    image: 'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#7d7e80', '#e3ccb4', '#bfd0dd', '#f5f5f7'],
-    priceFrom: '$549',
-    monthlyFrom: '$91.50/mo. for 6 mo.',
-    tags: ['airpods', 'pro']
-  }
-];
+const sampleProducts: Product[] = [];
 
-// Available filters with subcategories
-const categories = [
-  { name: 'All', subcategories: [] },
-  { 
-    name: 'iPhone', 
-    subcategories: ['iPhone 15 Pro', 'iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone SE', 'Compare']
-  },
-  { 
-    name: 'Mac', 
-    subcategories: ['MacBook Pro', 'MacBook Air', 'iMac', 'Mac mini', 'Mac Studio', 'Mac Pro', 'Compare']
-  },
-  { 
-    name: 'iPad', 
-    subcategories: ['iPad Pro', 'iPad Air', 'iPad', 'iPad mini', 'Compare']
-  },
-  { 
-    name: 'Watch', 
-    subcategories: ['Apple Watch Series 9', 'Apple Watch Ultra 2', 'Apple Watch SE', 'Compare']
-  },
-  { 
-    name: 'AirPods', 
-    subcategories: ['AirPods Pro', 'AirPods Max', 'AirPods (3rd generation)', 'Compare']
-  },
-  { 
-    name: 'TV & Home', 
-    subcategories: ['Apple TV 4K', 'HomePod mini', 'HomePod', 'Siri Remote']
-  },
-  { 
-    name: 'Accessories', 
-    subcategories: ['Cases & Protection', 'Charging', 'Audio', 'Storage', 'Cables & Adapters']
-  },
-  { 
-    name: 'Services', 
-    subcategories: ['AppleCare+', 'Apple One', 'Apple Music', 'iCloud+', 'Apple TV+', 'Apple Fitness+']
-  }
-];
-
-const tags = [
-  'All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
-  'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
-  'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education'
-];
-const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
+// Available filters with subcategories (loaded dynamically from DB)
+type UiCategory = { name: string; subcategories: string[] };
 
 const ProductsPage: React.FC = () => {
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(sampleProducts);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -250,6 +60,60 @@ const ProductsPage: React.FC = () => {
   const [expandedFilters, setExpandedFilters] = useState<{[key: string]: boolean}>({});
   const [showAllFilterSections, setShowAllFilterSections] = useState<boolean>(false);
 
+  // Categories state (must be inside the component for Hooks rules)
+  const [categories, setCategories] = useState<UiCategory[]>([{ name: 'All', subcategories: [] }]);
+
+  // Load categories and products from Supabase
+  useEffect(() => {
+    (async () => {
+      try {
+        setIsLoading(true);
+        const [catsRes, newRes, usedRes] = await Promise.all([
+          supabase.from('categories').select('*').order('name', { ascending: true }),
+          supabase.from('new_products').select('*').order('created_at', { ascending: false }),
+          supabase.from('secondhand_products').select('*').order('created_at', { ascending: false }),
+        ]);
+        if (catsRes.error) throw catsRes.error;
+        if (newRes.error) throw newRes.error;
+        if (usedRes.error) throw usedRes.error;
+
+        const categoriesMap = new Map<string, string>();
+        (catsRes.data || []).forEach((c: any) => categoriesMap.set(c.id, c.name));
+        const uiCats: UiCategory[] = [{ name: 'All', subcategories: [] }, ...((catsRes.data || []).map((c: any) => ({ name: c.name, subcategories: [] })) as UiCategory[])];
+        setCategories(uiCats);
+
+        const PLACEHOLDER_IMG = 'https://via.placeholder.com/800x600?text=Product';
+        function mapRow(r: any, type: 'new' | 'secondhand'): Product {
+          const categoryName = (r.category_id && categoriesMap.get(r.category_id)) || r.category || 'Uncategorized';
+          const priceNum = Number(r.price || 0);
+          const monthly = priceNum > 0 ? `$${(priceNum / 24).toFixed(2)}/mo. for 24 mo.` : '';
+          return {
+            id: r.id,
+            category: categoryName,
+            name: r.name,
+            image: r.image_url || PLACEHOLDER_IMG,
+            images: [r.image_url || PLACEHOLDER_IMG],
+            colors: [],
+            priceFrom: `$${priceNum.toFixed(2)}`,
+            monthlyFrom: monthly,
+            tags: type === 'new' ? ['new'] : ['secondhand'],
+          };
+        }
+
+        const merged: Product[] = [
+          ...((newRes.data || []).map((r: any) => mapRow(r, 'new')) as Product[]),
+          ...((usedRes.data || []).map((r: any) => mapRow(r, 'secondhand')) as Product[]),
+        ];
+        setAllProducts(merged);
+        setFilteredProducts(merged);
+      } catch (err) {
+        console.error('Failed to load products:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
   // Apply filters when dependencies change
   useEffect(() => {
     // Set loading state
@@ -257,7 +121,7 @@ const ProductsPage: React.FC = () => {
     
     // Simulate a small delay to show loading state (can be removed in production)
     const timeoutId = setTimeout(() => {
-      let result = [...sampleProducts];
+      let result = [...allProducts];
 
       // Filter by category
       if (selectedCategory !== 'All') {
@@ -390,7 +254,7 @@ const ProductsPage: React.FC = () => {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty]);
+  }, [allProducts, selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty]);
 
   // Toggle filter expansion
   const toggleFilterExpansion = (filterName: string) => {
@@ -823,7 +687,9 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Tags</h3>
                   <div className="space-y-2">
-                    {tags.slice(0, expandedFilters['tags'] ? tags.length : 4).map((tag) => (
+                    {['All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
+  'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
+  'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education', 'secondhand'].slice(0, expandedFilters['tags'] ? 27 : 4).map((tag) => (
                       <button
                         key={tag}
                         onClick={() => setSelectedTag(tag)}
@@ -837,12 +703,16 @@ const ProductsPage: React.FC = () => {
                       </button>
                     ))}
                     
-                    {tags.length > 4 && (
+                    {['All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
+  'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
+  'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education', 'secondhand'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('tags')}
                         className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        {expandedFilters['tags'] ? 'See less' : `See ${tags.length - 4} more`}
+                        {expandedFilters['tags'] ? 'See less' : `See ${['All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
+  'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
+  'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education', 'secondhand'].length - 4} more`}
                       </button>
                     )}
                   </div>
@@ -876,7 +746,7 @@ const ProductsPage: React.FC = () => {
           <div className="mb-6 flex flex-wrap justify-between items-center">
             {/* Quick Filter Buttons */}
             <div className="flex flex-wrap gap-2 mb-4 sm:mb-0">
-              {quickFilters.map((filter) => (
+              {['Deals', 'New', 'Second Hand', 'Bestsellers'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => handleQuickFilterClick(filter)}
@@ -1111,6 +981,13 @@ const ProductsPage: React.FC = () => {
                         onMouseMove={(e) => handleProductImageHover(product.id, e)}
                         onMouseLeave={() => handleProductImageLeave(product.id)}
                       >
+                        {(product.tags.includes('secondhand') || product.tags.includes('new')) && (
+                          <span className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-medium ${
+                            product.tags.includes('secondhand') ? 'bg-amber-600 text-white' : 'bg-blue-600 text-white'
+                          }`}>
+                            {product.tags.includes('secondhand') ? 'Secondhand' : 'New'}
+                          </span>
+                        )}
                         <img 
                           src={hoveredProductImages[product.id] !== undefined && product.images ? 
                             product.images[hoveredProductImages[product.id]] : product.image} 

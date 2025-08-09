@@ -59,6 +59,18 @@ export async function fetchProducts(type: ProductType): Promise<AnyProduct[]> {
   return products;
 }
 
+export async function fetchProductById(type: ProductType, id: string): Promise<AnyProduct | null> {
+  const tbl = tableFor(type);
+  const { data, error } = await supabase
+    .from(tbl)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { ...(data as any), product_type: type } as AnyProduct;
+}
+
 export async function uploadImage(file: File, folder: string): Promise<string> {
   const form = new FormData();
   form.append('file', file);

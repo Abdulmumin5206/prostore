@@ -17,7 +17,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
 import AdminNewProductsPage from './pages/AdminNewProductsPage';
 import AdminSecondhandProductsPage from './pages/AdminSecondhandProductsPage';
-import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import AdminNewProductEditorPage from './pages/AdminNewProductEditorPage';
 
 function App() {
   return (
@@ -48,21 +48,31 @@ function App() {
               }
             />
             <Route
-              path="/admin/secondhand-products"
+              path="/admin/new-products/new"
               element={
                 <ProtectedRoute requireAdmin>
                   <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-                    <AdminSecondhandProductsPage />
+                    <AdminNewProductEditorPage />
                   </div>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/admin/categories"
+              path="/admin/new-products/:id/edit"
               element={
                 <ProtectedRoute requireAdmin>
                   <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-                    <AdminCategoriesPage />
+                    <AdminNewProductEditorPage />
+                  </div>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/secondhand-products"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+                    <AdminSecondhandProductsPage />
                   </div>
                 </ProtectedRoute>
               }
