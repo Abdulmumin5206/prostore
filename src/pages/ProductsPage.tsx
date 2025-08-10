@@ -3,6 +3,32 @@ import { Text, H1 } from '../components/Typography';
 import ProductCard from '../components/ProductCard';
 import FilterTag from '../components/FilterTag';
 import ProductModal from '../components/ProductModal';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { listPublicProducts, PublicProduct } from '../lib/db';
+
+// Fetch live products when Supabase is configured
+async function fetchLiveProducts(): Promise<Product[]> {
+  if (!isSupabaseConfigured) return sampleProducts
+  try {
+    const rows: PublicProduct[] = await listPublicProducts()
+    return rows.map((r) => ({
+      id: r.sku_id,
+      category: r.category,
+      name: r.title,
+      image: r.primary_image || '',
+      images: [r.primary_image || ''],
+      colors: typeof (r as any).attributes?.color === 'string' ? [(r as any).attributes.color] : [],
+      priceFrom: `${r.currency === 'USD' ? '$' : ''}${Number(r.effective_price).toFixed(2)}`,
+      monthlyFrom: `${r.currency === 'USD' ? '$' : ''}${(Number(r.effective_price)/24).toFixed(2)}/mo. for 24 mo.`,
+      tags: [r.brand.toLowerCase(), r.category.toLowerCase(), r.condition === 'second_hand' ? 'second-hand' : 'new']
+    }))
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('Falling back to sample products due to error', e)
+    return sampleProducts
+  }
+}
+
 
 // Product data interface
 interface Product {
@@ -217,6 +243,7 @@ const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
 
 const ProductsPage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(sampleProducts);
+  const [sourceProducts, setSourceProducts] = useState<Product[]>(sampleProducts);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -250,6 +277,14 @@ const ProductsPage: React.FC = () => {
   const [expandedFilters, setExpandedFilters] = useState<{[key: string]: boolean}>({});
   const [showAllFilterSections, setShowAllFilterSections] = useState<boolean>(false);
 
+  useEffect(() => {
+    (async () => {
+      const live = await fetchLiveProducts();
+      setSourceProducts(live);
+      setFilteredProducts(live);
+    })();
+  }, []);
+
   // Apply filters when dependencies change
   useEffect(() => {
     // Set loading state
@@ -257,7 +292,7 @@ const ProductsPage: React.FC = () => {
     
     // Simulate a small delay to show loading state (can be removed in production)
     const timeoutId = setTimeout(() => {
-      let result = [...sampleProducts];
+      let result = [...sourceProducts];
 
       // Filter by category
       if (selectedCategory !== 'All') {
@@ -390,7 +425,7 @@ const ProductsPage: React.FC = () => {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty]);
+  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, sourceProducts]);
 
   // Toggle filter expansion
   const toggleFilterExpansion = (filterName: string) => {

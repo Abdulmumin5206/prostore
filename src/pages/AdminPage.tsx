@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
+import AdminProductWizard from '../components/admin/AdminProductWizard'
+import { listAdminProducts, setProductPublished, setSkuActive, AdminProductSummary, deleteProduct } from '../lib/db'
 import {
   LayoutDashboard,
   Package,
@@ -29,6 +31,23 @@ const navItems = [
 const AdminPage: React.FC = () => {
   const { signOut } = useAuth()
   const [active, setActive] = useState<string>('dashboard')
+  const [adminProducts, setAdminProducts] = useState<AdminProductSummary[]>([])
+  const [loadingProducts, setLoadingProducts] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const refreshProducts = async () => {
+    try {
+      setLoadingProducts(true)
+      const rows = await listAdminProducts(100)
+      setAdminProducts(rows)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoadingProducts(false)
+    }
+  }
+
+  useEffect(() => { refreshProducts() }, [])
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
@@ -87,166 +106,179 @@ const AdminPage: React.FC = () => {
               Dev tip
             </div>
             <p className="mt-1 text-xs text-amber-200/80">
-              This dashboard is UI-only. Wire it to your backend later. You can sign in via dev override on the sign-in page.
+              This dashboard is wired to Supabase. Use the product wizard below to add products.
             </p>
           </div>
         </aside>
 
         {/* Main content */}
         <main className="space-y-6">
-          {/* Overview cards */}
-          <section>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/60">Revenue</span>
-                  <DollarSign className="h-4 w-4 text-emerald-400" />
-                </div>
-                <div className="mt-3 text-2xl font-semibold">$48,920</div>
-                <div className="mt-1 text-xs text-emerald-300 inline-flex items-center gap-1">
-                  <TrendingUp className="h-3.5 w-3.5" /> +12.4% vs last week
-                </div>
-              </div>
-
-              <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/60">Orders</span>
-                  <ShoppingCart className="h-4 w-4 text-blue-400" />
-                </div>
-                <div className="mt-3 text-2xl font-semibold">1,284</div>
-                <div className="mt-1 text-xs text-white/60">Avg $38 per order</div>
-              </div>
-
-              <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/60">Active Customers</span>
-                  <Users className="h-4 w-4 text-purple-400" />
-                </div>
-                <div className="mt-3 text-2xl font-semibold">6,432</div>
-                <div className="mt-1 text-xs text-white/60">+324 this month</div>
-              </div>
-
-              <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/60">Fulfillment</span>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                </div>
-                <div className="mt-3 text-2xl font-semibold">96.2%</div>
-                <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full w-[96%] bg-emerald-500"></div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Recent Orders */}
-          <section className="rounded-2xl bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h2 className="text-sm font-semibold">Recent Orders</h2>
-              <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">View all</button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-white/60">
-                  <tr className="border-b border-white/10">
-                    <th className="text-left font-medium px-4 py-3">Order</th>
-                    <th className="text-left font-medium px-4 py-3">Customer</th>
-                    <th className="text-left font-medium px-4 py-3">Total</th>
-                    <th className="text-left font-medium px-4 py-3">Status</th>
-                    <th className="text-right font-medium px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { id: 'ORD-10293', name: 'Jane Cooper', total: '$1,299.00', status: 'Paid' },
-                    { id: 'ORD-10292', name: 'Wade Warren', total: '$249.00', status: 'Pending' },
-                    { id: 'ORD-10291', name: 'Esther Howard', total: '$3,499.00', status: 'Paid' },
-                    { id: 'ORD-10290', name: 'Guy Hawkins', total: '$89.00', status: 'Refunded' },
-                  ].map((o) => (
-                    <tr key={o.id} className="border-b border-white/5">
-                      <td className="px-4 py-3 font-medium">{o.id}</td>
-                      <td className="px-4 py-3 text-white/80">{o.name}</td>
-                      <td className="px-4 py-3">{o.total}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                            o.status === 'Paid'
-                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                              : o.status === 'Pending'
-                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                              : 'bg-white/10 text-white/70 border-white/20'
-                          }`}
-                        >
-                          {o.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-white/10 border border-white/10">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* Products */}
-          <section className="rounded-2xl bg-white/5 border border-white/10">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h2 className="text-sm font-semibold">Products</h2>
-              <div className="flex items-center gap-2">
-                <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add product
-                </button>
-              </div>
-            </div>
-            <ul className="divide-y divide-white/10">
-              {[
-                {
-                  id: 'iphone-16-pro',
-                  name: 'iPhone 16 Pro Max',
-                  price: '$1,199',
-                  stock: 32,
-                  img: '/header/iPhone/iphone_16pro_promax.jpg'
-                },
-                {
-                  id: 'macbook-pro-16',
-                  name: 'MacBook Pro 16"',
-                  price: '$2,499',
-                  stock: 12,
-                  img: '/header/mac/macbook pro 16.jpg'
-                },
-                {
-                  id: 'airpods-pro-2',
-                  name: 'AirPods Pro (2nd gen)',
-                  price: '$249',
-                  stock: 120,
-                  img: '/header/AirPods/airpods-pro-2-hero-select-202409.png'
-                },
-              ].map((p) => (
-                <li key={p.id} className="px-4 py-3 flex items-center gap-4">
-                  <img src={p.img} alt={p.name} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-white/60">{p.id}</p>
+          {active === 'dashboard' && (
+            <>
+              {/* Overview cards */}
+              <section>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/60">Revenue</span>
+                      <DollarSign className="h-4 w-4 text-emerald-400" />
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold">$48,920</div>
+                    <div className="mt-1 text-xs text-emerald-300 inline-flex items-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5" /> +12.4% vs last week
+                    </div>
                   </div>
-                  <div className="hidden sm:block text-sm w-24">{p.price}</div>
-                  <div className="hidden sm:block text-xs w-28">
-                    <span className={`px-2 py-0.5 rounded border ${p.stock > 20 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30'}`}>
-                      Stock: {p.stock}
-                    </span>
+
+                  <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/60">Orders</span>
+                      <ShoppingCart className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold">1,284</div>
+                    <div className="mt-1 text-xs text-white/60">Avg $38 per order</div>
                   </div>
+
+                  <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/60">Active Customers</span>
+                      <Users className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold">6,432</div>
+                    <div className="mt-1 text-xs text-white/60">+324 this month</div>
+                  </div>
+
+                  <div className="rounded-2xl p-4 bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/60">Fulfillment</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold">96.2%</div>
+                    <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full w-[96%] bg-emerald-500"></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Recent Orders */}
+              <section className="rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <h2 className="text-sm font-semibold">Recent Orders</h2>
+                  <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">View all</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="text-white/60">
+                      <tr className="border-b border-white/10">
+                        <th className="text-left font-medium px-4 py-3">Order</th>
+                        <th className="text-left font-medium px-4 py-3">Customer</th>
+                        <th className="text-left font-medium px-4 py-3">Total</th>
+                        <th className="text-left font-medium px-4 py-3">Status</th>
+                        <th className="text-right font-medium px-4 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: 'ORD-10293', name: 'Jane Cooper', total: '$1,299.00', status: 'Paid' },
+                        { id: 'ORD-10292', name: 'Wade Warren', total: '$249.00', status: 'Pending' },
+                        { id: 'ORD-10291', name: 'Esther Howard', total: '$3,499.00', status: 'Paid' },
+                        { id: 'ORD-10290', name: 'Guy Hawkins', total: '$89.00', status: 'Refunded' },
+                      ].map((o) => (
+                        <tr key={o.id} className="border-b border-white/5">
+                          <td className="px-4 py-3 font-medium">{o.id}</td>
+                          <td className="px-4 py-3 text-white/80">{o.name}</td>
+                          <td className="px-4 py-3">{o.total}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                                o.status === 'Paid'
+                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                  : o.status === 'Pending'
+                                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                  : 'bg-white/10 text-white/70 border-white/20'
+                              }`}
+                            >
+                              {o.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-white/10 border border-white/10">
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
+
+          {active === 'products' && (
+            <>
+              {/* Add Product Wizard */}
+              <section className="rounded-2xl bg-white/5 border border-white/10" id="add-product">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <h2 className="text-sm font-semibold">Add Product</h2>
                   <div className="flex items-center gap-2">
-                    <button className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10">Edit</button>
-                    <button className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10">Disable</button>
+                    <a href="#add-product" className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add product
+                    </a>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+                </div>
+                <div className="p-4">
+                  <AdminProductWizard onSaved={refreshProducts} />
+                </div>
+              </section>
+
+              {/* Existing Products List */}
+              <section className="rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <h2 className="text-sm font-semibold">Existing Products</h2>
+                  <button onClick={refreshProducts} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Refresh</button>
+                </div>
+                <div className="divide-y divide-white/10">
+                  {loadingProducts && <div className="px-4 py-3 text-xs text-white/60">Loading…</div>}
+                  {!loadingProducts && adminProducts.length === 0 && (
+                    <div className="px-4 py-3 text-xs text-white/60">No products yet.</div>
+                  )}
+                  {adminProducts.map((p) => (
+                    <div key={p.productId} className="px-4 py-3 flex items-center gap-4">
+                      <img src={p.primaryImage || ''} alt={p.title} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{p.title}</p>
+                        <p className="text-xs text-white/60">{p.brandName} • {p.categoryName}</p>
+                      </div>
+                      <div className="hidden sm:block text-xs w-40">
+                        <span className={`px-2 py-0.5 rounded border ${p.published ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/10 text-white/70 border-white/20'}`}>{p.published ? 'Published' : 'Hidden'}</span>
+                      </div>
+                      <div className="hidden sm:block text-xs w-40">
+                        <span className={`px-2 py-0.5 rounded border ${p.skuActive ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/10 text-white/70 border-white/20'}`}>{p.skuActive ? 'Active' : 'Disabled'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={async ()=>{ await setProductPublished(p.productId, !p.published); refreshProducts(); }}
+                          className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10"
+                        >{p.published ? 'Hide' : 'Publish'}</button>
+                        {p.skuId && (
+                          <button
+                            onClick={async ()=>{ await setSkuActive(p.skuId!, !(p.skuActive ?? true)); refreshProducts(); }}
+                            className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
+                          >{p.skuActive ? 'Disable' : 'Enable'}</button>
+                        )}
+                        <button
+                          onClick={async ()=>{ if (confirm('Delete this product? This cannot be undone.')) { await deleteProduct(p.productId); refreshProducts(); } }}
+                          className="text-xs px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200"
+                        >Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
         </main>
       </div>
     </div>
