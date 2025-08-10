@@ -3,7 +3,7 @@ import { Text, H1 } from '../components/Typography';
 import ProductCard from '../components/ProductCard';
 import FilterTag from '../components/FilterTag';
 import ProductModal from '../components/ProductModal';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { listPublicProducts, PublicProduct } from '../lib/db';
 
 // Fetch live products when Supabase is configured
@@ -11,17 +11,48 @@ async function fetchLiveProducts(): Promise<Product[]> {
   if (!isSupabaseConfigured) return sampleProducts
   try {
     const rows: PublicProduct[] = await listPublicProducts()
-    return rows.map((r) => ({
-      id: r.sku_id,
-      category: r.category,
-      name: r.title,
-      image: r.primary_image || '',
-      images: [r.primary_image || ''],
-      colors: typeof (r as any).attributes?.color === 'string' ? [(r as any).attributes.color] : [],
-      priceFrom: `${r.currency === 'USD' ? '$' : ''}${Number(r.effective_price).toFixed(2)}`,
-      monthlyFrom: `${r.currency === 'USD' ? '$' : ''}${(Number(r.effective_price)/24).toFixed(2)}/mo. for 24 mo.`,
-      tags: [r.brand.toLowerCase(), r.category.toLowerCase(), r.condition === 'second_hand' ? 'second-hand' : 'new']
-    }))
+    // Fetch extra images for hover if available
+    let productIdToImages: Record<string, string[]> = {}
+    if (supabase) {
+      const productIds = Array.from(new Set(rows.map(r => r.product_id)))
+      if (productIds.length > 0) {
+        const { data: imagesRows, error } = await supabase
+          .from('product_images')
+          .select('product_id, url, is_primary, sort_order')
+          .in('product_id', productIds)
+        if (!error && imagesRows) {
+          const grouped: Record<string, { url: string; is_primary: boolean; sort_order: number }[]> = {}
+          for (const row of imagesRows as any[]) {
+            const pid = row.product_id as string
+            if (!grouped[pid]) grouped[pid] = []
+            grouped[pid].push({ url: row.url, is_primary: row.is_primary, sort_order: row.sort_order })
+          }
+          productIdToImages = Object.fromEntries(
+            Object.entries(grouped).map(([pid, arr]) => [
+              pid,
+              arr
+                .sort((a,b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
+                .map(x => x.url)
+            ])
+          )
+        }
+      }
+    }
+
+    return rows.map((r) => {
+      const images = productIdToImages[r.product_id] ?? [r.primary_image || '']
+      return {
+        id: r.sku_id,
+        category: r.category,
+        name: r.title,
+        image: images[0] || '',
+        images,
+        colors: typeof (r as any).attributes?.color === 'string' ? [(r as any).attributes.color] : [],
+        priceFrom: `${r.currency === 'USD' ? '$' : ''}${Number(r.effective_price).toFixed(2)}`,
+        monthlyFrom: `${r.currency === 'USD' ? '$' : ''}${(Number(r.effective_price)/24).toFixed(2)}/mo. for 24 mo.`,
+        tags: [r.brand.toLowerCase(), r.category.toLowerCase(), r.condition === 'second_hand' ? 'second-hand' : 'new']
+      }
+    })
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('Falling back to sample products due to error', e)

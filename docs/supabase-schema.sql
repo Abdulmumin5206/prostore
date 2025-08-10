@@ -29,6 +29,48 @@ create table if not exists public.categories (
   slug text not null unique
 );
 
+-- Normalized taxonomy: families, models, variants
+create table if not exists public.product_families (
+  id uuid primary key default gen_random_uuid(),
+  brand_id uuid not null references public.brands(id) on delete cascade,
+  name text not null,
+  slug text not null,
+  unique (brand_id, slug)
+);
+create index if not exists idx_product_families_brand on public.product_families(brand_id);
+
+create table if not exists public.product_models (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references public.product_families(id) on delete cascade,
+  name text not null,
+  slug text not null,
+  unique (family_id, slug)
+);
+create index if not exists idx_product_models_family on public.product_models(family_id);
+
+create table if not exists public.product_variants (
+  id uuid primary key default gen_random_uuid(),
+  model_id uuid not null references public.product_models(id) on delete cascade,
+  name text not null,
+  slug text not null,
+  unique (model_id, slug)
+);
+create index if not exists idx_product_variants_model on public.product_variants(model_id);
+
+-- Option presets per model/variant (colors, storages)
+create table if not exists public.product_option_presets (
+  id uuid primary key default gen_random_uuid(),
+  model_id uuid references public.product_models(id) on delete cascade,
+  variant_id uuid references public.product_variants(id) on delete cascade,
+  colors text[] not null default '{}',
+  storages text[] not null default '{}',
+  constraint one_target check ((model_id is not null) <> (variant_id is not null)),
+  unique (model_id),
+  unique (variant_id)
+);
+create index if not exists idx_option_presets_model on public.product_option_presets(model_id);
+create index if not exists idx_option_presets_variant on public.product_option_presets(variant_id);
+
 -- Products (base)
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
@@ -129,6 +171,10 @@ alter table public.sku_prices enable row level security;
 alter table public.sku_inventory enable row level security;
 alter table public.product_images enable row level security;
 alter table public.second_hand_items enable row level security;
+alter table public.product_families enable row level security;
+alter table public.product_models enable row level security;
+alter table public.product_variants enable row level security;
+alter table public.product_option_presets enable row level security;
 
 -- Policies (run once)
 create policy "public read products" on public.products
@@ -142,6 +188,10 @@ for select using (
 create policy "public read prices" on public.sku_prices for select using (true);
 create policy "public read inventory" on public.sku_inventory for select using (true);
 create policy "public read images" on public.product_images for select using (true);
+create policy "public read families" on public.product_families for select using (true);
+create policy "public read models" on public.product_models for select using (true);
+create policy "public read variants" on public.product_variants for select using (true);
+create policy "public read option presets" on public.product_option_presets for select using (true);
 
 -- Admin write access (authenticated + profile role check)
 create policy "admin write products" on public.products
@@ -180,6 +230,34 @@ for all to authenticated using (
 );
 
 create policy "admin write secondhand" on public.second_hand_items
+for all to authenticated using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+) with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+);
+
+create policy "admin write families" on public.product_families
+for all to authenticated using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+) with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+);
+
+create policy "admin write models" on public.product_models
+for all to authenticated using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+) with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+);
+
+create policy "admin write variants" on public.product_variants
+for all to authenticated using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+) with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+);
+
+create policy "admin write option presets" on public.product_option_presets
 for all to authenticated using (
   exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
 ) with check (

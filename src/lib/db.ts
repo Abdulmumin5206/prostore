@@ -20,6 +20,10 @@ export type PublicProduct = {
 
 export type Brand = { id: string; name: string; slug: string }
 export type Category = { id: string; name: string; slug: string }
+export type Family = { id: string; brand_id: string; name: string; slug: string }
+export type Model = { id: string; family_id: string; name: string; slug: string }
+export type Variant = { id: string; model_id: string; name: string; slug: string }
+export type OptionPreset = { id: string; model_id: string | null; variant_id: string | null; colors: string[]; storages: string[] }
 
 export async function listPublicProducts(): Promise<PublicProduct[]> {
   if (!isSupabaseConfigured || !supabase) return []
@@ -56,6 +60,98 @@ export async function createCategory(name: string): Promise<Category> {
   const { data, error } = await supabase.from('categories').insert({ name, slug }).select('*').single()
   if (error) throw error
   return data as Category
+}
+
+// Families / Models / Variants taxonomy helpers
+export async function listFamilies(brandId: string): Promise<Family[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase
+    .from('product_families')
+    .select('*')
+    .eq('brand_id', brandId)
+    .order('name')
+  if (error) throw error
+  return data as Family[]
+}
+
+export async function createFamily(brandId: string, name: string): Promise<Family> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const slug = name.toLowerCase().replace(/\s+/g, '-')
+  const { data, error } = await supabase
+    .from('product_families')
+    .insert({ brand_id: brandId, name, slug })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Family
+}
+
+export async function listModels(familyId: string): Promise<Model[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase
+    .from('product_models')
+    .select('*')
+    .eq('family_id', familyId)
+    .order('name')
+  if (error) throw error
+  return data as Model[]
+}
+
+export async function createModel(familyId: string, name: string): Promise<Model> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const slug = name.toLowerCase().replace(/\s+/g, '-')
+  const { data, error } = await supabase
+    .from('product_models')
+    .insert({ family_id: familyId, name, slug })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Model
+}
+
+export async function listVariants(modelId: string): Promise<Variant[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('model_id', modelId)
+    .order('name')
+  if (error) throw error
+  return data as Variant[]
+}
+
+export async function createVariant(modelId: string, name: string): Promise<Variant> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const slug = name.toLowerCase().replace(/\s+/g, '-')
+  const { data, error } = await supabase
+    .from('product_variants')
+    .insert({ model_id: modelId, name, slug })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Variant
+}
+
+export async function getOptionPresetForModel(modelId: string): Promise<OptionPreset | null> {
+  if (!isSupabaseConfigured || !supabase) return null
+  const { data, error } = await supabase
+    .from('product_option_presets')
+    .select('*')
+    .eq('model_id', modelId)
+    .single()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return (data as any) ?? null
+}
+
+export async function getOptionPresetForVariant(variantId: string): Promise<OptionPreset | null> {
+  if (!isSupabaseConfigured || !supabase) return null
+  const { data, error } = await supabase
+    .from('product_option_presets')
+    .select('*')
+    .eq('variant_id', variantId)
+    .single()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return (data as any) ?? null
 }
 
 export type NewProductInput = {
