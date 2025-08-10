@@ -1,20 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Apple, Search, ShoppingBag } from 'lucide-react';
+import { Apple, Search, ShoppingBag, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import NavDropdown from './NavDropdown';
 import { dropdownContents } from './NavDropdown';
 import NavOverlay from './NavOverlay';
 import { Text } from './Typography';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const location = useLocation();
+  const { user, signOut, isAdminOverride } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const navDropdownRef = useRef<HTMLDivElement>(null);
-  const hoverTimeoutRef = useRef<number | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Handle scroll events with throttling
   useEffect(() => {
@@ -141,6 +143,39 @@ const Header = () => {
               <ThemeToggle />
               <Search className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
               <ShoppingBag className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
+              
+              {/* Auth Section */}
+              {user || isAdminOverride ? (
+                <div className="flex items-center space-x-3">
+                  <Link
+                    to="/admin"
+                    className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                  >
+                    <User className="h-4 w-4" />
+                  </Link>
+                  <button
+                    onClick={signOut}
+                    className="text-xs text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link
+                    to="/signin"
+                    className="text-xs text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="text-xs bg-white text-black px-3 py-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
           </nav>
         </div>

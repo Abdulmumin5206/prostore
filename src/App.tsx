@@ -1,25 +1,40 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
-import Header from './components/Header';
-import Footer from './components/Footer';
+import { AuthProvider } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import IPhonePage from './pages/iPhonePage';
 import ProductsPage from './pages/ProductsPage';
-import TopPromotionalSection from './components/TopPromotionalSection';
+import SignUpPage from './pages/SignUpPage';
+import SignInPage from './pages/SignInPage';
+import AdminPage from './pages/AdminPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import TypographyGuide from './components/TypographyGuide';
+import MainLayout from './layouts/MainLayout';
 
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300 overflow-x-hidden flex flex-col">
-          <TopPromotionalSection />
-          <Header />
-          <main className="flex-1">
-            <Routes>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Admin route without layout (no header/footer) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* All other routes use the main layout */}
+            <Route element={<MainLayout />}>
               <Route path="/" element={<HomePage />} />
+              {/* Auth routes */}
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/signin" element={<SignInPage />} />
               {/* Placeholder routes for other pages */}
               <Route path="/store/:productId" element={<ProductPage />} />
               <Route path="/products" element={<ProductsPage />} />
@@ -38,11 +53,10 @@ function App() {
               <Route path="/airtag" element={<div className="p-8 text-center text-black dark:text-white transition-colors duration-300">AirTag Page Coming Soon</div>} />
               {/* Typography Guide Route */}
               <Route path="/typography" element={<TypographyGuide />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
