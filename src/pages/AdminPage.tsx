@@ -35,6 +35,7 @@ const AdminPage: React.FC = () => {
   const [adminProducts, setAdminProducts] = useState<AdminProductSummary[]>([])
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState<string>('')
 
   const refreshProducts = async () => {
     try {
@@ -50,6 +51,19 @@ const AdminPage: React.FC = () => {
 
   useEffect(() => { refreshProducts() }, [])
 
+  const filtered = adminProducts.filter((p) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    const fields = [
+      p.title?.toLowerCase() ?? '',
+      p.brandName?.toLowerCase() ?? '',
+      p.categoryName?.toLowerCase() ?? '',
+      (p.productCode ?? '').toLowerCase(),
+      (p.skuCode ?? '').toLowerCase(),
+    ]
+    return fields.some((f) => f.includes(q))
+  })
+
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
       {/* Top Bar */}
@@ -64,8 +78,10 @@ const AdminPage: React.FC = () => {
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
               <SearchIcon className="h-4 w-4 text-white/40" />
               <input
-                placeholder="Search…"
-                className="bg-transparent text-sm outline-none placeholder:text-white/40 w-56"
+                value={search}
+                onChange={(e)=>setSearch(e.target.value)}
+                placeholder="Search by title, brand, category, PRD- or SKU- code"
+                className="bg-transparent text-sm outline-none placeholder:text-white/40 w-72"
               />
             </div>
             <ThemeToggle />
@@ -217,17 +233,7 @@ const AdminPage: React.FC = () => {
           )}
 
           {active === 'add-product' && (
-            <>
-              {/* Add Product Wizard */}
-              <section className="rounded-2xl bg-white/5 border border-white/10" id="add-product">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <h2 className="text-sm font-semibold">Add Product</h2>
-                </div>
-                <div className="p-4">
-                  <AdminProductWizard onSaved={refreshProducts} />
-                </div>
-              </section>
-            </>
+            <AdminProductWizard onSaved={refreshProducts} />
           )}
 
           {active === 'catalog' && (
@@ -240,15 +246,18 @@ const AdminPage: React.FC = () => {
                 </div>
                 <div className="divide-y divide-white/10">
                   {loadingProducts && <div className="px-4 py-3 text-xs text-white/60">Loading…</div>}
-                  {!loadingProducts && adminProducts.length === 0 && (
+                  {!loadingProducts && filtered.length === 0 && (
                     <div className="px-4 py-3 text-xs text-white/60">No products yet.</div>
                   )}
-                  {adminProducts.map((p) => (
+                  {filtered.map((p) => (
                     <div key={p.productId} className="px-4 py-3 flex items-center gap-4">
                       <img src={p.primaryImage || ''} alt={p.title} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.title}</p>
                         <p className="text-xs text-white/60">{p.brandName} • {p.categoryName}</p>
+                        {(p.productCode || p.skuCode) && (
+                          <p className="text-[10px] text-white/40 mt-0.5">{p.productCode ? `Product: ${p.productCode}` : ''}{p.productCode && p.skuCode ? ' • ' : ''}{p.skuCode ? `SKU: ${p.skuCode}` : ''}</p>
+                        )}
                       </div>
                       <div className="hidden sm:block text-xs w-40">
                         <span className={`px-2 py-0.5 rounded border ${p.published ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/10 text-white/70 border-white/20'}`}>{p.published ? 'Published' : 'Hidden'}</span>
@@ -284,4 +293,4 @@ const AdminPage: React.FC = () => {
   )
 }
 
-export default AdminPage 
+export default AdminPage

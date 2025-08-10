@@ -8,7 +8,7 @@ import { listPublicProducts, PublicProduct } from '../lib/db';
 
 // Fetch live products when Supabase is configured
 async function fetchLiveProducts(): Promise<Product[]> {
-  if (!isSupabaseConfigured) return sampleProducts
+  if (!isSupabaseConfigured) return []
   try {
     const rows: PublicProduct[] = await listPublicProducts()
     // Fetch extra images for hover if available
@@ -55,8 +55,8 @@ async function fetchLiveProducts(): Promise<Product[]> {
     })
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.warn('Falling back to sample products due to error', e)
-    return sampleProducts
+    console.warn('Falling back to empty product list due to error', e)
+    return []
   }
 }
 
@@ -75,158 +75,7 @@ interface Product {
 }
 
 // Sample product data
-const sampleProducts: Product[] = [
-  {
-    id: 'iphone-15-pro',
-    category: 'iPhone',
-    name: 'iPhone 15 Pro',
-    image: 'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7795634/pexels-photo-7795634.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#555555', '#e3d0c0', '#f1f2ed'],
-    priceFrom: '$999',
-    monthlyFrom: '$41.62/mo. for 24 mo.',
-    tags: ['iphone', 'new', 'pro']
-  },
-  {
-    id: 'iphone-15',
-    category: 'iPhone',
-    name: 'iPhone 15',
-    image: 'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/13936668/pexels-photo-13936668.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/5750001/pexels-photo-5750001.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7795634/pexels-photo-7795634.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f9e5c9', '#7e808e', '#6e3d33', '#bfd0dd'],
-    priceFrom: '$799',
-    monthlyFrom: '$33.29/mo. for 24 mo.',
-    tags: ['iphone', 'new']
-  },
-  {
-    id: 'macbook-pro-16',
-    category: 'Mac',
-    name: 'MacBook Pro 16"',
-    image: 'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7'],
-    priceFrom: '$2499',
-    monthlyFrom: '$208.25/mo. for 12 mo.',
-    tags: ['mac', 'laptop', 'pro']
-  },
-  {
-    id: 'macbook-air',
-    category: 'Mac',
-    name: 'MacBook Air',
-    image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/18105/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/303383/pexels-photo-303383.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#7d7e80', '#e3ccb4'],
-    priceFrom: '$999',
-    monthlyFrom: '$83.25/mo. for 12 mo.',
-    tags: ['mac', 'laptop']
-  },
-  {
-    id: 'ipad-pro',
-    category: 'iPad',
-    name: 'iPad Pro',
-    image: 'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1716659/pexels-photo-1716659.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7'],
-    priceFrom: '$799',
-    monthlyFrom: '$66.58/mo. for 12 mo.',
-    tags: ['ipad', 'pro']
-  },
-  {
-    id: 'ipad-air',
-    category: 'iPad',
-    name: 'iPad Air',
-    image: 'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/1334598/pexels-photo-1334598.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1334597/pexels-photo-1334597.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/1716659/pexels-photo-1716659.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#7d7e80', '#e3ccb4', '#bfd0dd'],
-    priceFrom: '$599',
-    monthlyFrom: '$49.91/mo. for 12 mo.',
-    tags: ['ipad']
-  },
-  {
-    id: 'apple-watch-9',
-    category: 'Watch',
-    name: 'Apple Watch Series 9',
-    image: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#f5f5f7', '#e3ccb4', '#bfd0dd'],
-    priceFrom: '$399',
-    monthlyFrom: '$33.25/mo. for 12 mo.',
-    tags: ['watch', 'new']
-  },
-  {
-    id: 'apple-watch-ultra',
-    category: 'Watch',
-    name: 'Apple Watch Ultra 2',
-    image: 'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/437038/pexels-photo-437038.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/393047/pexels-photo-393047.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#7d7e80', '#f5f5f7'],
-    priceFrom: '$799',
-    monthlyFrom: '$66.58/mo. for 12 mo.',
-    tags: ['watch', 'pro', 'new']
-  },
-  {
-    id: 'airpods-pro',
-    category: 'AirPods',
-    name: 'AirPods Pro',
-    image: 'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#f5f5f7'],
-    priceFrom: '$249',
-    monthlyFrom: '$41.50/mo. for 6 mo.',
-    tags: ['airpods', 'pro']
-  },
-  {
-    id: 'airpods-max',
-    category: 'AirPods',
-    name: 'AirPods Max',
-    image: 'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-    images: [
-      'https://images.pexels.com/photos/7156886/pexels-photo-7156886.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3825517/pexels-photo-3825517.jpeg?auto=compress&cs=tinysrgb&w=800',
-      'https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800'
-    ],
-    colors: ['#1c1c1e', '#7d7e80', '#e3ccb4', '#bfd0dd', '#f5f5f7'],
-    priceFrom: '$549',
-    monthlyFrom: '$91.50/mo. for 6 mo.',
-    tags: ['airpods', 'pro']
-  }
-];
+const sampleProducts: Product[] = [];
 
 // Available filters with subcategories
 const categories = [
@@ -273,8 +122,8 @@ const tags = [
 const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
 
 const ProductsPage: React.FC = () => {
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(sampleProducts);
-  const [sourceProducts, setSourceProducts] = useState<Product[]>(sampleProducts);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [sourceProducts, setSourceProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -310,9 +159,11 @@ const ProductsPage: React.FC = () => {
 
   useEffect(() => {
     (async () => {
+      setIsLoading(true);
       const live = await fetchLiveProducts();
       setSourceProducts(live);
       setFilteredProducts(live);
+      setIsLoading(false);
     })();
   }, []);
 
@@ -1156,8 +1007,23 @@ const ProductsPage: React.FC = () => {
 
           {/* Products Grid */}
           {isLoading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500"></div>
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 12 }).map((_, idx) => (
+                  <div key={idx} className="flex flex-col h-full relative rounded-2xl overflow-hidden">
+                    <div className="overflow-hidden rounded-xl aspect-square mb-4 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+                    <div className="px-3 mb-2 space-y-2">
+                      <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="h-4 w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="h-5 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                      <div className="h-3 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                    </div>
+                    <div className="px-3 pb-3">
+                      <div className="h-9 w-full bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="space-y-8">

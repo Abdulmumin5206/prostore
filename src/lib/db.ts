@@ -248,12 +248,14 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
 // Admin listing types
 export type AdminProductSummary = {
   productId: string
+  productCode?: string | null
   title: string
   published: boolean
   brandName?: string | null
   categoryName?: string | null
   primaryImage?: string | null
   skuId?: string | null
+  skuCode?: string | null
   skuActive?: boolean | null
   condition?: 'new' | 'second_hand' | null
   effectivePrice?: number | null
@@ -267,12 +269,14 @@ export async function listAdminProducts(limit = 50): Promise<AdminProductSummary
     .from('products')
     .select(`
       id,
+      public_id,
       title,
       published,
       brands!inner(name),
       categories!inner(name),
       product_skus(
         id,
+        sku_code,
         condition,
         is_active,
         sku_prices(base_price, discount_percent, discount_amount),
@@ -298,12 +302,14 @@ export async function listAdminProducts(limit = 50): Promise<AdminProductSummary
     }
     return {
       productId: row.id,
+      productCode: (row as any).public_id ?? null,
       title: row.title,
       published: row.published,
       brandName: row.brands?.name ?? null,
       categoryName: row.categories?.name ?? null,
       primaryImage: primary?.url ?? null,
       skuId: sku?.id ?? null,
+      skuCode: sku?.sku_code ?? null,
       skuActive: sku?.is_active ?? null,
       condition: sku?.condition ?? null,
       effectivePrice,
