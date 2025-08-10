@@ -22,7 +22,8 @@ import {
 
 const navItems = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'products', label: 'Products', icon: Package },
+  { key: 'add-product', label: 'Add Product', icon: Plus },
+  { key: 'catalog', label: 'Products', icon: Package },
   { key: 'orders', label: 'Orders', icon: ShoppingCart },
   { key: 'customers', label: 'Customers', icon: Users },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -215,28 +216,26 @@ const AdminPage: React.FC = () => {
             </>
           )}
 
-          {active === 'products' && (
+          {active === 'add-product' && (
             <>
               {/* Add Product Wizard */}
               <section className="rounded-2xl bg-white/5 border border-white/10" id="add-product">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <h2 className="text-sm font-semibold">Add Product</h2>
-                  <div className="flex items-center gap-2">
-                    <a href="#add-product" className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add product
-                    </a>
-                  </div>
                 </div>
                 <div className="p-4">
                   <AdminProductWizard onSaved={refreshProducts} />
                 </div>
               </section>
+            </>
+          )}
 
+          {active === 'catalog' && (
+            <>
               {/* Existing Products List */}
               <section className="rounded-2xl bg-white/5 border border-white/10">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <h2 className="text-sm font-semibold">Existing Products</h2>
+                  <h2 className="text-sm font-semibold">Products</h2>
                   <button onClick={refreshProducts} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Refresh</button>
                 </div>
                 <div className="divide-y divide-white/10">

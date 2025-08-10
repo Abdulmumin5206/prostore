@@ -146,7 +146,27 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       })
       setSuccess('Product saved successfully.')
       if (onSaved) onSaved()
-      setStep(6)
+      // reset minimal form state
+      setStep(1)
+      setCondition('new')
+      setBrandId('')
+      setCategoryId('')
+      setFamily('iPhone')
+      setModel('')
+      setVariant('')
+      setTitle('')
+      setDescription('')
+      setPublished(false)
+      setStorage('128GB')
+      setColor('#1c1c1e')
+      setBasePrice('999')
+      setCurrency('USD')
+      setDiscountPercent('')
+      setDiscountAmount('')
+      setQuantity('10')
+      setImages([])
+      // auto hide success after 2.5s
+      setTimeout(()=> setSuccess(null), 2500)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -155,7 +175,13 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   }
 
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10">
+    <div className="rounded-2xl bg-white/5 border border-white/10 relative">
+      {/* toast */}
+      {success && (
+        <div className="absolute top-2 right-2 z-10 px-3 py-2 rounded-md bg-emerald-500 text-black text-xs shadow">
+          {success}
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <h2 className="text-sm font-semibold">Add Product Wizard</h2>
         <div className="text-xs text-white/60">Step {step} / 6</div>
