@@ -434,49 +434,46 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         </div>
 
         {step === 1 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs text-white/60">Brand</label>
-              <div className="flex gap-2 mt-1">
-                <select className="flex-1 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={brandId} onChange={e=>setBrandId(e.target.value)}>
+              <div className="flex mt-1">
+                <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={brandId} onChange={e=>setBrandId(e.target.value)}>
                   <option value="">Select brand</option>
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
-                <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addBrandInline}>+ New</button>
               </div>
             </div>
             {/* Removed Category manual selection; it is auto-set from family */}
             <div>
-              <label className="text-xs text-white/60">Product line (family)</label>
-              <div className="flex gap-2 mt-1">
-                <select disabled={!brandId} className="flex-1 disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={familyId} onChange={e=>setFamilyId(e.target.value)}>
-                  <option value="">{brandId ? 'Select product line' : 'Select brand first'}</option>
+              <label className="text-xs text-white/60">Line</label>
+              <div className="flex mt-1">
+                <select disabled={!brandId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={familyId} onChange={e=>setFamilyId(e.target.value)}>
+                  <option value="">{brandId ? 'Select line' : 'Select brand first'}</option>
                   {families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
-                <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addFamilyInline}>+ New</button>
               </div>
             </div>
             <div>
               <label className="text-xs text-white/60">Model</label>
-              <div className="flex gap-2 mt-1">
-                <select disabled={!familyId} className="flex-1 disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={modelId} onChange={e=>setModelId(e.target.value)}>
-                  <option value="">{familyId ? 'Select model' : 'Select product line first'}</option>
+              <div className="flex mt-1">
+                <select disabled={!familyId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={modelId} onChange={e=>setModelId(e.target.value)}>
+                  <option value="">{familyId ? 'Select model' : 'Select line first'}</option>
                   {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
-                <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addModelInline}>+ New</button>
               </div>
             </div>
             <div>
               <label className="text-xs text-white/60">Variant</label>
-              <div className="flex gap-2 mt-1">
-                <select disabled={!modelId} className="flex-1 disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={variantId} onChange={e=>setVariantId(e.target.value)}>
+              <div className="flex mt-1">
+                <select disabled={!modelId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={variantId} onChange={e=>setVariantId(e.target.value)}>
                   <option value="">{modelId ? 'Select variant' : 'Select model first'}</option>
                   {variants.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
-                <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addVariantInline}>+ New</button>
               </div>
+
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-4">
               <label className="text-xs text-white/60">Title</label>
               <div className="flex gap-2 items-center mt-1">
                 <input className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Product title shown to users" />
@@ -488,17 +485,17 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <div className="text-xs text-white/50 mt-1">Suggested: {titleSuggestion}</div>
               )}
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-4">
               <label className="text-xs text-white/60">Description</label>
               <textarea className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" rows={3} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Short description" />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="text-xs text-white/60">Storage</label>
               <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={storage} onChange={e=>setStorage(e.target.value)}>
                 {(presetStorages ?? defaultStorages).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="text-xs text-white/60">Color</label>
               <div className="flex gap-2 flex-wrap mt-1">
                 {availableColors.map(({ name, hex }) => (
@@ -532,7 +529,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <label className="text-xs text-white/60">Discount Amount (optional)</label>
               <input type="number" min="0" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={discountAmount} onChange={e=>setDiscountAmount(e.target.value)} />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-4">
               <label className="text-xs text-white/60">Images</label>
               <input type="file" multiple onChange={e=>handleUploadImages(e.target.files)} className="block mt-2 text-sm" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
@@ -551,7 +548,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             </div>
 
             {condition === 'second_hand' && (
-              <div className="md:col-span-2 p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="md:col-span-4 p-3 rounded-lg bg-white/5 border border-white/10">
                 <div className="text-xs text-white/60 mb-2">Second‑hand Details</div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
