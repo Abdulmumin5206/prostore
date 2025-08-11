@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import AdminProductWizard from '../components/admin/AdminProductWizard'
+import AdminCatalogManager from '../components/admin/AdminCatalogManager'
 import { listAdminProducts, setProductPublished, setSkuActive, AdminProductSummary, deleteProduct } from '../lib/db'
+import { setProductsPublished, deleteProducts } from '../lib/db'
 import {
   LayoutDashboard,
   Package,
@@ -24,6 +26,7 @@ const navItems = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'add-product', label: 'Add Product', icon: Plus },
   { key: 'catalog', label: 'Products', icon: Package },
+  { key: 'catalog-manager', label: 'Catalog Manager', icon: Package },
   { key: 'orders', label: 'Orders', icon: ShoppingCart },
   { key: 'customers', label: 'Customers', icon: Users },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -36,6 +39,8 @@ const AdminPage: React.FC = () => {
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState<string>('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkWorking, setBulkWorking] = useState<boolean>(false)
 
   const refreshProducts = async () => {
     try {
@@ -63,6 +68,55 @@ const AdminPage: React.FC = () => {
     ]
     return fields.some((f) => f.includes(q))
   })
+
+  const allSelected = filtered.length > 0 && filtered.every(p => selectedIds.has(p.productId))
+  const someSelected = selectedIds.size > 0
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedIds(prev => {
+      if (filtered.length === 0) return new Set()
+      const everySelected = filtered.every(p => prev.has(p.productId))
+      if (everySelected) return new Set()
+      return new Set(filtered.map(p => p.productId))
+    })
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const performBulkPublish = async (published: boolean) => {
+    if (selectedIds.size === 0) return
+    setBulkWorking(true)
+    try {
+      await setProductsPublished(Array.from(selectedIds), published)
+      clearSelection()
+      await refreshProducts()
+    } finally {
+      setBulkWorking(false)
+    }
+  }
+
+  const performBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    const count = selectedIds.size
+    if (!confirm(`Delete ${count} product${count > 1 ? 's' : ''}? This cannot be undone.`)) return
+    setBulkWorking(true)
+    try {
+      await deleteProducts(Array.from(selectedIds))
+      clearSelection()
+      await refreshProducts()
+    } finally {
+      setBulkWorking(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white">
@@ -242,8 +296,25 @@ const AdminPage: React.FC = () => {
               <section className="rounded-2xl bg-white/5 border border-white/10">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <h2 className="text-sm font-semibold">Products</h2>
-                  <button onClick={refreshProducts} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Refresh</button>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-xs text-white/70">
+                      <input type="checkbox" className="h-4 w-4 rounded border-white/20 bg-black/20" checked={allSelected} onChange={toggleSelectAllFiltered} />
+                      Select all
+                    </label>
+                    <button onClick={refreshProducts} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Refresh</button>
+                  </div>
                 </div>
+                {someSelected && (
+                  <div className="px-4 py-2 flex items-center justify-between bg-white/5 border-b border-white/10">
+                    <div className="text-xs text-white/70">{selectedIds.size} selected</div>
+                    <div className="flex items-center gap-2">
+                      <button disabled={bulkWorking} onClick={() => performBulkPublish(true)} className="text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 disabled:opacity-50">Publish</button>
+                      <button disabled={bulkWorking} onClick={() => performBulkPublish(false)} className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-50">Hide</button>
+                      <button disabled={bulkWorking} onClick={performBulkDelete} className="text-xs px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 disabled:opacity-50">Delete</button>
+                      <button disabled={bulkWorking} onClick={clearSelection} className="text-xs px-2.5 py-1.5 rounded-md bg-white/0 hover:bg-white/10 border border-white/10 disabled:opacity-50">Clear</button>
+                    </div>
+                  </div>
+                )}
                 <div className="divide-y divide-white/10">
                   {loadingProducts && <div className="px-4 py-3 text-xs text-white/60">Loading…</div>}
                   {!loadingProducts && filtered.length === 0 && (
@@ -251,6 +322,12 @@ const AdminPage: React.FC = () => {
                   )}
                   {filtered.map((p) => (
                     <div key={p.productId} className="px-4 py-3 flex items-center gap-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-white/20 bg-black/20"
+                        checked={selectedIds.has(p.productId)}
+                        onChange={() => toggleSelectOne(p.productId)}
+                      />
                       <img src={p.primaryImage || ''} alt={p.title} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.title}</p>
@@ -286,6 +363,17 @@ const AdminPage: React.FC = () => {
                 </div>
               </section>
             </>
+          )}
+
+          {active === 'catalog-manager' && (
+            <section className="rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                <h2 className="text-sm font-semibold">Catalog Manager</h2>
+              </div>
+              <div className="p-4">
+                <AdminCatalogManager />
+              </div>
+            </section>
           )}
         </main>
       </div>

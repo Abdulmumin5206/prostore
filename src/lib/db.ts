@@ -154,6 +154,62 @@ export async function getOptionPresetForVariant(variantId: string): Promise<Opti
   return (data as any) ?? null
 }
 
+export async function upsertOptionPresetForModel(modelId: string, colors: string[], storages: string[]): Promise<OptionPreset> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const { data: existing, error: selErr } = await supabase
+    .from('product_option_presets')
+    .select('*')
+    .eq('model_id', modelId)
+    .single()
+  if (selErr && (selErr as any).code !== 'PGRST116') throw selErr
+  if (existing) {
+    const { data, error } = await supabase
+      .from('product_option_presets')
+      .update({ colors, storages })
+      .eq('id', (existing as any).id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as OptionPreset
+  } else {
+    const { data, error } = await supabase
+      .from('product_option_presets')
+      .insert({ model_id: modelId, variant_id: null, colors, storages })
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as OptionPreset
+  }
+}
+
+export async function upsertOptionPresetForVariant(variantId: string, colors: string[], storages: string[]): Promise<OptionPreset> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const { data: existing, error: selErr } = await supabase
+    .from('product_option_presets')
+    .select('*')
+    .eq('variant_id', variantId)
+    .single()
+  if (selErr && (selErr as any).code !== 'PGRST116') throw selErr
+  if (existing) {
+    const { data, error } = await supabase
+      .from('product_option_presets')
+      .update({ colors, storages })
+      .eq('id', (existing as any).id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as OptionPreset
+  } else {
+    const { data, error } = await supabase
+      .from('product_option_presets')
+      .insert({ model_id: null, variant_id: variantId, colors, storages })
+      .select('*')
+      .single()
+    if (error) throw error
+    return data as OptionPreset
+  }
+}
+
 export type NewProductInput = {
   brand_id: string
   category_id: string
@@ -178,6 +234,7 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
 
   // Insert product
+  const productPublicId = generateProductPublicId(input)
   const { data: product, error: productErr } = await supabase
     .from('products')
     .insert({
@@ -189,6 +246,7 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
       title: input.title,
       description: input.description ?? null,
       published: input.published,
+      public_id: productPublicId,
     })
     .select('id')
     .single()
@@ -196,6 +254,11 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
   if (productErr || !product) throw productErr
 
   // Insert sku
+  const skuCode = generateSkuCode({
+    productPublicId,
+    condition: input.sku.condition,
+    attributes: input.sku.attributes,
+  })
   const { data: sku, error: skuErr } = await supabase
     .from('product_skus')
     .insert({
@@ -203,6 +266,7 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
       condition: input.sku.condition,
       attributes: input.sku.attributes,
       is_active: input.sku.is_active ?? true,
+      sku_code: skuCode,
     })
     .select('id')
     .single()
@@ -243,6 +307,83 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
   }
 
   return { product_id: product.id, sku_id: sku.id }
+}
+
+export function generateProductPublicId(input: { brand_id: string; category_id: string; family?: string | null; model?: string | null; variant?: string | null; title: string }): string {
+  // Simple readable slug: e.g., APP-IPH-IPHONE-16-PRO-MAX
+  const parts = [
+    // Brand and category are UUIDs; we cannot resolve names here without extra queries, so use title breakdown
+    (input.family || '').toString(),
+    (input.model || '').toString(),
+    (input.variant || '').toString(),
+    input.title,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  // Truncate to reasonable length
+  return parts.slice(0, 60)
+}
+
+export function generateSkuCode(input: { productPublicId: string; condition: 'new' | 'second_hand'; attributes: Record<string, any> }): string {
+  const attrs: string[] = []
+  if (input.attributes.storage) attrs.push(String(input.attributes.storage))
+  if (input.attributes.color) attrs.push(String(input.attributes.color))
+  if (input.attributes.connectivity) attrs.push(String(input.attributes.connectivity))
+  const suffix = attrs
+    .filter(Boolean)
+    .join('-')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+  const base = `${input.productPublicId}-${input.condition === 'second_hand' ? 'USED' : 'NEW'}`
+  const code = suffix ? `${base}-${suffix}` : base
+  return code.slice(0, 80)
+}
+
+// Create second-hand unique unit for an existing SKU
+export async function createSecondHandItem(params: {
+  sku_id: string
+  grade: 'A' | 'B' | 'C'
+  serial_number?: string | null
+  battery_health?: number | null
+  included_accessories?: any
+  notes?: string | null
+  price_override?: number | null
+}): Promise<{ id: string }> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const { data, error } = await supabase
+    .from('second_hand_items')
+    .insert({
+      sku_id: params.sku_id,
+      grade: params.grade,
+      serial_number: params.serial_number ?? null,
+      battery_health: params.battery_health ?? null,
+      included_accessories: params.included_accessories ?? null,
+      notes: params.notes ?? null,
+      price_override: params.price_override ?? null,
+      status: 'available',
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  return data as { id: string }
+}
+
+export async function findProductByPublicId(publicId: string): Promise<{ id: string } | null> {
+  if (!isSupabaseConfigured || !supabase) return null
+  const { data, error } = await supabase.from('products').select('id').eq('public_id', publicId).single()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return (data as any) ?? null
+}
+
+export async function findSkuByCode(skuCode: string): Promise<{ id: string } | null> {
+  if (!isSupabaseConfigured || !supabase) return null
+  const { data, error } = await supabase.from('product_skus').select('id').eq('sku_code', skuCode).single()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return (data as any) ?? null
 }
 
 // Admin listing types
@@ -333,5 +474,27 @@ export async function setSkuActive(skuId: string, isActive: boolean): Promise<vo
 export async function deleteProduct(productId: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
   const { error } = await supabase.from('products').delete().eq('id', productId)
+  if (error) throw error
+}
+
+// Add: batch operations for products
+export async function setProductsPublished(productIds: string[], published: boolean): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  if (!productIds || productIds.length === 0) return
+  const { error } = await supabase.from('products').update({ published }).in('id', productIds)
+  if (error) throw error
+}
+
+export async function deleteProducts(productIds: string[]): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  if (!productIds || productIds.length === 0) return
+  const { error } = await supabase.from('products').delete().in('id', productIds)
+  if (error) throw error
+} 
+
+// Add: delete a variant by id
+export async function deleteVariant(variantId: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const { error } = await supabase.from('product_variants').delete().eq('id', variantId)
   if (error) throw error
 } 

@@ -18,13 +18,21 @@
 -- insert into public.product_option_presets (model_id, colors, storages)
 -- values ('<IPHONE_14_MODEL_ID>', array['#1c1c1e','#f5f5f7','#bfd0dd','#e3ccb4','#ff69b4'], array['128GB','256GB','512GB']);
 
--- iPhone 15
+-- iPhone 15 (base/Plus) example preset
 -- insert into public.product_option_presets (model_id, colors, storages)
--- values ('<IPHONE_15_MODEL_ID>', array['#1c1c1e','#f5f5f7','#bfd0dd','#e3ccb4','#ffb6c1'], array['128GB','256GB','512GB']);
+-- values ('<IPHONE_15_MODEL_ID>', array['#000000','#F5F5F7','#FFB6C1','#B0E0E6'], array['128GB','256GB','512GB']);
 
--- iPhone 16
+-- iPhone 15 Pro/Pro Max example preset
 -- insert into public.product_option_presets (model_id, colors, storages)
--- values ('<IPHONE_16_MODEL_ID>', array['#1c1c1e','#f5f5f7','#bfd0dd','#e3ccb4'], array['128GB','256GB','512GB','1TB']);
+-- values ('<IPHONE_15_PRO_MODEL_ID>', array['#1C1C1E','#F5F5F7','#B39D7F','#7D7E80'], array['128GB','256GB','512GB','1TB']);
+
+-- iPhone 16 (base/Plus) example preset
+-- insert into public.product_option_presets (model_id, colors, storages)
+-- values ('<IPHONE_16_MODEL_ID>', array['#000000','#FFFFFF','#FF6B9E','#00B3A6','#1A4DB3'], array['128GB','256GB','512GB']);
+
+-- iPhone 16 Pro/Pro Max example preset
+-- insert into public.product_option_presets (model_id, colors, storages)
+-- values ('<IPHONE_16_PRO_MODEL_ID>', array['#3D3D3F','#F5F5F7','#B39D7F','#A3562B'], array['128GB','256GB','512GB','1TB']);
 
 -- If you maintain separate variants (e.g., Pro/Pro Max), prefer variant-level presets:
 -- insert into public.product_option_presets (variant_id, colors, storages)

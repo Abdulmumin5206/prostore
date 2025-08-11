@@ -18,6 +18,7 @@ import {
   Variant,
   getOptionPresetForModel,
   getOptionPresetForVariant,
+  createSecondHandItem,
 } from '../../lib/db'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 
@@ -27,6 +28,19 @@ type Condition = 'new' | 'second_hand'
 
 const defaultColors = ['#000000', '#ffffff', '#1c1c1e', '#f5f5f7', '#7d7e80', '#bfd0dd', '#e3ccb4']
 const defaultStorages = ['64GB','128GB','256GB','512GB','1TB']
+
+// Helper to parse color tokens from presets: "Name|#HEX" or just "#HEX"/name
+function parseColorToken(token: string): { name: string; hex: string } {
+  if (!token) return { name: '', hex: '#000000' }
+  const parts = token.split('|')
+  if (parts.length === 2) {
+    return { name: parts[0], hex: parts[1] }
+  }
+  const isHex = /^#?[0-9a-fA-F]{3,8}$/.test(token)
+  return isHex
+    ? { name: token.toUpperCase(), hex: token.startsWith('#') ? token : `#${token}` }
+    : { name: token, hex: '#000000' }
+}
 
 type Props = { onSaved?: () => void }
 
@@ -56,6 +70,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
 
   const [storage, setStorage] = useState<string>('128GB')
   const [color, setColor] = useState<string>('#1c1c1e')
+  const [colorName, setColorName] = useState<string>('')
 
   const [basePrice, setBasePrice] = useState<string>('999')
   const [currency, setCurrency] = useState<string>('USD')
@@ -64,6 +79,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [quantity, setQuantity] = useState<string>('10')
 
   const [images, setImages] = useState<{ url: string; is_primary?: boolean }[]>([])
+
+  const [secondHandGrade, setSecondHandGrade] = useState<'A'|'B'|'C'>('A')
+  const [secondHandBatteryHealth, setSecondHandBatteryHealth] = useState<string>('')
+  const [secondHandSerial, setSecondHandSerial] = useState<string>('')
+  const [secondHandNotes, setSecondHandNotes] = useState<string>('')
 
   const brandName = useMemo(() => brands.find(b=>b.id===brandId)?.name || '', [brands, brandId])
   const familyName = useMemo(() => families.find(f=>f.id===familyId)?.name || '', [families, familyId])
@@ -78,6 +98,12 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     // Simple SEO-friendly suggestion
     return `${base} – ${conditionLabel} | Best Price in ${currency}`
   }, [brandName, familyName, modelName, variantName, storage, condition, currency])
+
+  // Derive parsed colors from presets or defaults for rendering and selection
+  const availableColors = useMemo(() => {
+    const source = (presetColors ?? defaultColors)
+    return source.map(parseColorToken)
+  }, [presetColors])
 
   const previewCard = useMemo(() => ({
     id: 'preview',
@@ -102,6 +128,41 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     })()
   }, [])
 
+  // Auto-derive category based on selected family (Apple product)
+  function computeCategoryForFamily(famName: string): { slug: string; name: string } | null {
+    const n = famName.toLowerCase()
+    if (!n) return null
+    if (n.includes('iphone')) return { slug: 'phones', name: 'Phones' }
+    if (n.includes('ipad')) return { slug: 'tablets', name: 'Tablets' }
+    if (n.includes('macbook')) return { slug: 'laptops', name: 'Laptops' }
+    if (n.includes('imac') || n.includes('mac mini') || n.includes('mac studio')) return { slug: 'desktops', name: 'Desktops' }
+    if (n.includes('watch')) return { slug: 'wearables', name: 'Wearables' }
+    if (n.includes('airpods')) return { slug: 'audio', name: 'Audio' }
+    if (n.includes('tv')) return { slug: 'tv', name: 'TV' }
+    if (n.includes('homepod')) return { slug: 'smart-home', name: 'Smart Home' }
+    return { slug: 'accessories', name: 'Accessories' }
+  }
+
+  useEffect(() => {
+    // Clear category when family cleared
+    if (!familyId) { setCategoryId(''); return }
+    const fam = families.find(f => f.id === familyId)
+    const mapping = computeCategoryForFamily(fam?.name || '')
+    if (!mapping) return
+    const existing = categories.find(c => c.slug.toLowerCase() === mapping.slug)
+    if (existing) {
+      setCategoryId(existing.id)
+    } else {
+      ;(async () => {
+        try {
+          const created = await createCategory(mapping.name)
+          setCategories(prev => [...prev, created])
+          setCategoryId(created.id)
+        } catch {}
+      })()
+    }
+  }, [familyId, families, categories])
+
   // Load families when brand changes
   useEffect(() => {
     setFamilies([]); setFamilyId('')
@@ -115,6 +176,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       } catch (e:any) { setError(e.message) }
     })()
   }, [brandId])
+
+  // Additionally clear selection-dependent inputs
+  useEffect(() => { setVariantId('') }, [modelId])
+  useEffect(() => { setModelId(''); setVariantId('') }, [familyId])
+  useEffect(() => { /* already cleared above on brand change */ }, [brandId])
 
   // Load models when family changes
   useEffect(() => {
@@ -261,7 +327,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setError(null)
     setSuccess(null)
     try {
-      await createProductWithSku({
+      const { product_id, sku_id } = await createProductWithSku({
         brand_id: brandId,
         category_id: categoryId,
         family: familyName || null,
@@ -273,7 +339,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         images: images.map((im, i) => ({ url: im.url, is_primary: i === 0 })),
         sku: {
           condition,
-          attributes: { storage, color },
+          attributes: { storage, color, ...(colorName ? { color_name: colorName } : {}) },
           price: {
             currency,
             base_price: Number(basePrice),
@@ -283,6 +349,20 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           inventory: { quantity: Number(quantity) },
         },
       })
+
+      // If second-hand, optionally create an initial unique unit
+      if (condition === 'second_hand') {
+        await createSecondHandItem({
+          sku_id,
+          grade: secondHandGrade,
+          serial_number: secondHandSerial || null,
+          battery_health: secondHandBatteryHealth ? Number(secondHandBatteryHealth) : null,
+          included_accessories: null,
+          notes: secondHandNotes || null,
+          price_override: null,
+        })
+      }
+
       setSuccess('Product saved successfully.')
       if (onSaved) onSaved()
       // reset minimal form state
@@ -298,12 +378,17 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       setPublished(false)
       setStorage('128GB')
       setColor('#1c1c1e')
+      setColorName('')
       setBasePrice('999')
       setCurrency('USD')
       setDiscountPercent('')
       setDiscountAmount('')
       setQuantity('10')
       setImages([])
+      setSecondHandGrade('A')
+      setSecondHandBatteryHealth('')
+      setSecondHandSerial('')
+      setSecondHandNotes('')
       // auto hide success after 2.5s
       setTimeout(()=> setSuccess(null), 2500)
     } catch (e: any) {
@@ -360,21 +445,12 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addBrandInline}>+ New</button>
               </div>
             </div>
+            {/* Removed Category manual selection; it is auto-set from family */}
             <div>
-              <label className="text-xs text-white/60">Category</label>
-              <div className="flex gap-2 mt-1">
-                <select className="flex-1 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={categoryId} onChange={e=>setCategoryId(e.target.value)}>
-                  <option value="">Select category</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addCategoryInline}>+ New</button>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-white/60">Family</label>
+              <label className="text-xs text-white/60">Product line (family)</label>
               <div className="flex gap-2 mt-1">
                 <select disabled={!brandId} className="flex-1 disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={familyId} onChange={e=>setFamilyId(e.target.value)}>
-                  <option value="">{brandId ? 'Select family' : 'Select brand first'}</option>
+                  <option value="">{brandId ? 'Select product line' : 'Select brand first'}</option>
                   {families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
                 <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addFamilyInline}>+ New</button>
@@ -384,7 +460,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <label className="text-xs text-white/60">Model</label>
               <div className="flex gap-2 mt-1">
                 <select disabled={!familyId} className="flex-1 disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={modelId} onChange={e=>setModelId(e.target.value)}>
-                  <option value="">{familyId ? 'Select model' : 'Select family first'}</option>
+                  <option value="">{familyId ? 'Select model' : 'Select product line first'}</option>
                   {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
                 <button className="text-xs px-2 rounded-md bg-white/10 border border-white/10" onClick={addModelInline}>+ New</button>
@@ -425,8 +501,14 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             <div>
               <label className="text-xs text-white/60">Color</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {(presetColors ?? defaultColors).map(c => (
-                  <button key={c} className={`h-8 w-8 rounded-full border ${color===c?'ring-2 ring-white':''}`} style={{ backgroundColor: c }} onClick={()=>setColor(c)} />
+                {availableColors.map(({ name, hex }) => (
+                  <button
+                    key={name + hex}
+                    className={`h-8 w-8 rounded-full border ${color===hex?'ring-2 ring-white':''}`}
+                    style={{ backgroundColor: hex }}
+                    title={name || hex}
+                    onClick={() => { setColor(hex); setColorName(name) }}
+                  />
                 ))}
               </div>
             </div>
@@ -467,6 +549,35 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 ))}
               </div>
             </div>
+
+            {condition === 'second_hand' && (
+              <div className="md:col-span-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                <div className="text-xs text-white/60 mb-2">Second‑hand Details</div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-xs text-white/60">Grade</label>
+                    <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandGrade} onChange={e=>setSecondHandGrade(e.target.value as any)}>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/60">Battery Health %</label>
+                    <input type="number" min="0" max="100" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandBatteryHealth} onChange={e=>setSecondHandBatteryHealth(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/60">Serial Number</label>
+                    <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandSerial} onChange={e=>setSecondHandSerial(e.target.value)} />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="text-xs text-white/60">Notes</label>
+                    <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandNotes} onChange={e=>setSecondHandNotes(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 

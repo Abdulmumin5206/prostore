@@ -18,32 +18,62 @@ interface MacProduct {
 
 const AppleNotebooksSection: React.FC = () => {
   const macProducts: MacProduct[] = [
+    // MacBook Air models
     {
-      id: 'macbook-air-m3',
-      name: 'MacBook Air M3',
-      description: 'The most versatile MacBook Air ever. Now with the M3 chip.',
+      id: 'macbook-air-13-m4',
+      name: 'MacBook Air 13" (M4)',
+      description: 'The most powerful MacBook Air ever. Now with the M4 chip.',
+      price: 'From $1199',
+      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-m3-midnight-select-202403?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1707780024707',
+      link: '/mac/macbook-air-13/m4',
+      features: ['M4 chip', 'Up to 10-core CPU', 'Up to 32GB unified memory', 'Up to 20 hours battery life']
+    },
+    {
+      id: 'macbook-air-15-m4',
+      name: 'MacBook Air 15" (M4)',
+      description: 'Incredibly thin. Impressively large. Supercharged by M4.',
+      price: 'From $1299',
+      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-m3-midnight-select-202403?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1707780024707',
+      link: '/mac/macbook-air-15/m4',
+      features: ['M4 chip', 'Up to 10-core CPU', 'Up to 32GB unified memory', 'Up to 18 hours battery life']
+    },
+    {
+      id: 'macbook-air-13-m3',
+      name: 'MacBook Air 13" (M3)',
+      description: 'The world\'s best consumer laptop now with the M3 chip.',
       price: 'From $1099',
       image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-m3-midnight-select-202403?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1707780024707',
-      link: '/mac/macbook-air-m3',
-      features: ['M3 chip', 'Up to 18-core GPU', 'Up to 24GB unified memory']
+      link: '/mac/macbook-air-13/m3',
+      features: ['M3 chip', 'Up to 10-core GPU', 'Up to 24GB unified memory', 'Up to 18 hours battery life']
+    },
+    
+    // MacBook Pro models
+    {
+      id: 'macbook-pro-13-m4',
+      name: 'MacBook Pro 13" (M4)',
+      description: 'Pro power. Pro portability. Pro level performance with M4.',
+      price: 'From $1299',
+      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp-spacegray-select-202206?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1664497359481',
+      link: '/mac/macbook-pro-13/m4',
+      features: ['M4 chip', 'Up to 12-core GPU', 'Up to 32GB unified memory', 'Up to 20 hours battery life']
     },
     {
-      id: 'macbook-pro-14',
-      name: 'MacBook Pro 14"',
-      description: 'Supercharged by M3 Pro and M3 Max. Built for pros.',
+      id: 'macbook-pro-15-m4',
+      name: 'MacBook Pro 15" (M4)',
+      description: 'The ultimate pro laptop. Now with M4 Pro and M4 Max.',
       price: 'From $1999',
-      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-pro-14-m3-max-pro-spaceblack-select-202310?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1696962662664',
-      link: '/mac/macbook-pro-14',
-      features: ['M3 Pro or M3 Max', 'Up to 22-core GPU', 'Up to 128GB unified memory']
+      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp-spacegray-select-202206?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1664497359481',
+      link: '/mac/macbook-pro-15/m4',
+      features: ['M4 Pro or M4 Max', 'Up to 40-core GPU', 'Up to 96GB unified memory', 'Up to 22 hours battery life']
     },
     {
-      id: 'macbook-pro-16',
-      name: 'MacBook Pro 16"',
-      description: 'The most powerful MacBook Pro ever. Now with M3 Pro and M3 Max.',
-      price: 'From $2499',
-      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-pro-16-m3-max-pro-spaceblack-select-202310?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1696962662664',
-      link: '/mac/macbook-pro-16',
-      features: ['M3 Pro or M3 Max', 'Up to 40-core GPU', 'Up to 128GB unified memory']
+      id: 'macbook-pro-13-m3',
+      name: 'MacBook Pro 13" (M3)',
+      description: 'Pro anywhere. With the power-efficient performance of M3.',
+      price: 'From $1299',
+      image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp-spacegray-select-202206?wid=800&hei=800&fmt=jpeg&qlt=90&.v=1664497359481',
+      link: '/mac/macbook-pro-13/m3',
+      features: ['M3 chip', 'Up to 10-core GPU', 'Up to 24GB unified memory', 'Up to 18 hours battery life']
     }
   ];
 

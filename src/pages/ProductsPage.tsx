@@ -39,18 +39,47 @@ async function fetchLiveProducts(): Promise<Product[]> {
       }
     }
 
-    return rows.map((r) => {
-      const images = productIdToImages[r.product_id] ?? [r.primary_image || '']
+    // Group by product_id to aggregate variants across SKUs
+    const byProduct: Record<string, PublicProduct[]> = {}
+    for (const r of rows) {
+      if (!byProduct[r.product_id]) byProduct[r.product_id] = []
+      byProduct[r.product_id].push(r)
+    }
+
+    return Object.values(byProduct).map(group => {
+      const r0 = group[0]
+      const images = productIdToImages[r0.product_id] ?? [r0.primary_image || '']
+      // Unique colors (hex) and storages
+      const colorSet = new Set<string>()
+      const storageSet = new Set<string>()
+      let minPrice = Number.POSITIVE_INFINITY
+      for (const r of group) {
+        const attrs: any = (r as any).attributes || {}
+        if (typeof attrs.color === 'string' && attrs.color) {
+          colorSet.add(attrs.color)
+        }
+        if (typeof attrs.storage === 'string' && attrs.storage) {
+          storageSet.add(attrs.storage)
+        }
+        if (typeof r.effective_price === 'number') {
+          minPrice = Math.min(minPrice, Number(r.effective_price))
+        }
+      }
+      const colors = Array.from(colorSet)
+      const storages = Array.from(storageSet)
+      const price = Number.isFinite(minPrice) ? minPrice : Number(r0.effective_price)
+
       return {
-        id: r.sku_id,
-        category: r.category,
-        name: r.title,
+        id: r0.product_id,
+        category: r0.category,
+        name: r0.title,
         image: images[0] || '',
         images,
-        colors: typeof (r as any).attributes?.color === 'string' ? [(r as any).attributes.color] : [],
-        priceFrom: `${r.currency === 'USD' ? '$' : ''}${Number(r.effective_price).toFixed(2)}`,
-        monthlyFrom: `${r.currency === 'USD' ? '$' : ''}${(Number(r.effective_price)/24).toFixed(2)}/mo. for 24 mo.`,
-        tags: [r.brand.toLowerCase(), r.category.toLowerCase(), r.condition === 'second_hand' ? 'second-hand' : 'new']
+        colors,
+        storages,
+        priceFrom: `${r0.currency === 'USD' ? '$' : ''}${Number(price).toFixed(2)}`,
+        monthlyFrom: `${r0.currency === 'USD' ? '$' : ''}${(Number(price)/24).toFixed(2)}/mo. for 24 mo.`,
+        tags: [r0.brand.toLowerCase(), r0.category.toLowerCase(), r0.condition === 'second_hand' ? 'second-hand' : 'new']
       }
     })
   } catch (e) {
@@ -69,6 +98,7 @@ interface Product {
   image: string;
   images: string[]; // Array of multiple images
   colors: string[];
+  storages: string[];
   priceFrom: string;
   monthlyFrom: string;
   tags: string[];
@@ -231,7 +261,7 @@ const ProductsPage: React.FC = () => {
       // Filter by storage
       if (selectedStorage !== 'All') {
         result = result.filter(product => 
-          product.name.toLowerCase().includes(selectedStorage.toLowerCase())
+          product.storages.some(storage => storage.toLowerCase() === selectedStorage.toLowerCase())
         );
       }
 

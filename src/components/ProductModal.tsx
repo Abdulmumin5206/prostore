@@ -12,6 +12,7 @@ interface ProductModalProps {
     name: string;
     image: string;
     colors: string[];
+    storages?: string[];
     priceFrom: string;
     monthlyFrom: string;
     description?: string;
@@ -84,29 +85,33 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, product })
                 ))}
               </div>
             </div>
+
+            {/* Storage Options */}
+            {product.storages && product.storages.length > 0 && (
+              <div className="mb-6">
+                <Text weight="medium" className="mb-2">Storage:</Text>
+                <div className="flex flex-wrap gap-2">
+                  {product.storages.map((s, idx) => (
+                    <span key={idx} className={`px-3 py-1 rounded-md border text-sm ${idx===0? 'bg-blue-50 dark:bg-blue-900/10 border-blue-400 text-blue-600 dark:text-blue-300':'border-gray-300 dark:border-gray-600'}`}>
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Pricing */}
             <div className="mb-6">
-              <ApplePrice className="text-2xl mb-1">{product.priceFrom}</ApplePrice>
-              <Text size="sm" color="tertiary">or {product.monthlyFrom}</Text>
+              <ApplePrice className="text-2xl mb-1">
+                {product.priceFrom}
+              </ApplePrice>
+              <Text color="tertiary">{product.monthlyFrom}</Text>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                variant="primary" 
-                size="medium" 
-                className="w-full sm:w-auto"
-              >
-                Add to Bag
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="medium" 
-                className="w-full sm:w-auto"
-              >
-                Save for Later
-              </Button>
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button variant="primary">Add to Bag</Button>
+              <Button variant="secondary">Learn more</Button>
             </div>
           </div>
         </div>
