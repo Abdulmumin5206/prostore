@@ -40,7 +40,9 @@ const AdminPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState<string>('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [conditionFilter, setConditionFilter] = useState<'all'|'new'|'second_hand'>('all')
   const [bulkWorking, setBulkWorking] = useState<boolean>(false)
+  const [showMobileSearch, setShowMobileSearch] = useState<boolean>(false)
 
   const refreshProducts = async () => {
     try {
@@ -58,15 +60,15 @@ const AdminPage: React.FC = () => {
 
   const filtered = adminProducts.filter((p) => {
     const q = search.trim().toLowerCase()
-    if (!q) return true
-    const fields = [
+    const matchesSearch = !q || [
       p.title?.toLowerCase() ?? '',
       p.brandName?.toLowerCase() ?? '',
       p.categoryName?.toLowerCase() ?? '',
       (p.productCode ?? '').toLowerCase(),
       (p.skuCode ?? '').toLowerCase(),
-    ]
-    return fields.some((f) => f.includes(q))
+    ].some((f) => f.includes(q))
+    const matchesCondition = conditionFilter === 'all' || p.condition === conditionFilter
+    return matchesSearch && matchesCondition
   })
 
   const allSelected = filtered.length > 0 && filtered.every(p => selectedIds.has(p.productId))
@@ -128,7 +130,8 @@ const AdminPage: React.FC = () => {
             <span className="text-white/30">/</span>
             <span className="font-semibold">ProStore Admin</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Desktop search */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
               <SearchIcon className="h-4 w-4 text-white/40" />
               <input
@@ -138,22 +141,47 @@ const AdminPage: React.FC = () => {
                 className="bg-transparent text-sm outline-none placeholder:text-white/40 w-72"
               />
             </div>
+            {/* Mobile search toggle */}
+            <button
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-white/10 bg-white/5"
+              aria-label="Search"
+              onClick={() => setShowMobileSearch((v) => !v)}
+            >
+              <SearchIcon className="h-4 w-4" />
+            </button>
             <ThemeToggle />
             <button
               onClick={signOut}
               className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
+        {/* Mobile search bar */}
+        {showMobileSearch && (
+          <div className="md:hidden border-t border-white/10">
+            <div className="max-w-[120rem] mx-auto px-4 py-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                <SearchIcon className="h-4 w-4 text-white/40" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e)=>setSearch(e.target.value)}
+                  placeholder="Search products, PRD-/SKU- code"
+                  className="bg-transparent text-sm outline-none placeholder:text-white/40 w-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Body */}
-      <div className="max-w-[120rem] mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-        {/* Sidebar */}
-        <aside className="md:sticky md:top-16 h-fit">
+      <div className="max-w-[120rem] mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 pb-24 md:pb-6">
+        {/* Sidebar (hidden on mobile; bottom nav used instead) */}
+        <aside className="hidden md:sticky md:top-16 md:block h-fit">
           <nav className="space-y-1">
             {navItems.map(({ key, label, icon: Icon }) => (
               <button
@@ -164,6 +192,7 @@ const AdminPage: React.FC = () => {
                     ? 'bg-white text-black border-white'
                     : 'bg-white/0 text-white/80 hover:bg-white/10 border-white/10'
                 }`}
+                aria-current={active === key ? 'page' : undefined}
               >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -295,11 +324,36 @@ const AdminPage: React.FC = () => {
               {/* Existing Products List */}
               <section className="rounded-2xl bg-white/5 border border-white/10">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <h2 className="text-sm font-semibold">Products</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-sm font-semibold">Products</h2>
+                    {/* Filter chips hidden on mobile for compactness */}
+                    <div className="hidden md:flex items-center gap-2 ml-2 text-xs">
+                      <span className="text-white/50">Type:</span>
+                      <button
+                        onClick={()=>setConditionFilter('all')}
+                        className={`px-3 py-1.5 rounded-lg border transition-colors ${conditionFilter==='all' ? 'bg-white text-black border-white' : 'bg-white/0 text-white/80 border-white/10 hover:bg-white/10'}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={()=>setConditionFilter('new')}
+                        className={`px-3 py-1.5 rounded-lg border transition-colors ${conditionFilter==='new' ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/0 text-white/80 border-emerald-500/40 hover:bg-emerald-500/10'}`}
+                      >
+                        New
+                      </button>
+                      <button
+                        onClick={()=>setConditionFilter('second_hand')}
+                        className={`px-3 py-1.5 rounded-lg border transition-colors ${conditionFilter==='second_hand' ? 'bg-rose-500 text-black border-rose-400' : 'bg-white/0 text-white/80 border-rose-500/40 hover:bg-rose-500/10'}`}
+                      >
+                        Second‑hand
+                      </button>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <label className="inline-flex items-center gap-2 text-xs text-white/70">
                       <input type="checkbox" className="h-4 w-4 rounded border-white/20 bg-black/20" checked={allSelected} onChange={toggleSelectAllFiltered} />
-                      Select all
+                      <span className="hidden sm:inline">Select all</span>
+                      <span className="sm:hidden">All</span>
                     </label>
                     <button onClick={refreshProducts} className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Refresh</button>
                   </div>
@@ -328,31 +382,36 @@ const AdminPage: React.FC = () => {
                         checked={selectedIds.has(p.productId)}
                         onChange={() => toggleSelectOne(p.productId)}
                       />
-                      <img src={p.primaryImage || ''} alt={p.title} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{p.title}</p>
-                        <p className="text-xs text-white/60">{p.brandName} • {p.categoryName}</p>
+                      <Link to={`/store/${p.productId}`} target="_blank" className="shrink-0">
+                        <img src={p.primaryImage || ''} alt={p.title} className="h-12 w-12 object-cover rounded-md border border-white/10 bg-white/5" />
+                      </Link>
+                      <Link to={`/store/${p.productId}`} target="_blank" className="flex-1 min-w-0 group">
+                        <p className="text-sm font-medium truncate group-hover:underline">{p.title || `${p.brandName ?? ''} ${p.categoryName ?? ''}`.trim()}</p>
+                        <p className="text-xs text-white/60 flex items-center gap-2">
+                          <span>{p.brandName} • {p.categoryName}</span>
+                          {p.condition && (
+                            <span className={`px-1.5 py-0.5 rounded border text-[10px] ${p.condition==='new' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'}`}>{p.condition==='new'?'New':'Second‑hand'}</span>
+                          )}
+                        </p>
                         {(p.productCode || p.skuCode) && (
                           <p className="text-[10px] text-white/40 mt-0.5">{p.productCode ? `Product: ${p.productCode}` : ''}{p.productCode && p.skuCode ? ' • ' : ''}{p.skuCode ? `SKU: ${p.skuCode}` : ''}</p>
                         )}
+                      </Link>
+                      <div className="hidden sm:block text-xs w-28 text-right">
+                        {p.effectivePrice != null ? (
+                          <span className="font-semibold">${p.effectivePrice.toFixed(2)}</span>
+                        ) : (
+                          <span className="text-white/60">—</span>
+                        )}
                       </div>
-                      <div className="hidden sm:block text-xs w-40">
+                      <div className="hidden sm:block text-xs w-36">
                         <span className={`px-2 py-0.5 rounded border ${p.published ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/10 text-white/70 border-white/20'}`}>{p.published ? 'Published' : 'Hidden'}</span>
-                      </div>
-                      <div className="hidden sm:block text-xs w-40">
-                        <span className={`px-2 py-0.5 rounded border ${p.skuActive ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/10 text-white/70 border-white/20'}`}>{p.skuActive ? 'Active' : 'Disabled'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={async ()=>{ await setProductPublished(p.productId, !p.published); refreshProducts(); }}
+                          onClick={async ()=>{ const makeVisible = !p.published; await setProductPublished(p.productId, makeVisible); if (p.skuId) { await setSkuActive(p.skuId!, makeVisible) }; refreshProducts(); }}
                           className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10"
                         >{p.published ? 'Hide' : 'Publish'}</button>
-                        {p.skuId && (
-                          <button
-                            onClick={async ()=>{ await setSkuActive(p.skuId!, !(p.skuActive ?? true)); refreshProducts(); }}
-                            className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
-                          >{p.skuActive ? 'Disable' : 'Enable'}</button>
-                        )}
                         <button
                           onClick={async ()=>{ if (confirm('Delete this product? This cannot be undone.')) { await deleteProduct(p.productId); refreshProducts(); } }}
                           className="text-xs px-2.5 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200"
@@ -377,6 +436,37 @@ const AdminPage: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* Mobile bulk action bar (fixed above bottom nav) */}
+      {someSelected && (
+        <div className="md:hidden fixed bottom-16 inset-x-0 z-40">
+          <div className="mx-4 rounded-xl border border-white/10 bg-black/80 backdrop-blur p-2 flex items-center justify-between">
+            <div className="text-xs text-white/70">{selectedIds.size} selected</div>
+            <div className="flex items-center gap-2">
+              <button disabled={bulkWorking} onClick={() => performBulkPublish(true)} className="text-xs px-2.5 py-1.5 rounded-md bg-emerald-500 text-black disabled:opacity-50">Publish</button>
+              <button disabled={bulkWorking} onClick={() => performBulkPublish(false)} className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 border border-white/10 disabled:opacity-50">Hide</button>
+              <button disabled={bulkWorking} onClick={performBulkDelete} className="text-xs px-2.5 py-1.5 rounded-md bg-red-500 text-black disabled:opacity-50">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom tab bar (mobile only) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-black/80 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+        <div className="max-w-[120rem] mx-auto grid grid-cols-5">
+          {navItems.slice(0,5).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => { setActive(key); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              className={`flex flex-col items-center justify-center gap-1 py-2 text-[11px] ${active===key ? 'text-white' : 'text-white/70'}`}
+              aria-current={active === key ? 'page' : undefined}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="truncate max-w-20">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

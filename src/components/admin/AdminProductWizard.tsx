@@ -50,6 +50,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
 
   const [brands, setBrands] = useState<Brand[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -115,6 +116,12 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     priceFrom: `$${Number(basePrice || '0').toFixed(2)}`,
     monthlyFrom: `$${(Number(basePrice || '0')/24).toFixed(2)}/mo. for 24 mo.`,
   }), [familyName, title, images, color, basePrice])
+
+  const [previewImageIndex, setPreviewImageIndex] = useState<number>(0)
+  useEffect(() => {
+    // Reset to first image when image list changes
+    setPreviewImageIndex(0)
+  }, [images])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -388,6 +395,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       }
 
       setSuccess('Product saved successfully.')
+      setShowSuccessModal(true)
       if (onSaved) onSaved()
       resetForm()
       // auto hide success after 2.5s
@@ -430,46 +438,48 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
 
   return (
     <div className={`rounded-2xl bg-white/5 border relative ${condition === 'new' ? 'border-emerald-500/40' : condition === 'second_hand' ? 'border-rose-500/40' : 'border-white/10'}`}>
-      {/* toast */}
-      {success && (
+      {/* toast (suppressed when modal is open) */}
+      {success && !showSuccessModal && (
         <div className="absolute top-2 right-2 z-10 px-3 py-2 rounded-md bg-emerald-500 text-black text-xs shadow">
           {success}
         </div>
       )}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <h2 className="text-sm font-semibold">Add Product</h2>
-        <div className="text-xs text-white/60">{step === 1 ? 'Build' : 'Preview & Publish'}</div>
+        <div className="text-xs text-white/60">{step === 1 ? 'Build' : 'Preview'}</div>
       </div>
 
       {error && (
         <div className="m-4 p-3 text-sm rounded-lg bg-red-500/10 border border-red-400/20 text-red-200">{error}</div>
       )}
-      {success && (
+      {success && !showSuccessModal && (
         <div className="m-4 p-3 text-sm rounded-lg bg-emerald-500/10 border border-emerald-400/20 text-emerald-200">{success}</div>
       )}
 
-      <div className="p-4 space-y-6">
-        {/* Condition toggle - always visible */}
-        <div className="space-y-2">
-          <div className="text-sm text-white/80">Condition</div>
-          <div className={`inline-flex rounded-lg border ${condition==='new' ? 'border-emerald-500/40' : condition==='second_hand' ? 'border-rose-500/40' : 'border-white/10'}`}>
-            <button
-              type="button"
-              onClick={() => setCondition('new')}
-              className={`px-4 py-2 text-sm rounded-l-lg border-r ${condition==='new' ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/0 text-white/80 border-white/10 hover:bg-white/5'}`}
-            >
-              New
-            </button>
-            <button
-              type="button"
-              onClick={() => setCondition('second_hand')}
-              className={`px-4 py-2 text-sm rounded-r-lg ${condition==='second_hand' ? 'bg-rose-500 text-black border-rose-400' : 'bg-white/0 text-white/80 hover:bg-white/5'}`}
-              style={{ borderLeftWidth: 0, borderColor: condition==='second_hand' ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.1)' }}
-            >
-              Second‑hand
-            </button>
+      <div className="p-4 space-y-4">
+        {/* Condition toggle - only on step 1 */}
+        {step === 1 && (
+          <div className="space-y-2">
+            <div className="text-sm text-white/80">Condition</div>
+            <div className={`inline-flex rounded-lg border ${condition==='new' ? 'border-emerald-500/40' : condition==='second_hand' ? 'border-rose-500/40' : 'border-white/10'}`}>
+              <button
+                type="button"
+                onClick={() => setCondition('new')}
+                className={`px-4 py-2 text-sm rounded-l-lg border-r ${condition==='new' ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/0 text-white/80 border-white/10 hover:bg-white/5'}`}
+              >
+                New
+              </button>
+              <button
+                type="button"
+                onClick={() => setCondition('second_hand')}
+                className={`px-4 py-2 text-sm rounded-r-lg ${condition==='second_hand' ? 'bg-rose-500 text-black border-rose-400' : 'bg-white/0 text-white/80 hover:bg-white/5'}`}
+                style={{ borderLeftWidth: 0, borderColor: condition==='second_hand' ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.1)' }}
+              >
+                Second‑hand
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {step === 1 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -631,26 +641,45 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         )}
 
         {step === 2 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <div className="text-sm text-white/80 mb-2">Preview Card</div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div className="text-sm text-white/80 mb-1.5">Preview</div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
                 <div className="text-xs text-white/60">{previewCard.category}</div>
-                <div className="font-semibold mt-1">{previewCard.name}</div>
-                <img src={previewCard.image} className="mt-4 rounded-lg w-full h-40 object-cover" />
-                <div className="flex gap-2 mt-4">
-                  {previewCard.colors.map((c,i)=> (
-                    <div key={i} className="w-4 h-4 rounded-full border" style={{ backgroundColor: c }} />
-                  ))}
+                <div className="font-semibold mt-0.5 text-sm md:text-base">{previewCard.name}</div>
+                <div className="mt-2">
+                  <img
+                    src={(images[previewImageIndex]?.url) || previewCard.image}
+                    className="rounded-lg w-full h-44 object-cover"
+                  />
                 </div>
-                <div className="text-sm mt-3">From {previewCard.priceFrom}</div>
+                {images.length > 1 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto">
+                    {images.map((im, idx) => (
+                      <button
+                        key={idx}
+                        className={`h-14 w-14 flex-shrink-0 rounded-md border ${idx===previewImageIndex? 'ring-2 ring-white border-white' : 'border-white/10'}`}
+                        onClick={()=> setPreviewImageIndex(idx)}
+                      >
+                        <img src={im.url} className="h-full w-full object-cover rounded-md" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {previewCard.colors.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {previewCard.colors.map((c,i)=> (
+                      <div key={i} className="w-4 h-4 rounded-full border" style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                )}
+                <div className="text-sm mt-2">From {previewCard.priceFrom}</div>
                 <div className="text-xs text-white/60">or {previewCard.monthlyFrom}</div>
               </div>
             </div>
             <div className="self-start">
-              <div className="text-sm text-white/80 mb-2">Summary</div>
-              <ul className="text-sm text-white/80 space-y-1">
-                <li>Type: {condition === 'new' ? 'New' : condition === 'second_hand' ? 'Second‑hand' : '-'}</li>
+              <div className="text-sm text-white/80 mb-1.5">Summary</div>
+              <ul className="text-xs text-white/80 space-y-1">
                 <li>Brand: {brandName || '-'}</li>
                 <li>Category: {categories.find(c=>c.id===categoryId)?.name || '-'}</li>
                 <li>Family/Model/Variant: {[familyName, modelName, variantName].filter(Boolean).join(' / ') || '-'}</li>
@@ -660,9 +689,6 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <li>Images: {images.length}</li>
                 <li>Title: {title || titleSuggestion || '-'}</li>
               </ul>
-              <div className="mt-3">
-                <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" className="accent-white" checked={published} onChange={e=>setPublished(e.target.checked)} /> Publish on save</label>
-              </div>
             </div>
           </div>
         )}
@@ -677,6 +703,28 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           {step===2 && <button disabled={loading || !isSupabaseConfigured} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black" onClick={onSave}>Save Product</button>}
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-black border border-white/10 p-5 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <svg className="h-5 w-5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.378 7.377a1 1 0 01-1.415 0L3.296 9.768a1 1 0 111.415-1.415l3.2 3.2 6.67-6.67a1 1 0 011.415 0z" clipRule="evenodd"/></svg>
+              <div className="font-semibold">Success</div>
+            </div>
+            <div className="text-sm text-white/80 mb-4">Product has been saved{published ? ' and published' : ''} successfully.</div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-xs px-3 py-1.5 rounded-lg bg-white text-black border border-white"
+                onClick={() => { setShowSuccessModal(false); setSuccess(null) }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

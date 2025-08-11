@@ -160,7 +160,7 @@ const ProductsPage: React.FC = () => {
   const [selectedQuickFilter, setSelectedQuickFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [visibleProducts, setVisibleProducts] = useState<number>(12); // Show 3 rows of 4 products initially
@@ -187,6 +187,9 @@ const ProductsPage: React.FC = () => {
   const [expandedFilters, setExpandedFilters] = useState<{[key: string]: boolean}>({});
   const [showAllFilterSections, setShowAllFilterSections] = useState<boolean>(false);
 
+  // Track that the initial fetch has completed to avoid flicker
+  const [hasLoadedOnce, setHasLoadedOnce] = useState<boolean>(false);
+
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -194,149 +197,144 @@ const ProductsPage: React.FC = () => {
       setSourceProducts(live);
       setFilteredProducts(live);
       setIsLoading(false);
+      setHasLoadedOnce(true);
     })();
   }, []);
 
   // Apply filters when dependencies change
   useEffect(() => {
-    // Set loading state
-    setIsLoading(true);
-    
-    // Simulate a small delay to show loading state (can be removed in production)
-    const timeoutId = setTimeout(() => {
-      let result = [...sourceProducts];
+    // Avoid triggering loading state before the first load completes
+    if (!hasLoadedOnce) return;
 
-      // Filter by category
-      if (selectedCategory !== 'All') {
-        result = result.filter(product => product.category === selectedCategory);
+    let result = [...sourceProducts];
+
+    // Filter by category
+    if (selectedCategory !== 'All') {
+      result = result.filter(product => product.category === selectedCategory);
+    }
+
+    // Filter by subcategory
+    if (selectedSubcategory) {
+      result = result.filter(product => 
+        product.name.toLowerCase().includes(selectedSubcategory.toLowerCase())
+      );
+    }
+
+    // Filter by tag
+    if (selectedTag !== 'All') {
+      result = result.filter(product => product.tags.includes(selectedTag));
+    }
+
+    // Filter by price range
+    if (selectedPriceRange.min > 0 || selectedPriceRange.max < 3000) {
+      result = result.filter(product => {
+        const price = parseFloat(product.priceFrom.replace('$', ''));
+        return price >= selectedPriceRange.min && price <= selectedPriceRange.max;
+      });
+    }
+
+    // Filter by brand
+    if (selectedBrand !== 'All') {
+      result = result.filter(product => product.category === selectedBrand);
+    }
+
+    // Filter by condition
+    if (selectedCondition !== 'All') {
+      // Simulate condition filtering
+      if (selectedCondition === 'New') {
+        result = result.filter(product => product.tags.includes('new'));
+      } else if (selectedCondition === 'Refurbished') {
+        result = result.filter((_, index) => index % 4 === 0);
+      } else if (selectedCondition === 'Used') {
+        result = result.filter((_, index) => index % 3 === 0);
       }
+    }
 
-      // Filter by subcategory
-      if (selectedSubcategory) {
-        result = result.filter(product => 
-          product.name.toLowerCase().includes(selectedSubcategory.toLowerCase())
-        );
+    // Filter by availability
+    if (selectedAvailability !== 'All') {
+      // Simulate availability filtering
+      if (selectedAvailability === 'In Stock') {
+        result = result.filter((_, index) => index % 2 === 0);
+      } else if (selectedAvailability === 'Pre-order') {
+        result = result.filter((_, index) => index % 5 === 0);
       }
+    }
 
-      // Filter by tag
-      if (selectedTag !== 'All') {
-        result = result.filter(product => product.tags.includes(selectedTag));
+    // Filter by storage
+    if (selectedStorage !== 'All') {
+      result = result.filter(product => 
+        product.storages.some(storage => storage.toLowerCase() === selectedStorage.toLowerCase())
+      );
+    }
+
+    // Filter by color
+    if (selectedColor !== 'All') {
+      result = result.filter(product => 
+        product.colors.some(color => {
+          const colorMap: { [key: string]: string[] } = {
+            'Black': ['#1c1c1e', '#555555'],
+            'White': ['#f5f5f7', '#f1f2ed'],
+            'Gold': ['#e3d0c0', '#f9e5c9', '#e3ccb4'],
+            'Blue': ['#bfd0dd'],
+            'Silver': ['#7e808e', '#7d7e80']
+          };
+          return colorMap[selectedColor]?.includes(color);
+        })
+      );
+    }
+
+    // Filter by warranty
+    if (selectedWarranty !== 'All') {
+      if (selectedWarranty === 'AppleCare+') {
+        result = result.filter(product => product.tags.includes('AppleCare+'));
       }
+    }
 
-      // Filter by price range
-      if (selectedPriceRange.min > 0 || selectedPriceRange.max < 3000) {
-        result = result.filter(product => {
-          const price = parseFloat(product.priceFrom.replace('$', ''));
-          return price >= selectedPriceRange.min && price <= selectedPriceRange.max;
-        });
-      }
-
-      // Filter by brand
-      if (selectedBrand !== 'All') {
-        result = result.filter(product => product.category === selectedBrand);
-      }
-
-      // Filter by condition
-      if (selectedCondition !== 'All') {
-        // Simulate condition filtering
-        if (selectedCondition === 'New') {
+    // Filter by quick filter
+    if (selectedQuickFilter) {
+      switch (selectedQuickFilter) {
+        case 'Deals':
+          // Simulate deals by filtering products under $600
+          result = result.filter(product => 
+            parseFloat(product.priceFrom.replace('$', '')) < 600
+          );
+          break;
+        case 'New':
           result = result.filter(product => product.tags.includes('new'));
-        } else if (selectedCondition === 'Refurbished') {
-          result = result.filter((_, index) => index % 4 === 0);
-        } else if (selectedCondition === 'Used') {
+          break;
+        case 'Second Hand':
+          // Simulate second hand by taking random products (in a real app, you'd have a property for this)
           result = result.filter((_, index) => index % 3 === 0);
-        }
+          break;
+        case 'Bestsellers':
+          // Simulate bestsellers (in a real app, you'd have a property for this)
+          result = result.filter((_, index) => index % 4 === 0 || index % 5 === 0);
+          break;
+        default:
+          break;
       }
+    }
 
-      // Filter by availability
-      if (selectedAvailability !== 'All') {
-        // Simulate availability filtering
-        if (selectedAvailability === 'In Stock') {
-          result = result.filter((_, index) => index % 2 === 0);
-        } else if (selectedAvailability === 'Pre-order') {
-          result = result.filter((_, index) => index % 5 === 0);
-        }
-      }
+    // Filter by search query
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(product => 
+        product.name.toLowerCase().includes(query) || 
+        product.category.toLowerCase().includes(query)
+      );
+    }
 
-      // Filter by storage
-      if (selectedStorage !== 'All') {
-        result = result.filter(product => 
-          product.storages.some(storage => storage.toLowerCase() === selectedStorage.toLowerCase())
-        );
-      }
+    // Apply sorting
+    if (sortBy === 'price-low') {
+      result.sort((a, b) => parseFloat(a.priceFrom.replace('$', '')) - parseFloat(b.priceFrom.replace('$', '')));
+    } else if (sortBy === 'price-high') {
+      result.sort((a, b) => parseFloat(b.priceFrom.replace('$', '')) - parseFloat(a.priceFrom.replace('$', '')));
+    } else if (sortBy === 'name') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
-      // Filter by color
-      if (selectedColor !== 'All') {
-        result = result.filter(product => 
-          product.colors.some(color => {
-            const colorMap: { [key: string]: string[] } = {
-              'Black': ['#1c1c1e', '#555555'],
-              'White': ['#f5f5f7', '#f1f2ed'],
-              'Gold': ['#e3d0c0', '#f9e5c9', '#e3ccb4'],
-              'Blue': ['#bfd0dd'],
-              'Silver': ['#7e808e', '#7d7e80']
-            };
-            return colorMap[selectedColor]?.includes(color);
-          })
-        );
-      }
-
-      // Filter by warranty
-      if (selectedWarranty !== 'All') {
-        if (selectedWarranty === 'AppleCare+') {
-          result = result.filter(product => product.tags.includes('AppleCare+'));
-        }
-      }
-
-      // Filter by quick filter
-      if (selectedQuickFilter) {
-        switch (selectedQuickFilter) {
-          case 'Deals':
-            // Simulate deals by filtering products under $600
-            result = result.filter(product => 
-              parseFloat(product.priceFrom.replace('$', '')) < 600
-            );
-            break;
-          case 'New':
-            result = result.filter(product => product.tags.includes('new'));
-            break;
-          case 'Second Hand':
-            // Simulate second hand by taking random products (in a real app, you'd have a property for this)
-            result = result.filter((_, index) => index % 3 === 0);
-            break;
-          case 'Bestsellers':
-            // Simulate bestsellers (in a real app, you'd have a property for this)
-            result = result.filter((_, index) => index % 4 === 0 || index % 5 === 0);
-            break;
-          default:
-            break;
-        }
-      }
-
-      // Filter by search query
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase();
-        result = result.filter(product => 
-          product.name.toLowerCase().includes(query) || 
-          product.category.toLowerCase().includes(query)
-        );
-      }
-
-      // Apply sorting
-      if (sortBy === 'price-low') {
-        result.sort((a, b) => parseFloat(a.priceFrom.replace('$', '')) - parseFloat(b.priceFrom.replace('$', '')));
-      } else if (sortBy === 'price-high') {
-        result.sort((a, b) => parseFloat(b.priceFrom.replace('$', '')) - parseFloat(a.priceFrom.replace('$', '')));
-      } else if (sortBy === 'name') {
-        result.sort((a, b) => a.name.localeCompare(b.name));
-      }
-
-      setFilteredProducts(result);
-      setVisibleProducts(12); // Reset pagination when filters change
-      setIsLoading(false);
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
+    setFilteredProducts(result);
+    setVisibleProducts(12); // Reset pagination when filters change
   }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, sourceProducts]);
 
   // Toggle filter expansion
@@ -1029,11 +1027,13 @@ const ProductsPage: React.FC = () => {
           )}
 
           {/* Results Count */}
-          <div className="mb-6">
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              Showing {Math.min(visibleProducts, filteredProducts.length)} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-            </Text>
-          </div>
+          {!isLoading && (
+            <div className="mb-6">
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                Showing {Math.min(visibleProducts, filteredProducts.length)} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+              </Text>
+            </div>
+          )}
 
           {/* Products Grid */}
           {isLoading ? (
