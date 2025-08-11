@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   listBrands,
   listCategories,
@@ -21,10 +21,11 @@ import {
   createSecondHandItem,
 } from '../../lib/db'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
+import AdminSelect, { AdminSelectOption } from './AdminSelect'
 
 type Step = 1 | 2
 
-type Condition = 'new' | 'second_hand'
+type Condition = 'new' | 'second_hand' | null
 
 const defaultColors = ['#000000', '#ffffff', '#1c1c1e', '#f5f5f7', '#7d7e80', '#bfd0dd', '#e3ccb4']
 const defaultStorages = ['64GB','128GB','256GB','512GB','1TB']
@@ -58,18 +59,17 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [presetStorages, setPresetStorages] = useState<string[] | null>(null)
   const [presetColors, setPresetColors] = useState<string[] | null>(null)
 
-  const [condition, setCondition] = useState<Condition>('new')
+  const [condition, setCondition] = useState<Condition>(null)
   const [brandId, setBrandId] = useState<string>('')
   const [categoryId, setCategoryId] = useState<string>('')
   const [familyId, setFamilyId] = useState<string>('')
   const [modelId, setModelId] = useState<string>('')
   const [variantId, setVariantId] = useState<string>('')
   const [title, setTitle] = useState<string>('')
-  const [description, setDescription] = useState<string>('')
   const [published, setPublished] = useState<boolean>(false)
 
-  const [storage, setStorage] = useState<string>('128GB')
-  const [color, setColor] = useState<string>('#1c1c1e')
+  const [storage, setStorage] = useState<string>('')
+  const [color, setColor] = useState<string>('')
   const [colorName, setColorName] = useState<string>('')
 
   const [basePrice, setBasePrice] = useState<string>('999')
@@ -93,10 +93,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const titleSuggestion = useMemo(() => {
     const parts = [brandName, familyName, modelName, variantName, storage]
     const base = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
-    const conditionLabel = condition === 'second_hand' ? 'Second‑hand' : 'New'
+    const conditionLabel = condition === 'second_hand' ? 'Second‑hand' : condition === 'new' ? 'New' : ''
     if (!base) return ''
     // Simple SEO-friendly suggestion
-    return `${base} – ${conditionLabel} | Best Price in ${currency}`
+    const suffix = conditionLabel ? ` – ${conditionLabel}` : ''
+    return `${base}${suffix} | Best Price in ${currency}`
   }, [brandName, familyName, modelName, variantName, storage, condition, currency])
 
   // Derive parsed colors from presets or defaults for rendering and selection
@@ -110,10 +111,13 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     category: familyName || 'Product',
     name: title || 'New Product',
     image: images[0]?.url || '/hero/blue gradient electronic sale promotion banner.webp',
-    colors: [color],
+    colors: color ? [color] : [],
     priceFrom: `$${Number(basePrice || '0').toFixed(2)}`,
     monthlyFrom: `$${(Number(basePrice || '0')/24).toFixed(2)}/mo. for 24 mo.`,
   }), [familyName, title, images, color, basePrice])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState<boolean>(false)
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -168,6 +172,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setFamilies([]); setFamilyId('')
     setModels([]); setModelId('')
     setVariants([]); setVariantId('')
+    // Reset option-related selections when brand changes
+    setStorage('')
+    setColor('')
+    setColorName('')
     if (!brandId || !isSupabaseConfigured) return
     ;(async ()=>{
       try {
@@ -186,6 +194,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   useEffect(() => {
     setModels([]); setModelId('')
     setVariants([]); setVariantId('')
+    // Also reset option selections when family changes
+    setStorage('')
+    setColor('')
+    setColorName('')
     if (!familyId || !isSupabaseConfigured) return
     ;(async ()=>{
       try {
@@ -198,6 +210,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   // Load variants when model changes
   useEffect(() => {
     setVariants([]); setVariantId('')
+    // Reset storage/color when model changes
+    setStorage('')
+    setColor('')
+    setColorName('')
     if (!modelId || !isSupabaseConfigured) return
     ;(async ()=>{
       try {
@@ -206,6 +222,14 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       } catch (e:any) { setError(e.message) }
     })()
   }, [modelId])
+
+  // Clear storage/color when variant changes too
+  useEffect(() => {
+    if (!variantId) return
+    setStorage('')
+    setColor('')
+    setColorName('')
+  }, [variantId])
 
   // Load option presets when variant or model changes
   useEffect(() => {
@@ -313,7 +337,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const canNext = () => {
     if (step === 1) {
       return Boolean(
-        brandId && categoryId &&
+        condition && brandId && categoryId &&
         storage && color &&
         basePrice && quantity &&
         images.length > 0
@@ -334,11 +358,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         model: modelName || null,
         variant: variantName || null,
         title,
-        description: description || null,
+        description: null,
         published,
         images: images.map((im, i) => ({ url: im.url, is_primary: i === 0 })),
         sku: {
-          condition,
+          condition: (condition as 'new'|'second_hand'),
           attributes: { storage, color, ...(colorName ? { color_name: colorName } : {}) },
           price: {
             currency,
@@ -365,30 +389,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
 
       setSuccess('Product saved successfully.')
       if (onSaved) onSaved()
-      // reset minimal form state
-      setStep(1)
-      setCondition('new')
-      setBrandId('')
-      setCategoryId('')
-      setFamilyId('')
-      setModelId('')
-      setVariantId('')
-      setTitle('')
-      setDescription('')
-      setPublished(false)
-      setStorage('128GB')
-      setColor('#1c1c1e')
-      setColorName('')
-      setBasePrice('999')
-      setCurrency('USD')
-      setDiscountPercent('')
-      setDiscountAmount('')
-      setQuantity('10')
-      setImages([])
-      setSecondHandGrade('A')
-      setSecondHandBatteryHealth('')
-      setSecondHandSerial('')
-      setSecondHandNotes('')
+      resetForm()
       // auto hide success after 2.5s
       setTimeout(()=> setSuccess(null), 2500)
     } catch (e: any) {
@@ -398,8 +399,37 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     }
   }
 
+  const resetForm = () => {
+    setStep(1)
+    setError(null)
+    setSuccess(null)
+    setCondition(null)
+    setBrandId('')
+    setCategoryId('')
+    setFamilyId('')
+    setModelId('')
+    setVariantId('')
+    setTitle('')
+    setPublished(false)
+    setStorage('')
+    setColor('')
+    setColorName('')
+    setBasePrice('999')
+    setCurrency('USD')
+    setDiscountPercent('')
+    setDiscountAmount('')
+    setQuantity('10')
+    setImages([])
+    setSecondHandGrade('A')
+    setSecondHandBatteryHealth('')
+    setSecondHandSerial('')
+    setSecondHandNotes('')
+    setPresetStorages(null)
+    setPresetColors(null)
+  }
+
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 relative">
+    <div className={`rounded-2xl bg-white/5 border relative ${condition === 'new' ? 'border-emerald-500/40' : condition === 'second_hand' ? 'border-rose-500/40' : 'border-white/10'}`}>
       {/* toast */}
       {success && (
         <div className="absolute top-2 right-2 z-10 px-3 py-2 rounded-md bg-emerald-500 text-black text-xs shadow">
@@ -422,14 +452,22 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         {/* Condition toggle - always visible */}
         <div className="space-y-2">
           <div className="text-sm text-white/80">Condition</div>
-          <div className="flex gap-3">
-            {(['new','second_hand'] as Condition[]).map(c => (
-              <button key={c}
-                className={`px-3 py-2 rounded-lg border ${condition===c? 'bg-white text-black border-white':'bg-white/0 text-white/80 border-white/10'}`}
-                onClick={() => setCondition(c)}>
-                {c === 'new' ? 'New' : 'Second‑hand'}
-              </button>
-            ))}
+          <div className={`inline-flex rounded-lg border ${condition==='new' ? 'border-emerald-500/40' : condition==='second_hand' ? 'border-rose-500/40' : 'border-white/10'}`}>
+            <button
+              type="button"
+              onClick={() => setCondition('new')}
+              className={`px-4 py-2 text-sm rounded-l-lg border-r ${condition==='new' ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/0 text-white/80 border-white/10 hover:bg-white/5'}`}
+            >
+              New
+            </button>
+            <button
+              type="button"
+              onClick={() => setCondition('second_hand')}
+              className={`px-4 py-2 text-sm rounded-r-lg ${condition==='second_hand' ? 'bg-rose-500 text-black border-rose-400' : 'bg-white/0 text-white/80 hover:bg-white/5'}`}
+              style={{ borderLeftWidth: 0, borderColor: condition==='second_hand' ? 'rgba(244,63,94,0.4)' : 'rgba(255,255,255,0.1)' }}
+            >
+              Second‑hand
+            </button>
           </div>
         </div>
 
@@ -437,42 +475,71 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs text-white/60">Brand</label>
-              <div className="flex mt-1">
-                <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={brandId} onChange={e=>setBrandId(e.target.value)}>
-                  <option value="">Select brand</option>
-                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
+              <AdminSelect
+                disabled={!condition}
+                value={brandId}
+                onChange={setBrandId}
+                placeholder={condition ? 'Select brand' : 'Select condition first'}
+                options={brands.map(b => ({ value: b.id, label: b.name })) as AdminSelectOption[]}
+              />
             </div>
             {/* Removed Category manual selection; it is auto-set from family */}
             <div>
               <label className="text-xs text-white/60">Line</label>
-              <div className="flex mt-1">
-                <select disabled={!brandId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={familyId} onChange={e=>setFamilyId(e.target.value)}>
-                  <option value="">{brandId ? 'Select line' : 'Select brand first'}</option>
-                  {families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </div>
+              <AdminSelect
+                disabled={!brandId}
+                value={familyId}
+                onChange={setFamilyId}
+                placeholder={brandId ? 'Select line' : 'Select brand first'}
+                options={families.map(f => ({ value: f.id, label: f.name })) as AdminSelectOption[]}
+              />
             </div>
             <div>
               <label className="text-xs text-white/60">Model</label>
-              <div className="flex mt-1">
-                <select disabled={!familyId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={modelId} onChange={e=>setModelId(e.target.value)}>
-                  <option value="">{familyId ? 'Select model' : 'Select line first'}</option>
-                  {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-              </div>
+              <AdminSelect
+                disabled={!familyId}
+                value={modelId}
+                onChange={setModelId}
+                placeholder={familyId ? 'Select model' : 'Select line first'}
+                options={models.map(m => ({ value: m.id, label: m.name })) as AdminSelectOption[]}
+              />
             </div>
             <div>
               <label className="text-xs text-white/60">Variant</label>
-              <div className="flex mt-1">
-                <select disabled={!modelId} className="w-full disabled:opacity-50 bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={variantId} onChange={e=>setVariantId(e.target.value)}>
-                  <option value="">{modelId ? 'Select variant' : 'Select model first'}</option>
-                  {variants.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
-              </div>
+              <AdminSelect
+                disabled={!modelId}
+                value={variantId}
+                onChange={setVariantId}
+                placeholder={modelId ? 'Select variant' : 'Select model first'}
+                options={variants.map(v => ({ value: v.id, label: v.name })) as AdminSelectOption[]}
+              />
 
             </div>
+            <div className="md:col-span-2">
+              <label className="text-xs text-white/60">Storage</label>
+              <AdminSelect
+                disabled={!modelId}
+                value={storage}
+                onChange={setStorage}
+                placeholder={modelId ? 'Select storage' : 'Select model first'}
+                options={(presetStorages ?? defaultStorages).map(s => ({ value: s, label: s }))}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs text-white/60">Color</label>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {availableColors.map(({ name, hex }) => (
+                  <button
+                    key={name + hex}
+                    className={`h-8 w-8 rounded-full border ${color===hex?'ring-2 ring-white':''} ${!modelId ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    style={{ backgroundColor: hex }}
+                    title={name || hex}
+                    onClick={() => { if (!modelId) return; setColor(hex); setColorName(name) }}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Title moved below Storage/Color */}
             <div className="md:col-span-4">
               <label className="text-xs text-white/60">Title</label>
               <div className="flex gap-2 items-center mt-1">
@@ -485,33 +552,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <div className="text-xs text-white/50 mt-1">Suggested: {titleSuggestion}</div>
               )}
             </div>
-            <div className="md:col-span-4">
-              <label className="text-xs text-white/60">Description</label>
-              <textarea className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" rows={3} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Short description" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-white/60">Storage</label>
-              <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={storage} onChange={e=>setStorage(e.target.value)}>
-                {(presetStorages ?? defaultStorages).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-xs text-white/60">Color</label>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {availableColors.map(({ name, hex }) => (
-                  <button
-                    key={name + hex}
-                    className={`h-8 w-8 rounded-full border ${color===hex?'ring-2 ring-white':''}`}
-                    style={{ backgroundColor: hex }}
-                    title={name || hex}
-                    onClick={() => { setColor(hex); setColorName(name) }}
-                  />
-                ))}
-              </div>
-            </div>
             <div>
               <label className="text-xs text-white/60">Currency</label>
-              <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={currency} onChange={e=>setCurrency(e.target.value)} />
+              <input className="w-full bg-white/5 text-white border border-white/10 rounded-lg px-3 py-2 text-sm" value={currency} onChange={e=>setCurrency(e.target.value)} />
             </div>
             <div>
               <label className="text-xs text-white/60">Base Price</label>
@@ -531,7 +574,16 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             </div>
             <div className="md:col-span-4">
               <label className="text-xs text-white/60">Images</label>
-              <input type="file" multiple onChange={e=>handleUploadImages(e.target.files)} className="block mt-2 text-sm" />
+              <div
+                className={`mt-2 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-white/40 bg-white/5' : 'border-white/10 hover:border-white/20'}`}
+                onDragOver={(e)=>{ e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={()=> setIsDragging(false)}
+                onDrop={(e)=>{ e.preventDefault(); setIsDragging(false); const f=e.dataTransfer.files; if (f && f.length) handleUploadImages(f) }}
+                onClick={()=> fileInputRef.current?.click()}
+              >
+                <div className="text-xs text-white/70">Drag & drop images here, or click to browse</div>
+              </div>
+              <input ref={fileInputRef} type="file" multiple onChange={e=>handleUploadImages(e.target.files)} className="hidden" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                 {images.map((im, idx) => (
                   <div key={idx} className="relative">
@@ -553,12 +605,12 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
                     <label className="text-xs text-white/60">Grade</label>
-                    <select className="w-full bg-white text-black border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandGrade} onChange={e=>setSecondHandGrade(e.target.value as any)}>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                    </select>
-                  </div>
+                    <AdminSelect
+                      value={secondHandGrade}
+                      onChange={(v)=>setSecondHandGrade(v as any)}
+                      options={[{value:'A',label:'A'},{value:'B',label:'B'},{value:'C',label:'C'}]}
+                    />
+                </div>
                   <div>
                     <label className="text-xs text-white/60">Battery Health %</label>
                     <input type="number" min="0" max="100" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={secondHandBatteryHealth} onChange={e=>setSecondHandBatteryHealth(e.target.value)} />
@@ -598,7 +650,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             <div className="self-start">
               <div className="text-sm text-white/80 mb-2">Summary</div>
               <ul className="text-sm text-white/80 space-y-1">
-                <li>Type: {condition}</li>
+                <li>Type: {condition === 'new' ? 'New' : condition === 'second_hand' ? 'Second‑hand' : '-'}</li>
                 <li>Brand: {brandName || '-'}</li>
                 <li>Category: {categories.find(c=>c.id===categoryId)?.name || '-'}</li>
                 <li>Family/Model/Variant: {[familyName, modelName, variantName].filter(Boolean).join(' / ') || '-'}</li>
@@ -607,7 +659,6 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <li>Quantity: {quantity}</li>
                 <li>Images: {images.length}</li>
                 <li>Title: {title || titleSuggestion || '-'}</li>
-                <li>Description: {description || '-'}</li>
               </ul>
               <div className="mt-3">
                 <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" className="accent-white" checked={published} onChange={e=>setPublished(e.target.checked)} /> Publish on save</label>
@@ -620,8 +671,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
       <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
         <div className="text-xs text-white/50">{!isSupabaseConfigured ? 'Supabase not configured; wizard UI only' : loading ? 'Working...' : ''}</div>
         <div className="flex gap-2">
-          {step>1 && <button className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10" onClick={()=>setStep(1)}>Back</button>}
-          {step<2 && <button disabled={!canNext()} className={`text-xs px-3 py-1.5 rounded-lg border ${canNext()?'bg-white text-black border-white':'bg-white/10 border-white/10 text-white/40'}`} onClick={()=>setStep(2)}>Preview</button>}
+          <button type="button" className="text-xs px-3 py-1.5 rounded-lg bg-white/0 hover:bg-white/10 border border-white/10" onClick={resetForm} disabled={loading}>Clear</button>
+          {step>1 && <button className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10" onClick={()=>setStep(1)} disabled={loading}>Back</button>}
+          {step<2 && <button disabled={!canNext() || loading} className={`text-xs px-3 py-1.5 rounded-lg border ${canNext() && !loading?'bg-white text-black border-white':'bg-white/10 border-white/10 text-white/40'}`} onClick={()=>setStep(2)}>Preview</button>}
           {step===2 && <button disabled={loading || !isSupabaseConfigured} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black" onClick={onSave}>Save Product</button>}
         </div>
       </div>
