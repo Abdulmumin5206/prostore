@@ -25,6 +25,7 @@
 - Master (all Apple at once): `docs/seeds/apple.sql`
 - Per-family seeds (run only what you need):
   - iPhone (resets iPhone and reseeds correctly): `docs/seeds/apple/iphone.sql`
+  - iPad (resets iPad and reseeds correctly): `docs/seeds/apple/ipad.sql`
   - Watch: `docs/seeds/apple/watch.sql`
   - MacBook Air: `docs/seeds/apple/macbook_air.sql`
   - MacBook Pro: `docs/seeds/apple/macbook_pro.sql`
