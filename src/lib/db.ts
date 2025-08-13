@@ -92,7 +92,8 @@ export async function listModels(familyId: string): Promise<Model[]> {
     .from('product_models')
     .select('*')
     .eq('family_id', familyId)
-    .order('name')
+    .order('display_order', { ascending: false, nullsFirst: false })
+    .order('name', { ascending: true })
   if (error) throw error
   return data as Model[]
 }
@@ -115,7 +116,8 @@ export async function listVariants(modelId: string): Promise<Variant[]> {
     .from('product_variants')
     .select('*')
     .eq('model_id', modelId)
-    .order('name')
+    .order('display_order', { ascending: false, nullsFirst: false })
+    .order('name', { ascending: true })
   if (error) throw error
   return data as Variant[]
 }

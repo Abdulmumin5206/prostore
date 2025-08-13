@@ -65,3 +65,23 @@
 ## Codes
 - Product `public_id` is auto-generated from title/family/model for easy admin search.
 - SKU `sku_code` includes condition and attributes for precise identification.
+
+## Database: Apply schema and seed data
+
+1. Open Supabase dashboard > SQL Editor.
+2. Paste and run `docs/supabase-schema.sql` (entire file). It is idempotent.
+3. Then run `docs/seed-brands-categories.sql`.
+4. Optionally run `docs/seed-apple-iphone.sql` to prefill Apple/iPhone taxonomy and a sample product.
+
+After this, the admin wizard will let you:
+- Choose condition (new vs second_hand)
+- Pick brand → family → model → variant
+- Select color/storage from presets
+- Price, stock, and upload images
+
+### Storage setup (fix bucket not found 400)
+- Run `docs/seed-storage-setup.sql` in Supabase SQL editor to create the `product-images` bucket and storage policies.
+
+### Ordering and naming updates
+- Re-run `docs/seed-apple-iphone-variants.sql` to set `display_order` for models and variants and full variant names (e.g., "iPhone 15 Pro Max").
+- The admin UI will now show newest iPhone models at the top, and variant names will be full names.

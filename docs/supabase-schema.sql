@@ -381,3 +381,146 @@ drop trigger if exists trg_product_skus_set_sku_code on public.product_skus;
 create trigger trg_product_skus_set_sku_code
 before insert or update on public.product_skus
 for each row execute function public.product_skus_set_sku_code(); 
+
+-- Hardening: constraints, indexes, and taxonomy improvements
+-- These statements are idempotent and safe to rerun
+
+-- Categories: support hierarchy (optional)
+alter table if exists public.categories add column if not exists parent_id uuid references public.categories(id) on delete set null;
+create index if not exists idx_categories_parent on public.categories(parent_id);
+
+-- Brands/Categories optional metadata
+alter table if exists public.brands add column if not exists description text;
+alter table if exists public.brands add column if not exists logo_url text;
+alter table if exists public.categories add column if not exists description text;
+
+-- Products: index specs for filtering and search
+create index if not exists idx_products_specs on public.products using gin (specs jsonb_path_ops);
+
+-- Ensure at most one primary image per product
+create unique index if not exists uidx_product_images_primary on public.product_images(product_id) where is_primary;
+
+-- Inventory and pricing sanity checks (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'sku_inventory_non_negative' AND conrelid = 'public.sku_inventory'::regclass
+  ) THEN
+    ALTER TABLE public.sku_inventory ADD CONSTRAINT sku_inventory_non_negative CHECK (quantity >= 0);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'sku_prices_non_negative' AND conrelid = 'public.sku_prices'::regclass
+  ) THEN
+    ALTER TABLE public.sku_prices ADD CONSTRAINT sku_prices_non_negative CHECK (
+      base_price >= 0 AND (discount_amount IS NULL OR discount_amount >= 0)
+    );
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'sku_prices_discount_percent_range' AND conrelid = 'public.sku_prices'::regclass
+  ) THEN
+    ALTER TABLE public.sku_prices ADD CONSTRAINT sku_prices_discount_percent_range CHECK (
+      discount_percent IS NULL OR (discount_percent >= 0 AND discount_percent <= 100)
+    );
+  END IF;
+END $$;
+
+-- Second-hand items sanity checks (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'second_hand_battery_health_range' AND conrelid = 'public.second_hand_items'::regclass
+  ) THEN
+    ALTER TABLE public.second_hand_items ADD CONSTRAINT second_hand_battery_health_range CHECK (
+      battery_health IS NULL OR (battery_health >= 0 AND battery_health <= 100)
+    );
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'second_hand_price_override_non_negative' AND conrelid = 'public.second_hand_items'::regclass
+  ) THEN
+    ALTER TABLE public.second_hand_items ADD CONSTRAINT second_hand_price_override_non_negative CHECK (
+      price_override IS NULL OR price_override >= 0
+    );
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'second_hand_status_values' AND conrelid = 'public.second_hand_items'::regclass
+  ) THEN
+    ALTER TABLE public.second_hand_items ADD CONSTRAINT second_hand_status_values CHECK (
+      status IN ('available','reserved','sold','unlisted')
+    );
+  END IF;
+END $$;
+
+-- Enforce that second_hand_items.sku_id points to a SKU with condition = 'second_hand'
+create or replace function public.enforce_second_hand_sku_condition()
+returns trigger
+language plpgsql
+as $$
+begin
+  if not exists (
+    select 1 from public.product_skus s where s.id = new.sku_id and s.condition = 'second_hand'
+  ) then
+    raise exception 'SKU % must have condition = second_hand to attach a second_hand_item', new.sku_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_second_hand_sku_condition on public.second_hand_items;
+create trigger trg_enforce_second_hand_sku_condition
+before insert or update on public.second_hand_items
+for each row execute function public.enforce_second_hand_sku_condition();
+
+-- Helpful indexes
+create index if not exists idx_product_images_product on public.product_images(product_id);
+create index if not exists idx_sku_prices_currency on public.sku_prices(currency);
+
+-- End hardening 
+
+-- Ordering helpers for models and variants
+alter table if exists public.product_models add column if not exists display_order int;
+alter table if exists public.product_variants add column if not exists display_order int;
+create index if not exists idx_product_models_display_order on public.product_models(display_order);
+create index if not exists idx_product_variants_display_order on public.product_variants(display_order); 
+
+-- Auto-provision profiles on new signup (default role: customer)
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles(id, role)
+  values (new.id, 'customer')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
+
+-- Backfill profiles for existing auth users
+insert into public.profiles(id, role)
+select u.id, 'customer'
+from auth.users u
+left join public.profiles p on p.id = u.id
+where p.id is null; 
+
+-- Profiles RLS: allow each authenticated user to read their own profile row
+DROP POLICY IF EXISTS "own profile read" ON public.profiles;
+create policy "own profile read" on public.profiles
+for select to authenticated
+using (id = auth.uid()); 
