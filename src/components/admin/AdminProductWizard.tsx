@@ -251,6 +251,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             setPresetStorages(preset.storages ?? null)
             setPresetColors(preset.colors ?? null)
             return
+          } else {
+            setPresetStorages(null)
+            setPresetColors(null)
           }
         }
         if (modelId) {
@@ -258,6 +261,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           if (preset) {
             setPresetStorages(preset.storages ?? null)
             setPresetColors(preset.colors ?? null)
+          } else {
+            setPresetStorages(null)
+            setPresetColors(null)
           }
         }
       } catch (e:any) { /* non-fatal */ }
@@ -511,7 +517,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 value={modelId}
                 onChange={setModelId}
                 placeholder={familyId ? 'Select model' : 'Select line first'}
-                options={models.map(m => ({ value: m.id, label: m.name })) as AdminSelectOption[]}
+                options={models.map(m => ({ value: m.id, label: m.name + (m.release_year ? ` — ${m.release_year}` : '') })) as AdminSelectOption[]}
               />
             </div>
             <div>

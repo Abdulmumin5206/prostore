@@ -338,12 +338,29 @@ create or replace function public.products_set_public_id()
 returns trigger
 language plpgsql
 as $$
+declare
+  base text;
+  candidate text;
+  i int := 1;
 begin
   if new.public_id is null or length(new.public_id) = 0 then
     new.public_id := public.slugify(
       coalesce(new.family,'') || ' ' || coalesce(new.model,'') || ' ' || coalesce(new.variant, new.title)
     );
   end if;
+
+  -- Ensure uniqueness by adding a numeric suffix if needed
+  base := new.public_id;
+  candidate := base;
+  while exists (
+    select 1 from public.products p
+    where p.public_id = candidate and (TG_OP = 'INSERT' or p.id <> new.id)
+  ) loop
+    i := i + 1;
+    candidate := base || '-' || i::text;
+  end loop;
+  new.public_id := candidate;
+
   return new;
 end;
 $$;
@@ -490,7 +507,11 @@ create index if not exists idx_sku_prices_currency on public.sku_prices(currency
 alter table if exists public.product_models add column if not exists display_order int;
 alter table if exists public.product_variants add column if not exists display_order int;
 create index if not exists idx_product_models_display_order on public.product_models(display_order);
-create index if not exists idx_product_variants_display_order on public.product_variants(display_order); 
+create index if not exists idx_product_variants_display_order on public.product_variants(display_order);
+
+-- Product models metadata: release year for UI ordering/labels
+alter table if exists public.product_models add column if not exists release_year int;
+create index if not exists idx_product_models_release_year on public.product_models(release_year);
 
 -- Auto-provision profiles on new signup (default role: customer)
 create or replace function public.handle_new_user()
@@ -524,3 +545,58 @@ DROP POLICY IF EXISTS "own profile read" ON public.profiles;
 create policy "own profile read" on public.profiles
 for select to authenticated
 using (id = auth.uid()); 
+
+-- Short, readable codes (immutable) for products and SKUs
+-- Products: PRD-000001, SKUs: SKU-000001
+alter table if exists public.products add column if not exists code text unique;
+create sequence if not exists public.product_code_seq start 1001;
+
+create or replace function public.products_set_code()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.code is null or length(new.code) = 0 then
+    new.code := 'PRD-' || to_char(nextval('public.product_code_seq'), 'FM000000');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_products_set_code on public.products;
+create trigger trg_products_set_code
+before insert on public.products
+for each row execute function public.products_set_code();
+
+-- SKUs short code
+alter table if exists public.product_skus add column if not exists short_code text unique;
+create sequence if not exists public.sku_code_seq start 1001;
+
+create or replace function public.product_skus_set_short_code()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.short_code is null or length(new.short_code) = 0 then
+    new.short_code := 'SKU-' || to_char(nextval('public.sku_code_seq'), 'FM000000');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_product_skus_set_short_code on public.product_skus;
+create trigger trg_product_skus_set_short_code
+before insert on public.product_skus
+for each row execute function public.product_skus_set_short_code();
+
+create index if not exists idx_products_code on public.products(code);
+create index if not exists idx_skus_short_code on public.product_skus(short_code); 
+
+-- Backfill codes for existing rows
+update public.products
+set code = 'PRD-' || to_char(nextval('public.product_code_seq'), 'FM000000')
+where code is null;
+
+update public.product_skus
+set short_code = 'SKU-' || to_char(nextval('public.sku_code_seq'), 'FM000000')
+where short_code is null; 

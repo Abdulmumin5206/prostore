@@ -21,7 +21,7 @@ export type PublicProduct = {
 export type Brand = { id: string; name: string; slug: string }
 export type Category = { id: string; name: string; slug: string }
 export type Family = { id: string; brand_id: string; name: string; slug: string }
-export type Model = { id: string; family_id: string; name: string; slug: string }
+export type Model = { id: string; family_id: string; name: string; slug: string; release_year?: number | null; display_order?: number | null }
 export type Variant = { id: string; model_id: string; name: string; slug: string }
 export type OptionPreset = { id: string; model_id: string | null; variant_id: string | null; colors: string[]; storages: string[] }
 
@@ -92,6 +92,7 @@ export async function listModels(familyId: string): Promise<Model[]> {
     .from('product_models')
     .select('*')
     .eq('family_id', familyId)
+    .order('release_year', { ascending: false, nullsFirst: false })
     .order('display_order', { ascending: false, nullsFirst: false })
     .order('name', { ascending: true })
   if (error) throw error
@@ -140,8 +141,8 @@ export async function getOptionPresetForModel(modelId: string): Promise<OptionPr
     .from('product_option_presets')
     .select('*')
     .eq('model_id', modelId)
-    .single()
-  if (error && (error as any).code !== 'PGRST116') throw error
+    .maybeSingle()
+  if (error) throw error
   return (data as any) ?? null
 }
 
@@ -151,8 +152,8 @@ export async function getOptionPresetForVariant(variantId: string): Promise<Opti
     .from('product_option_presets')
     .select('*')
     .eq('variant_id', variantId)
-    .single()
-  if (error && (error as any).code !== 'PGRST116') throw error
+    .maybeSingle()
+  if (error) throw error
   return (data as any) ?? null
 }
 
@@ -413,6 +414,7 @@ export async function listAdminProducts(limit = 50): Promise<AdminProductSummary
     .select(`
       id,
       public_id,
+      code,
       title,
       published,
       brands!inner(name),
@@ -420,6 +422,7 @@ export async function listAdminProducts(limit = 50): Promise<AdminProductSummary
       product_skus(
         id,
         sku_code,
+        short_code,
         condition,
         is_active,
         sku_prices(base_price, discount_percent, discount_amount),
@@ -443,16 +446,18 @@ export async function listAdminProducts(limit = 50): Promise<AdminProductSummary
       if (p.discount_amount != null) effectivePrice = p.base_price - p.discount_amount
       else if (p.discount_percent != null) effectivePrice = p.base_price * (1 - p.discount_percent/100)
     }
+    const humanProductCode = (row as any).code ?? (row as any).public_id ?? null
+    const humanSkuCode = sku?.short_code ?? sku?.sku_code ?? null
     return {
       productId: row.id,
-      productCode: (row as any).public_id ?? null,
+      productCode: humanProductCode,
       title: row.title,
       published: row.published,
       brandName: row.brands?.name ?? null,
       categoryName: row.categories?.name ?? null,
       primaryImage: primary?.url ?? null,
       skuId: sku?.id ?? null,
-      skuCode: sku?.sku_code ?? null,
+      skuCode: humanSkuCode,
       skuActive: sku?.is_active ?? null,
       condition: sku?.condition ?? null,
       effectivePrice,
