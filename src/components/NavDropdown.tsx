@@ -412,82 +412,52 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible, onNavigate }
 	const [contentHeight, setContentHeight] = useState(0);
 	const [displayedName, setDisplayedName] = useState(name);
 	
-	// Update displayed content when name changes
 	useEffect(() => {
 		if (isVisible) {
-			// Simple update with a slight delay to allow height calculation
-			const timer = setTimeout(() => {
-				setDisplayedName(name);
-			}, 50);
+			const timer = setTimeout(() => { setDisplayedName(name); }, 50);
 			return () => clearTimeout(timer);
 		} else {
-			// Update immediately when dropdown is closed
 			setDisplayedName(name);
 		}
 	}, [name, isVisible]);
 	
-	// Measure content height
-	useEffect(() => {
-		if (contentRef.current) {
-			setContentHeight(contentRef.current.scrollHeight);
-		}
-	}, [displayedName, isVisible]);
+	useEffect(() => { if (contentRef.current) setContentHeight(contentRef.current.scrollHeight); }, [displayedName, isVisible]);
 	
 	if (!content) return null;
-	
 	const displayContent = dropdownContents[displayedName];
-	
 	if (!displayContent) return null;
 	
 	return (
 		<div 
 			ref={dropdownRef}
 			className="absolute left-0 w-full bg-white backdrop-blur-md border-t border-gray-200 overflow-hidden transition-all duration-300 ease-out"
-			style={{ 
-				top: '48px',
-				marginTop: '-1px',
-				height: isVisible ? `${contentHeight}px` : '0px',
-				opacity: isVisible ? 1 : 0,
-				pointerEvents: isVisible ? 'auto' : 'none',
-			}}
+			style={{ top: '48px', marginTop: '-1px', height: isVisible ? `${contentHeight}px` : '0px', opacity: isVisible ? 1 : 0, pointerEvents: isVisible ? 'auto' : 'none' }}
 		>
-			<div 
-				ref={contentRef} 
-				className="max-w-laptop mx-auto px-section-x pt-4 pb-8 transition-opacity duration-200"
-			>
+			<div ref={contentRef} className="max-w-laptop mx-auto px-section-x pt-3 pb-5 transition-opacity duration-200">
 				{cardGrids[displayedName] ? (
-					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+					<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-3">
 						{cardGrids[displayedName].map((card) => (
-							<Link key={card.title} to={card.href} onClick={onNavigate} className="group focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700 rounded-lg">
-								<div className="overflow-hidden rounded-lg bg-[#fafafa] dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 shadow-sm transition-colors duration-200">
-									<div className="aspect-[16/9] w-full overflow-hidden bg-white dark:bg-black">
-										<img
-											src={card.imagePath}
-											alt={card.title}
-											className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]"
-											loading="lazy"
-										/>
+							<Link key={card.title} to={card.href} onClick={onNavigate} className="group focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700 rounded-md">
+								<div className="overflow-hidden rounded-md bg-[#fafafa] dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 shadow-sm transition-colors duration-200">
+									<div className="aspect-[4/3] w-full overflow-hidden bg-white dark:bg-black">
+										<img src={card.imagePath} alt={card.title} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
 									</div>
-									<div className="px-3 py-2 text-center border-t border-gray-200 dark:border-gray-800">
-										<div className="text-[11px] font-medium text-gray-900 dark:text-gray-100">{card.title}</div>
+									<div className="px-2 py-1 text-center border-t border-gray-200 dark:border-gray-800">
+										<div className="text-[10px] font-medium text-gray-900 dark:text-gray-100 truncate">{card.title}</div>
 									</div>
 								</div>
 							</Link>
 						))}
 					</div>
 				) : (
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 						{displayContent.sections.map((section, index) => (
 							<div key={index}>
-								<h3 className="text-gray-500 text-xs font-medium mb-2">{section.title}</h3>
-								<ul className="space-y-2">
+								<h3 className="text-gray-500 text-[11px] font-medium mb-1.5">{section.title}</h3>
+								<ul className="space-y-1.5">
 									{section.items.map((item, itemIndex) => (
 										<li key={itemIndex}>
-											<Link 
-												to={item.href} 
-												onClick={onNavigate}
-												className="text-xs font-normal text-gray-800 hover:text-gray-600 transition-colors duration-200"
-											>
+											<Link to={item.href} onClick={onNavigate} className="text-[11px] font-normal text-gray-800 hover:text-gray-600 transition-colors duration-200">
 												{item.name}
 											</Link>
 										</li>
