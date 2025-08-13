@@ -646,6 +646,14 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <div className="text-xs text-white/50 mt-1">Suggested: {titleSuggestion}</div>
               )}
             </div>
+            {/* Publish toggle */}
+            <div className="md:col-span-2">
+              <label className="text-xs text-white/60">Publish</label>
+              <div className="mt-1 flex items-center gap-2">
+                <input id="publishToggle" type="checkbox" checked={published} onChange={(e)=>setPublished(e.target.checked)} />
+                <label htmlFor="publishToggle" className="text-xs text-white/70 cursor-pointer">{published ? 'Published (visible in store)' : 'Draft (hidden from store)'}</label>
+              </div>
+            </div>
             <div>
               <label className="text-xs text-white/60">Currency</label>
               <input className="w-full bg-white/5 text-white border border-white/10 rounded-lg px-3 py-2 text-sm" value={currency} onChange={e=>setCurrency(e.target.value)} />
@@ -772,6 +780,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 <li>Quantity: {quantity}</li>
                 <li>Images: {images.length}</li>
                 <li>Title: {title || titleSuggestion || '-'}</li>
+                <li>Status: {published ? 'Published' : 'Draft'}</li>
               </ul>
             </div>
           </div>

@@ -58,12 +58,12 @@ const Header = () => {
 
   const navItems = [
     { name: 'Store', href: '/products' },
-    { name: 'Mac', href: '/mac' },
-    { name: 'iPad', href: '/ipad' },
-    { name: 'iPhone', href: '/iphone' },
-    { name: 'Watch', href: '/watch' },
-    { name: 'AirPods', href: '/airpods' },
-    { name: 'Accessories', href: '/accessories' },
+    { name: 'Mac', href: '/products?category=Mac' },
+    { name: 'iPad', href: '/products?category=iPad' },
+    { name: 'iPhone', href: '/products?category=iPhone' },
+    { name: 'Watch', href: '/products?category=Watch' },
+    { name: 'AirPods', href: '/products?category=AirPods' },
+    { name: 'Accessories', href: '/products?category=Accessories' },
     { name: 'Contact Us', href: '/contact' },
   ];
 
@@ -93,6 +93,15 @@ const Header = () => {
         }
       }, 500);
     }, 150);
+  };
+
+  const closeDropdownNow = () => {
+    setIsDropdownVisible(false);
+    setActiveDropdown(null);
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
   };
 
   return (
@@ -125,6 +134,7 @@ const Header = () => {
                     className={`transition-colors duration-200 ${
                       location.pathname === item.href ? 'text-white dark:text-gray-100' : 'text-gray-300 dark:text-gray-400'
                     }`}
+                    onClick={closeDropdownNow}
                   >
                     <Text 
                       size="xs" 
@@ -150,6 +160,7 @@ const Header = () => {
                   <Link
                     to="/admin"
                     className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                    onClick={closeDropdownNow}
                   >
                     <User className="h-4 w-4" />
                   </Link>
@@ -165,12 +176,14 @@ const Header = () => {
                   <Link
                     to="/signin"
                     className="text-xs text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                    onClick={closeDropdownNow}
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/signup"
                     className="text-xs bg-white text-black px-3 py-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                    onClick={closeDropdownNow}
                   >
                     Sign Up
                   </Link>
@@ -187,6 +200,7 @@ const Header = () => {
               key="dropdown"
               name={activeDropdown}
               isVisible={isDropdownVisible}
+              onNavigate={closeDropdownNow}
             />
           )}
         </div>
@@ -195,15 +209,7 @@ const Header = () => {
       {/* Background overlay */}
       <NavOverlay 
         isVisible={isDropdownVisible} 
-        onClick={() => {
-          setIsDropdownVisible(false);
-          
-          // Clear any pending timeouts
-          if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current);
-            hoverTimeoutRef.current = null;
-          }
-        }}
+        onClick={closeDropdownNow}
       />
     </>
   );

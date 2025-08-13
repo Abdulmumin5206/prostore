@@ -5,6 +5,7 @@ import FilterTag from '../components/FilterTag';
 import ProductModal from '../components/ProductModal';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { listPublicProducts, PublicProduct } from '../lib/db';
+import { useSearchParams } from 'react-router-dom';
 
 // Fetch live products when Supabase is configured
 async function fetchLiveProducts(): Promise<Product[]> {
@@ -72,6 +73,10 @@ async function fetchLiveProducts(): Promise<Product[]> {
       return {
         id: r0.product_id,
         category: r0.category,
+        brand: r0.brand,
+        family: r0.family,
+        model: r0.model,
+        variant: r0.variant,
         name: r0.title,
         image: images[0] || '',
         images,
@@ -94,6 +99,10 @@ async function fetchLiveProducts(): Promise<Product[]> {
 interface Product {
   id: string;
   category: string;
+  brand: string;
+  family?: string | null;
+  model?: string | null;
+  variant?: string | null;
   name: string;
   image: string;
   images: string[]; // Array of multiple images
@@ -151,6 +160,38 @@ const tags = [
 ];
 const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
 
+// Mapping from UI categories to DB categories/tokens
+const UI_CATEGORY_PRESETS: Record<string, { dbCategories?: string[]; nameContains?: string[]; brand?: string }> = {
+  'iPhone': { dbCategories: ['Phones'], nameContains: ['iphone'], brand: 'Apple' },
+  'Mac': { dbCategories: ['Laptops', 'Desktops'], nameContains: ['mac', 'macbook', 'imac', 'mac mini', 'mac pro', 'mac studio'], brand: 'Apple' },
+  'iPad': { dbCategories: ['Tablets'], nameContains: ['ipad'], brand: 'Apple' },
+  'Watch': { dbCategories: ['Wearables'], nameContains: ['watch'], brand: 'Apple' },
+  'AirPods': { dbCategories: ['Audio'], nameContains: ['airpods'], brand: 'Apple' },
+  'TV & Home': { dbCategories: ['TV', 'Smart Home'], nameContains: ['apple tv', 'homepod'], brand: 'Apple' },
+  'Accessories': { dbCategories: ['Accessories'], nameContains: ['case', 'charger', 'cable', 'adapter', 'keyboard', 'mouse'] },
+}
+
+function matchesUiCategory(product: Product, uiCategory: string): boolean {
+  if (uiCategory === 'All') return true
+  const preset = UI_CATEGORY_PRESETS[uiCategory]
+  if (!preset) return (product.category || '').toLowerCase() === uiCategory.toLowerCase()
+  const brandOk = preset.brand ? (product.brand || '').toLowerCase() === preset.brand.toLowerCase() : true
+  const dbOk = preset.dbCategories ? preset.dbCategories.some(dc => (product.category || '').toLowerCase() === dc.toLowerCase()) : false
+  const haystack = [product.name, product.family || '', product.model || '', product.variant || ''].join(' ').toLowerCase()
+  const tokensOk = preset.nameContains ? preset.nameContains.some(tok => haystack.includes(tok.toLowerCase())) : false
+  return brandOk && (dbOk || tokensOk)
+}
+
+function getUiCategoryLabel(product: Product): string {
+	// If user already filtered by category, prefer that
+	// Otherwise infer from presets
+	for (const [ui, preset] of Object.entries(UI_CATEGORY_PRESETS)) {
+		if (matchesUiCategory(product, ui)) return ui
+	}
+	// Fallback to DB category
+	return product.category
+}
+
 const ProductsPage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [sourceProducts, setSourceProducts] = useState<Product[]>([]);
@@ -197,6 +238,29 @@ const ProductsPage: React.FC = () => {
   // Mobile filters drawer toggle
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
 
+  // Read and write query params for initial filters
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    const sub = searchParams.get('subcategory');
+    const brand = searchParams.get('brand');
+    const q = searchParams.get('q');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    if (cat) setSelectedCategory(cat);
+    if (sub) setSelectedSubcategory(sub);
+    if (brand) setSelectedBrand(brand);
+    if (q) setSearchInput(q);
+    if (minPrice || maxPrice) {
+      setSelectedPriceRange({
+        min: minPrice ? Number(minPrice) : 0,
+        max: maxPrice ? Number(maxPrice) : 3000,
+      });
+    }
+    // Expand the selected category by default when provided
+    if (cat) setExpandedCategory('All' === cat ? null : cat);
+  }, [searchParams]);
+
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -215,9 +279,9 @@ const ProductsPage: React.FC = () => {
 
     let result = [...sourceProducts];
 
-    // Filter by category
+    // Filter by category (map UI categories to DB categories/tokens)
     if (selectedCategory !== 'All') {
-      result = result.filter(product => product.category === selectedCategory);
+      result = result.filter(product => matchesUiCategory(product, selectedCategory));
     }
 
     // Filter by subcategory
@@ -326,8 +390,12 @@ const ProductsPage: React.FC = () => {
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
       result = result.filter(product => 
-        product.name.toLowerCase().includes(query) || 
-        product.category.toLowerCase().includes(query)
+        product.name.toLowerCase().includes(query) ||
+        (product.category || '').toLowerCase().includes(query) ||
+        (product.brand || '').toLowerCase().includes(query) ||
+        (product.family || '').toLowerCase().includes(query) ||
+        (product.model || '').toLowerCase().includes(query) ||
+        (product.variant || '').toLowerCase().includes(query)
       );
     }
 
@@ -342,7 +410,7 @@ const ProductsPage: React.FC = () => {
 
     setFilteredProducts(result);
     setVisibleProducts(12); // Reset pagination when filters change
-  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, sourceProducts]);
+  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, sourceProducts, hasLoadedOnce]);
 
   // Debounce user typing before applying search filter
   useEffect(() => {
@@ -387,20 +455,32 @@ const ProductsPage: React.FC = () => {
 
   // Handle category click
   const handleCategoryClick = (categoryName: string) => {
+    let nextCategory = 'All';
     if (selectedCategory === categoryName) {
+      nextCategory = 'All';
       setSelectedCategory('All');
       setSelectedSubcategory('');
       setExpandedCategory(null);
     } else {
+      nextCategory = categoryName;
       setSelectedCategory(categoryName);
       setSelectedSubcategory('');
       setExpandedCategory(categoryName);
     }
+    // Update URL params
+    const params = new URLSearchParams(searchParams);
+    if (nextCategory !== 'All') params.set('category', nextCategory); else params.delete('category');
+    params.delete('subcategory');
+    setSearchParams(params, { replace: true });
   };
 
   // Handle subcategory click
   const handleSubcategoryClick = (subcategory: string) => {
     setSelectedSubcategory(subcategory);
+    const params = new URLSearchParams(searchParams);
+    if (selectedCategory && selectedCategory !== 'All') params.set('category', selectedCategory);
+    params.set('subcategory', subcategory);
+    setSearchParams(params, { replace: true });
   };
 
   // Handle quick filter click
@@ -519,17 +599,21 @@ const ProductsPage: React.FC = () => {
 
   // Test product for modal and labels
   const testProduct: Product = {
-    id: 'test-card',
-    category: 'Test Category',
-    name: 'Test Product Name',
-    image: testCardImages[0],
-    images: testCardImages,
-    colors: ['#111827', '#9CA3AF', '#F59E0B', '#3B82F6'],
-    storages: ['128GB', '256GB'],
-    priceFrom: '$999.00',
-    monthlyFrom: '$41.63/mo. for 24 mo.',
-    tags: ['test', 'iphone', 'new']
-  };
+	id: 'test-card',
+	category: 'Test Category',
+	brand: 'Apple',
+	family: 'iPhone',
+	model: 'Test',
+	variant: null,
+	name: 'Test Product Name',
+	image: testCardImages[0],
+	images: testCardImages,
+	colors: ['#111827', '#9CA3AF', '#F59E0B', '#3B82F6'],
+	storages: ['128GB', '256GB'],
+	priceFrom: '$999.00',
+	monthlyFrom: '$41.63/mo. for 24 mo.',
+	tags: ['test', 'iphone', 'new']
+};
 
   // Second hardcoded card (Second hand)
   const testCard2Images = [
@@ -565,17 +649,21 @@ const ProductsPage: React.FC = () => {
   };
 
   const testProductSecondHand: Product = {
-    id: 'test-card-2',
-    category: 'Second Hand',
-    name: 'Refurbished Mac Selection',
-    image: testCard2Images[0],
-    images: testCard2Images,
-    colors: ['#1f2937', '#9ca3af'],
-    storages: ['256GB', '512GB'],
-    priceFrom: '$699.00',
-    monthlyFrom: '$29.13/mo. for 24 mo.',
-    tags: ['test', 'mac', 'second-hand']
-  };
+	id: 'test-card-2',
+	category: 'Second Hand',
+	brand: 'Apple',
+	family: 'Mac',
+	model: 'Refurbished',
+	variant: null,
+	name: 'Refurbished Mac Selection',
+	image: testCard2Images[0],
+	images: testCard2Images,
+	colors: ['#1f2937', '#9ca3af'],
+	storages: ['256GB', '512GB'],
+	priceFrom: '$699.00',
+	monthlyFrom: '$29.13/mo. for 24 mo.',
+	tags: ['test', 'mac', 'second-hand']
+};
 
   // Define which filter sections to show initially
   const initialFilterSections = ['Categories', 'Price Range', 'Brand'];
@@ -1367,7 +1455,7 @@ const ProductsPage: React.FC = () => {
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
                   {selectedSubcategory}
                   <button 
-                    onClick={() => setSelectedSubcategory('')} 
+                    onClick={() => { setSelectedSubcategory(''); const p=new URLSearchParams(searchParams); p.delete('subcategory'); setSearchParams(p,{replace:true}); }} 
                     className="ml-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -1692,7 +1780,7 @@ const ProductsPage: React.FC = () => {
                         )}
                       </div>
                       <div className="px-3 mb-2">
-                        <Text size="xs" color="secondary" className="mb-1">{product.category}</Text>
+                        <Text size="xs" color="secondary" className="mb-1">{getUiCategoryLabel(product)}</Text>
                         <Text size="base" className="font-bold mb-2 text-black dark:text-white">{product.name}</Text>
                         {/* Color swatches */}
                         {product.colors && product.colors.length > 0 && (

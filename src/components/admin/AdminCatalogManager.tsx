@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   listBrands,
   listFamilies,
@@ -117,6 +117,42 @@ const AdminCatalogManager: React.FC = () => {
     })()
   }, [])
 
+  // Group families by main product lines
+  const groupedFamilies = useMemo(() => {
+    if (!families) return null
+    
+    const groups = new Map<string, Family[]>()
+    
+    families.forEach(family => {
+      const familyName = family.name.toLowerCase()
+      let mainLine = ''
+      
+      if (familyName.includes('ipad')) {
+        mainLine = 'iPad'
+      } else if (familyName.includes('iphone')) {
+        mainLine = 'iPhone'
+      } else if (familyName.includes('macbook') || familyName.includes('mac')) {
+        mainLine = 'Mac'
+      } else if (familyName.includes('watch')) {
+        mainLine = 'Apple Watch'
+      } else if (familyName.includes('airpods')) {
+        mainLine = 'AirPods'
+      } else {
+        mainLine = 'Other'
+      }
+      
+      if (!groups.has(mainLine)) {
+        groups.set(mainLine, [])
+      }
+      groups.get(mainLine)!.push(family)
+    })
+    
+    return Array.from(groups.entries()).map(([line, fams]) => ({
+      line,
+      families: fams
+    }))
+  }, [families])
+
   // Close editor when context changes
   useEffect(() => { setActiveVariantId(null); setActiveVariantName(null) }, [brandId])
   useEffect(() => { setActiveVariantId(null); setActiveVariantName(null) }, [familyId])
@@ -165,13 +201,18 @@ const AdminCatalogManager: React.FC = () => {
           </div>
         </div>
         <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-          <div className="text-xs mb-2 text-white/60">Families</div>
+          <div className="text-xs mb-2 text-white/60">Product Lines</div>
           {!brandId && <div className="text-xs text-white/50">Select a brand</div>}
-          {families && (
-            <div className="space-y-1">
-              {families.map((f) => (
-                <button key={f.id} onClick={()=>setFamilyId(f.id)}
-                        className={`w-full text-left ${pill} ${familyId===f.id? 'bg-white text-black border-white' : 'bg-white/0 text-white/80 hover:bg-white/10 border-white/10'}`}>{f.name}</button>
+          {groupedFamilies && (
+            <div className="space-y-2">
+              {groupedFamilies.map(({ line, families: fams }) => (
+                <div key={line} className="space-y-1">
+                  <div className="text-[10px] text-white/40 font-medium uppercase tracking-wider">{line}</div>
+                  {fams.map((f) => (
+                    <button key={f.id} onClick={()=>setFamilyId(f.id)}
+                            className={`w-full text-left ${pill} ${familyId===f.id? 'bg-white text-black border-white' : 'bg-white/0 text-white/80 hover:bg-white/10 border-white/10'}`}>{f.name}</button>
+                  ))}
+                </div>
               ))}
             </div>
           )}

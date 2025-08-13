@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { AppleHeadline, AppleProductTitle, AppleProductSubtitle, Text, ApplePrice, AppleCaption, AppleSubheadline } from './Typography';
 import Spacing from './Spacing';
+import { useNavigate } from 'react-router-dom';
 
 interface IPhoneCategory {
   id: string;
@@ -21,6 +22,7 @@ const IPhoneCategoriesSection: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const navigate = useNavigate();
 
   // iPhone categories data
   const categories: IPhoneCategory[] = [
@@ -222,7 +224,7 @@ const IPhoneCategoriesSection: React.FC = () => {
                   className="flex-shrink-0 w-[280px] sm:w-[300px] md:w-[320px] xl:w-[340px] 2xl:w-[380px] 3xl:w-[420px] mr-5 md:mr-6 2xl:mr-8"
                 >
                   {category.id === 'see-all' ? (
-                    <div className="flex flex-col items-center justify-center h-full space-y-6 cursor-pointer transition-all duration-500 ease-out transform hover:scale-[1.02]">
+                    <div className="flex flex-col items-center justify-center h-full space-y-6 cursor-pointer transition-all duration-500 ease-out transform hover:scale-[1.02]" onClick={() => navigate('/products?category=iPhone')}>
                       <div className="w-24 h-24 2xl:w-28 2xl:h-28 3xl:w-32 3xl:h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
                         <ArrowRight className="w-12 h-12 2xl:w-14 2xl:h-14 3xl:w-16 3xl:h-16 text-white" />
                       </div>
@@ -275,7 +277,7 @@ const IPhoneCategoriesSection: React.FC = () => {
                       {/* Spacer to push price to bottom */}
                       <div className="flex-grow"></div>
                       
-                      {/* Price and Buy Button - at the bottom */}
+                      {/* Price and Explore Button - at the bottom */}
                       <div className="px-5 2xl:px-6 pt-2 pb-4 2xl:pb-6">
                         <div className="flex items-center justify-between">
                           <div className="text-left">
@@ -288,8 +290,16 @@ const IPhoneCategoriesSection: React.FC = () => {
                               </Text>
                             )}
                           </div>
-                          <button className="bg-blue-600 text-white rounded-full px-6 py-2 2xl:px-8 2xl:py-3 text-sm 2xl:text-base font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-md">
-                            Buy
+                          <button className="bg-blue-600 text-white rounded-full px-6 py-2 2xl:px-8 2xl:py-3 text-sm 2xl:text-base font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-md" onClick={() => {
+                            if (category.id === 'accessories') {
+                              navigate('/products?category=Accessories&subcategory=iPhone');
+                            } else if (category.id === 'compare') {
+                              navigate('/products?category=iPhone');
+                            } else {
+                              navigate(`/products?category=iPhone&subcategory=${encodeURIComponent(category.name)}`);
+                            }
+                          }}>
+                            Explore
                           </button>
                         </div>
                       </div>
