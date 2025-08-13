@@ -194,11 +194,19 @@ const AdminCatalogManager: React.FC = () => {
           {variants && (
             <div className="space-y-2">
               {variants.map((v) => (
-                <div key={v.id} className="rounded-lg border border-white/10 flex items-center justify-between px-3 py-2">
-                  <span className="text-sm truncate mr-3">{v.name}</span>
+                <div key={v.id} className="rounded-lg border border-white/10 flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors duration-200">
+                  <span className="text-sm mr-3 flex-1 min-w-0 group relative">
+                    <span className="block group-hover:text-white transition-colors duration-200">{v.name}</span>
+                    {/* Tooltip for long names */}
+                    {v.name.length > 30 && (
+                      <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                        {v.name}
+                      </div>
+                    )}
+                  </span>
                   <button
                     onClick={() => { setActiveVariantId(v.id); setActiveVariantName(v.name) }}
-                    className="text-xs px-2 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10"
+                    className="text-xs px-2 py-1.5 rounded-md bg-white/10 hover:bg-white/20 border border-white/10 transition-colors duration-200 flex-shrink-0"
                   >
                     {activeVariantId === v.id ? 'Viewing…' : 'View'}
                   </button>
