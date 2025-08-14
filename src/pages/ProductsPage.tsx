@@ -119,7 +119,6 @@ const sampleProducts: Product[] = [];
 
 // Available filters with subcategories
 const categories = [
-  { name: 'All', subcategories: [] },
   { 
     name: 'iPhone', 
     subcategories: ['iPhone 15 Pro', 'iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone SE', 'Compare']
@@ -155,7 +154,7 @@ const categories = [
 ];
 
 const tags = [
-  'All', 'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
+  'new', 'pro', 'laptop', 'wireless', 'waterproof', '5G', 'M2', 'M3', 'Retina', 
   'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
   'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education'
 ];
@@ -173,7 +172,6 @@ const UI_CATEGORY_PRESETS: Record<string, { dbCategories?: string[]; nameContain
 }
 
 function matchesUiCategory(product: Product, uiCategory: string): boolean {
-  if (uiCategory === 'All') return true
   const preset = UI_CATEGORY_PRESETS[uiCategory]
   if (!preset) return (product.category || '').toLowerCase() === uiCategory.toLowerCase()
   const brandOk = preset.brand ? (product.brand || '').toLowerCase() === preset.brand.toLowerCase() : true
@@ -196,9 +194,9 @@ function getUiCategoryLabel(product: Product): string {
 const ProductsPage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [sourceProducts, setSourceProducts] = useState<Product[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
-  const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [selectedTag, setSelectedTag] = useState<string>('');
   const [selectedQuickFilter, setSelectedQuickFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('default');
@@ -216,12 +214,12 @@ const ProductsPage: React.FC = () => {
   const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 3000 });
   
   // Additional filters
-  const [selectedBrand, setSelectedBrand] = useState<string>('All');
-  const [selectedCondition, setSelectedCondition] = useState<string>('All');
-  const [selectedAvailability, setSelectedAvailability] = useState<string>('All');
-  const [selectedStorage, setSelectedStorage] = useState<string>('All');
-  const [selectedColor, setSelectedColor] = useState<string>('All');
-  const [selectedWarranty, setSelectedWarranty] = useState<string>('All');
+  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
+  const [selectedAvailability, setSelectedAvailability] = useState<string>('');
+  const [selectedStorage, setSelectedStorage] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedWarranty, setSelectedWarranty] = useState<string>('');
 
   // New state for hover image functionality
   const [hoveredProductImages, setHoveredProductImages] = useState<{[key: string]: number}>({});
@@ -229,6 +227,65 @@ const ProductsPage: React.FC = () => {
   // New state for expanded filter sections
   const [expandedFilters, setExpandedFilters] = useState<{[key: string]: boolean}>({});
   const [showAllFilterSections, setShowAllFilterSections] = useState<boolean>(false);
+
+  // Favorites (persisted locally for now)
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('favorites')
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  })
+
+  const isFavorite = (id: string) => favorites.includes(id)
+
+  const toggleFavorite = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      try { localStorage.setItem('favorites', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // Helpers for pricing display
+  const shortMonthlyLabel = (priceFrom: string): string => {
+    const { currency, amount } = parseCurrency(priceFrom)
+    const monthly = amount / 24
+    return `Monthly ${currency}${monthly.toFixed(2)}`
+  }
+
+  const computeOriginalPrice = (priceFrom: string): string => {
+    const { currency, amount } = parseCurrency(priceFrom)
+    const original = amount * 1.1
+    return `${currency}${original.toFixed(2)}`
+  }
+
+  const renderStars = (rating: number) => {
+    const full = Math.floor(rating)
+    const total = 5
+    const items: JSX.Element[] = []
+    for (let i = 0; i < total; i++) {
+      const filled = i < full
+      items.push(
+        <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-3.5 h-3.5" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.75.75 0 011.04 0l2.206 2.185a.75.75 0 00.564.218l3.053-.262a.75.75 0 01.78.975l-.93 2.832a.75.75 0 00.23.82l2.323 1.75a.75.75 0 01-.27 1.324l-2.928.909a.75.75 0 00-.51.53l-.8 2.903a.75.75 0 01-1.2.401l-2.41-1.982a.75.75 0 00-.948 0l-2.41 1.982a.75.75 0 01-1.2-.401l-.8-2.903a.75.75 0 00-.51-.53l-2.928-.91a.75.75 0 01-.27-1.323l2.323-1.75a.75.75 0 00.23-.82l-.93-2.832a.75.75 0 01.78-.975l3.053.262a.75.75 0 00.564-.218l2.206-2.185z" />
+        </svg>
+      )
+    }
+    return items
+  }
+
+  // Simple deterministic "bestseller" score for sorting (placeholder until real metrics)
+  const computeBestsellerScore = (p: Product): number => {
+    const s = (p.id || p.name || '')
+    let sum = 0
+    for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i)
+    // Favor newer-looking items a bit if tagged 'new'
+    if (p.tags?.includes('new')) sum += 500
+    return sum
+  }
 
   const toggleFilterExpansion = (filterName: string) => {
     setExpandedFilters(prev => ({
@@ -250,13 +307,14 @@ const ProductsPage: React.FC = () => {
   // Read and write query params for initial filters
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
-    const cat = searchParams.get('category');
+    const catParam = searchParams.get('category');
+    const cat = catParam && catParam.toLowerCase() === 'all' ? '' : catParam;
     const sub = searchParams.get('subcategory');
     const brand = searchParams.get('brand');
     const q = searchParams.get('q');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    if (cat) setSelectedCategory(cat);
+    if (cat !== null) setSelectedCategory(cat);
     if (sub) setSelectedSubcategory(sub);
     if (brand) setSelectedBrand(brand);
     if (q) setSearchInput(q);
@@ -267,7 +325,7 @@ const ProductsPage: React.FC = () => {
       });
     }
     // Expand the selected category by default when provided
-    if (cat) setExpandedCategory('All' === cat ? null : cat);
+    if (cat) setExpandedCategory(cat ? cat : null);
   }, [searchParams]);
 
   useEffect(() => {
@@ -289,7 +347,7 @@ const ProductsPage: React.FC = () => {
     let result = [...sourceProducts];
 
     // Filter by category (map UI categories to DB categories/tokens)
-    if (selectedCategory !== 'All') {
+    if (selectedCategory) {
       result = result.filter(product => matchesUiCategory(product, selectedCategory));
     }
 
@@ -301,7 +359,7 @@ const ProductsPage: React.FC = () => {
     }
 
     // Filter by tag
-    if (selectedTag !== 'All') {
+    if (selectedTag) {
       result = result.filter(product => product.tags.includes(selectedTag.toLowerCase()));
     }
 
@@ -314,12 +372,12 @@ const ProductsPage: React.FC = () => {
     }
 
     // Filter by brand (fix to use tags where brand is stored in lowercase)
-    if (selectedBrand !== 'All') {
+    if (selectedBrand) {
       result = result.filter(product => product.tags.includes(selectedBrand.toLowerCase()));
     }
 
     // Filter by condition
-    if (selectedCondition !== 'All') {
+    if (selectedCondition) {
       // Simulate condition filtering
       if (selectedCondition === 'New') {
         result = result.filter(product => product.tags.includes('new'));
@@ -331,7 +389,7 @@ const ProductsPage: React.FC = () => {
     }
 
     // Filter by availability
-    if (selectedAvailability !== 'All') {
+    if (selectedAvailability) {
       // Simulate availability filtering
       if (selectedAvailability === 'In Stock') {
         result = result.filter((_, index) => index % 2 === 0);
@@ -341,14 +399,14 @@ const ProductsPage: React.FC = () => {
     }
 
     // Filter by storage
-    if (selectedStorage !== 'All') {
+    if (selectedStorage) {
       result = result.filter(product => 
         product.storages.some(storage => storage.toLowerCase() === selectedStorage.toLowerCase())
       );
     }
 
     // Filter by color
-    if (selectedColor !== 'All') {
+    if (selectedColor) {
       result = result.filter(product => 
         product.colors.some(color => {
           const colorMap: { [key: string]: string[] } = {
@@ -364,7 +422,7 @@ const ProductsPage: React.FC = () => {
     }
 
     // Filter by warranty
-    if (selectedWarranty !== 'All') {
+    if (selectedWarranty) {
       if (selectedWarranty === 'AppleCare+') {
         result = result.filter(product => product.tags.includes('applecare+'));
       }
@@ -416,6 +474,9 @@ const ProductsPage: React.FC = () => {
       case 'price-high':
         result.sort((a, b) => parseFloat(b.priceFrom.replace('$', '')) - parseFloat(a.priceFrom.replace('$', '')));
         break;
+      case 'bestsellers':
+        result.sort((a, b) => computeBestsellerScore(b) - computeBestsellerScore(a));
+        break;
       case 'name':
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
@@ -447,16 +508,16 @@ const ProductsPage: React.FC = () => {
   }, [searchInput]);
 
   const resetFilters = () => {
-    setSelectedCategory('All');
+    setSelectedCategory('');
     setSelectedSubcategory('');
-    setSelectedTag('All');
+    setSelectedTag('');
     setSelectedQuickFilter(null);
-    setSelectedBrand('All');
-    setSelectedCondition('All');
-    setSelectedAvailability('All');
-    setSelectedStorage('All');
-    setSelectedColor('All');
-    setSelectedWarranty('All');
+    setSelectedBrand('');
+    setSelectedCondition('');
+    setSelectedAvailability('');
+    setSelectedStorage('');
+    setSelectedColor('');
+    setSelectedWarranty('');
     setSelectedPriceRange({ min: 0, max: 3000 });
     setSearchInput('');
     setSortBy('default');
@@ -468,12 +529,12 @@ const ProductsPage: React.FC = () => {
     setSelectedCategory(category);
     setExpandedCategory(category);
     setSelectedSubcategory('');
-    setSelectedTag('All');
+    setSelectedTag('');
     setSelectedQuickFilter(null);
 
     // Update query parameters when category changes
     const params = new URLSearchParams(searchParams);
-    if (category && category !== 'All') params.set('category', category); else params.delete('category');
+    if (category) params.set('category', category); else params.delete('category');
     params.delete('subcategory');
     params.delete('brand');
     setSearchParams(params, { replace: true });
@@ -484,7 +545,7 @@ const ProductsPage: React.FC = () => {
     setSelectedSubcategory(subcategory);
 
     const params = new URLSearchParams(searchParams);
-    if (selectedCategory && selectedCategory !== 'All') params.set('category', selectedCategory);
+    if (selectedCategory) params.set('category', selectedCategory);
     params.set('subcategory', subcategory);
     setSearchParams(params, { replace: true });
   };
@@ -695,9 +756,9 @@ const ProductsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-[#f5f5f7]/90 dark:bg-black/90 border-b border-gray-200 dark:border-gray-800 pt-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <H1 className="text-xl font-medium">Store</H1>
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-[#f5f5f7]/90 dark:bg-black/90 border-b border-gray-200 dark:border-gray-800 pt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+          <H1 className="text-2xl font-semibold tracking-tight">Store</H1>
           <div className="relative w-full max-w-xs ml-4">
             <input
               type="text"
@@ -723,22 +784,22 @@ const ProductsPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex max-w-6xl mx-auto">
+      <div className="flex max-w-7xl mx-auto">
         {/* Sidebar - Desktop */}
-        <aside className="w-56 pr-4 py-8 hidden md:block">
-          <div className="space-y-8">
+        <aside className="w-64 pr-6 py-8 hidden md:block">
+          <div className="space-y-7">
             {/* Categories - Always visible */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Categories</h3>
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Categories</h3>
               <div className="space-y-1">
                 {categories.slice(0, expandedFilters['categories'] ? categories.length : 4).map((category) => (
                   <div key={category.name}>
                     <button
                       onClick={() => handleCategoryClick(category.name)}
-                      className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
                         selectedCategory === category.name 
-                          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                          : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -764,10 +825,10 @@ const ProductsPage: React.FC = () => {
                           <button
                             key={subcategory}
                             onClick={() => handleSubcategoryClick(subcategory)}
-                            className={`block w-full text-left px-2 py-1 rounded-md text-xs ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedSubcategory === subcategory 
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 font-medium' 
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {subcategory}
@@ -777,7 +838,7 @@ const ProductsPage: React.FC = () => {
                         {category.subcategories.length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion(`subcategories-${category.name}`)}
-                            className="block w-full text-left px-2 py-1 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {expandedFilters[`subcategories-${category.name}`] ? 'See less' : `See ${category.subcategories.length - 4} more`}
                           </button>
@@ -790,7 +851,7 @@ const ProductsPage: React.FC = () => {
                 {categories.length > 4 && (
                   <button
                     onClick={() => toggleFilterExpansion('categories')}
-                    className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
                   >
                     {expandedFilters['categories'] ? 'See less' : `See ${categories.length - 4} more`}
                   </button>
@@ -800,7 +861,7 @@ const ProductsPage: React.FC = () => {
 
             {/* Price Range - Always visible */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Price Range</h3>
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Price Range</h3>
               <div className="space-y-3">
                 <div className="flex space-x-2">
                   <input
@@ -808,7 +869,7 @@ const ProductsPage: React.FC = () => {
                     placeholder="Min"
                     value={selectedPriceRange.min || ''}
                     onChange={(e) => handlePriceRangeChange('min', Number(e.target.value))}
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                   />
                   <span className="text-gray-500 self-center text-xs">-</span>
                   <input
@@ -816,7 +877,7 @@ const ProductsPage: React.FC = () => {
                     placeholder="Max"
                     value={selectedPriceRange.max || ''}
                     onChange={(e) => handlePriceRangeChange('max', Number(e.target.value))}
-                    className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                   />
                 </div>
                 <div className="text-xs text-gray-500">
@@ -827,26 +888,26 @@ const ProductsPage: React.FC = () => {
 
             {/* Brand - Always visible */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Brand</h3>
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Brand</h3>
               <div className="space-y-2">
-                {['All', 'Apple', 'Beats', 'Belkin', 'Logitech'].slice(0, expandedFilters['brands'] ? 5 : 4).map((brand) => (
+                {['Apple', 'Beats', 'Belkin', 'Logitech'].slice(0, expandedFilters['brands'] ? 5 : 4).map((brand) => (
                   <button
                     key={brand}
                     onClick={() => setSelectedBrand(brand)}
-                    className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
                       selectedBrand === brand 
-                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                        : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                     }`}
                   >
                     {brand}
                   </button>
                 ))}
                 
-                {['All', 'Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
+                {['Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
                   <button
                     onClick={() => toggleFilterExpansion('brands')}
-                    className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     {expandedFilters['brands'] ? 'See less' : 'See more'}
                   </button>
@@ -858,7 +919,7 @@ const ProductsPage: React.FC = () => {
             {!showAllFilterSections && (
               <button
                 onClick={() => setShowAllFilterSections(true)}
-                className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+                className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -874,14 +935,14 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Condition</h3>
                   <div className="space-y-2">
-                    {['All', 'New', 'Refurbished', 'Used'].map((condition) => (
+                    {['New', 'Refurbished', 'Used'].map((condition) => (
                       <button
                         key={condition}
                         onClick={() => setSelectedCondition(condition)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedCondition === condition 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {condition}
@@ -894,24 +955,24 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Availability</h3>
                   <div className="space-y-2">
-                    {['All', 'In Stock', 'Pre-order', 'Out of Stock'].slice(0, expandedFilters['availability'] ? 4 : 3).map((availability) => (
+                    {['In Stock', 'Pre-order', 'Out of Stock'].slice(0, expandedFilters['availability'] ? 4 : 3).map((availability) => (
                       <button
                         key={availability}
                         onClick={() => setSelectedAvailability(availability)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedAvailability === availability 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {availability}
                       </button>
                     ))}
                     
-                    {['All', 'In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
+                    {['In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
                       <button
                         onClick={() => toggleFilterExpansion('availability')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {expandedFilters['availability'] ? 'See less' : 'See more'}
                       </button>
@@ -923,24 +984,24 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Storage</h3>
                   <div className="space-y-2">
-                    {['All', '128GB', '256GB', '512GB', '1TB', '2TB'].slice(0, expandedFilters['storage'] ? 6 : 4).map((storage) => (
+                    {['128GB', '256GB', '512GB', '1TB', '2TB'].slice(0, expandedFilters['storage'] ? 6 : 4).map((storage) => (
                       <button
                         key={storage}
                         onClick={() => setSelectedStorage(storage)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedStorage === storage 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {storage}
                       </button>
                     ))}
                     
-                    {['All', '128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
+                    {['128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('storage')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {expandedFilters['storage'] ? 'See less' : 'See more'}
                       </button>
@@ -952,24 +1013,24 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Color</h3>
                   <div className="space-y-2">
-                    {['All', 'Black', 'White', 'Gold', 'Blue', 'Silver'].slice(0, expandedFilters['colors'] ? 6 : 4).map((color) => (
+                    {['Black', 'White', 'Gold', 'Blue', 'Silver'].slice(0, expandedFilters['colors'] ? 6 : 4).map((color) => (
                       <button
                         key={color}
                         onClick={() => setSelectedColor(color)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedColor === color 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {color}
                       </button>
                     ))}
                     
-                    {['All', 'Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
+                    {['Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('colors')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {expandedFilters['colors'] ? 'See less' : 'See more'}
                       </button>
@@ -981,14 +1042,14 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Warranty</h3>
                   <div className="space-y-2">
-                    {['All', 'AppleCare+', 'Standard', 'Extended'].map((warranty) => (
+                    {['AppleCare+', 'Standard', 'Extended'].map((warranty) => (
                       <button
                         key={warranty}
                         onClick={() => setSelectedWarranty(warranty)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedWarranty === warranty 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {warranty}
@@ -1005,10 +1066,10 @@ const ProductsPage: React.FC = () => {
                       <button
                         key={tag}
                         onClick={() => setSelectedTag(tag)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                           selectedTag === tag 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {tag}
@@ -1018,7 +1079,7 @@ const ProductsPage: React.FC = () => {
                     {tags.length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('tags')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {expandedFilters['tags'] ? 'See less' : `See ${tags.length - 4} more`}
                       </button>
@@ -1029,7 +1090,7 @@ const ProductsPage: React.FC = () => {
                 {/* See fewer filters button */}
                 <button
                   onClick={() => setShowAllFilterSections(false)}
-                  className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+                  className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1041,7 +1102,7 @@ const ProductsPage: React.FC = () => {
 
             <button
               onClick={resetFilters}
-              className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+              className="w-full py-2 px-4 rounded-lg text-xs font-medium bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               Reset All Filters
             </button>
@@ -1073,10 +1134,10 @@ const ProductsPage: React.FC = () => {
                       <div key={category.name}>
                         <button
                           onClick={() => handleCategoryClick(category.name)}
-                          className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                          className={`block w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
                             selectedCategory === category.name 
-                              ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                              : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -1102,10 +1163,10 @@ const ProductsPage: React.FC = () => {
                               <button
                                 key={subcategory}
                                 onClick={() => handleSubcategoryClick(subcategory)}
-                                className={`block w-full text-left px-2 py-1 rounded-md text-xs ${
+                                className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                                   selectedSubcategory === subcategory 
-                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 font-medium' 
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                    : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                                 }`}
                               >
                                 {subcategory}
@@ -1115,7 +1176,7 @@ const ProductsPage: React.FC = () => {
                             {category.subcategories.length > 4 && (
                               <button
                                 onClick={() => toggleFilterExpansion(`subcategories-${category.name}`)}
-                                className="block w-full text-left px-2 py-1 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                               >
                                 {expandedFilters[`subcategories-${category.name}`] ? 'See less' : `See ${category.subcategories.length - 4} more`}
                               </button>
@@ -1128,7 +1189,7 @@ const ProductsPage: React.FC = () => {
                     {categories.length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('categories')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
                       >
                         {expandedFilters['categories'] ? 'See less' : `See ${categories.length - 4} more`}
                       </button>
@@ -1146,7 +1207,7 @@ const ProductsPage: React.FC = () => {
                         placeholder="Min"
                         value={selectedPriceRange.min || ''}
                         onChange={(e) => handlePriceRangeChange('min', Number(e.target.value))}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                       />
                       <span className="text-gray-500 self-center text-xs">-</span>
                       <input
@@ -1154,7 +1215,7 @@ const ProductsPage: React.FC = () => {
                         placeholder="Max"
                         value={selectedPriceRange.max || ''}
                         onChange={(e) => handlePriceRangeChange('max', Number(e.target.value))}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                       />
                     </div>
                     <div className="text-xs text-gray-500">
@@ -1167,24 +1228,24 @@ const ProductsPage: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Brand</h3>
                   <div className="space-y-2">
-                    {['All', 'Apple', 'Beats', 'Belkin', 'Logitech'].slice(0, expandedFilters['brands'] ? 5 : 4).map((brand) => (
+                    {['Apple', 'Beats', 'Belkin', 'Logitech'].slice(0, expandedFilters['brands'] ? 5 : 4).map((brand) => (
                       <button
                         key={brand}
                         onClick={() => setSelectedBrand(brand)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                        className={`block w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${
                           selectedBrand === brand 
-                            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                            : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                         }`}
                       >
                         {brand}
                       </button>
                     ))}
                     
-                    {['All', 'Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
+                    {['Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('brands')}
-                        className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {expandedFilters['brands'] ? 'See less' : 'See more'}
                       </button>
@@ -1196,7 +1257,7 @@ const ProductsPage: React.FC = () => {
                 {!showAllFilterSections && (
                   <button
                     onClick={() => setShowAllFilterSections(true)}
-                    className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+                    className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1212,14 +1273,14 @@ const ProductsPage: React.FC = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Condition</h3>
                       <div className="space-y-2">
-                        {['All', 'New', 'Refurbished', 'Used'].map((condition) => (
+                        {['New', 'Refurbished', 'Used'].map((condition) => (
                           <button
                             key={condition}
                             onClick={() => setSelectedCondition(condition)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedCondition === condition 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {condition}
@@ -1232,24 +1293,24 @@ const ProductsPage: React.FC = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Availability</h3>
                       <div className="space-y-2">
-                        {['All', 'In Stock', 'Pre-order', 'Out of Stock'].slice(0, expandedFilters['availability'] ? 4 : 3).map((availability) => (
+                        {['In Stock', 'Pre-order', 'Out of Stock'].slice(0, expandedFilters['availability'] ? 4 : 3).map((availability) => (
                           <button
                             key={availability}
                             onClick={() => setSelectedAvailability(availability)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedAvailability === availability 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {availability}
                           </button>
                         ))}
                         
-                        {['All', 'In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
+                        {['In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
                           <button
                             onClick={() => toggleFilterExpansion('availability')}
-                            className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {expandedFilters['availability'] ? 'See less' : 'See more'}
                           </button>
@@ -1261,24 +1322,24 @@ const ProductsPage: React.FC = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Storage</h3>
                       <div className="space-y-2">
-                        {['All', '128GB', '256GB', '512GB', '1TB', '2TB'].slice(0, expandedFilters['storage'] ? 6 : 4).map((storage) => (
+                        {['128GB', '256GB', '512GB', '1TB', '2TB'].slice(0, expandedFilters['storage'] ? 6 : 4).map((storage) => (
                           <button
                             key={storage}
                             onClick={() => setSelectedStorage(storage)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedStorage === storage 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {storage}
                           </button>
                         ))}
                         
-                        {['All', '128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
+                        {['128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('storage')}
-                            className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {expandedFilters['storage'] ? 'See less' : 'See more'}
                           </button>
@@ -1290,24 +1351,24 @@ const ProductsPage: React.FC = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Color</h3>
                       <div className="space-y-2">
-                        {['All', 'Black', 'White', 'Gold', 'Blue', 'Silver'].slice(0, expandedFilters['colors'] ? 6 : 4).map((color) => (
+                        {['Black', 'White', 'Gold', 'Blue', 'Silver'].slice(0, expandedFilters['colors'] ? 6 : 4).map((color) => (
                           <button
                             key={color}
                             onClick={() => setSelectedColor(color)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedColor === color 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {color}
                           </button>
                         ))}
                         
-                        {['All', 'Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
+                        {['Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('colors')}
-                            className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {expandedFilters['colors'] ? 'See less' : 'See more'}
                           </button>
@@ -1319,14 +1380,14 @@ const ProductsPage: React.FC = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Warranty</h3>
                       <div className="space-y-2">
-                        {['All', 'AppleCare+', 'Standard', 'Extended'].map((warranty) => (
+                        {['AppleCare+', 'Standard', 'Extended'].map((warranty) => (
                           <button
                             key={warranty}
                             onClick={() => setSelectedWarranty(warranty)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedWarranty === warranty 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {warranty}
@@ -1343,10 +1404,10 @@ const ProductsPage: React.FC = () => {
                           <button
                             key={tag}
                             onClick={() => setSelectedTag(tag)}
-                            className={`block w-full text-left px-2 py-1.5 rounded-md text-sm ${
+                            className={`block w-full text-left px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                               selectedTag === tag 
-                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium shadow-sm' 
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                : 'bg-transparent text-blue-600 border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             {tag}
@@ -1356,7 +1417,7 @@ const ProductsPage: React.FC = () => {
                         {tags.length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('tags')}
-                            className="block w-full text-left px-2 py-1.5 rounded-md text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
                             {expandedFilters['tags'] ? 'See less' : `See ${tags.length - 4} more`}
                           </button>
@@ -1367,7 +1428,7 @@ const ProductsPage: React.FC = () => {
                     {/* See fewer filters button */}
                     <button
                       onClick={() => setShowAllFilterSections(false)}
-                      className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
+                      className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1391,7 +1452,7 @@ const ProductsPage: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 py-8 px-4">
           {/* Quick Filters and Sort */}
-          <div className="mb-6 flex flex-wrap justify-between items-center">
+          <div className="mb-4 flex flex-wrap justify-between items-center">
             {/* Quick Filter Tags */}
             <div className="flex flex-wrap gap-2 mb-4 sm:mb-0">
               {quickFilters.map((filter) => (
@@ -1408,7 +1469,7 @@ const ProductsPage: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                className="flex items-center px-4 py-2 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium shadow-sm"
+                className="flex items-center h-9 px-4 rounded-lg text-sm font-medium transition-colors duration-200 bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               >
                 <span className="mr-1">Sort By: </span>
                 <span className="font-medium">
@@ -1416,6 +1477,7 @@ const ProductsPage: React.FC = () => {
                   {sortBy === 'price-low' && 'Price: Low to High'}
                   {sortBy === 'price-high' && 'Price: High to Low'}
                   {sortBy === 'name' && 'Name'}
+                  {sortBy === 'bestsellers' && 'Bestsellers'}
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1427,6 +1489,7 @@ const ProductsPage: React.FC = () => {
                   <div className="py-1" role="menu" aria-orientation="vertical">
                     {[
                       { value: 'default', label: 'Featured' },
+                      { value: 'bestsellers', label: 'Bestsellers' },
                       { value: 'price-low', label: 'Price: Low to High' },
                       { value: 'price-high', label: 'Price: High to Low' },
                       { value: 'name', label: 'Name' }
@@ -1454,15 +1517,15 @@ const ProductsPage: React.FC = () => {
           </div>
 
           {/* Active Filters */}
-          {(selectedCategory !== 'All' || selectedSubcategory || selectedTag !== 'All' || selectedQuickFilter || searchQuery || selectedPriceRange.min > 0 || selectedPriceRange.max < 3000 || selectedBrand !== 'All' || selectedCondition !== 'All' || selectedAvailability !== 'All' || selectedStorage !== 'All' || selectedColor !== 'All' || selectedWarranty !== 'All') && (
+          {(selectedCategory || selectedSubcategory || selectedTag || selectedQuickFilter || selectedPriceRange.min > 0 || selectedPriceRange.max < 3000 || selectedBrand || selectedCondition || selectedAvailability || selectedStorage || selectedColor || selectedWarranty) && (
             <div className="mb-6 flex flex-wrap gap-2 items-center">
               <span className="text-sm text-gray-500 dark:text-gray-400">Active filters:</span>
-              {selectedCategory !== 'All' && (
+              {selectedCategory && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedCategory}
                   <button 
                     onClick={() => {
-                      setSelectedCategory('All');
+                      setSelectedCategory('');
                       setSelectedSubcategory('');
                       setExpandedCategory(null);
                     }} 
@@ -1500,12 +1563,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedBrand !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200">
+              {selectedBrand && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedBrand}
                   <button 
-                    onClick={() => setSelectedBrand('All')} 
-                    className="ml-1 text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-200"
+                    onClick={() => setSelectedBrand('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1513,12 +1576,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedCondition !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200">
+              {selectedCondition && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedCondition}
                   <button 
-                    onClick={() => setSelectedCondition('All')} 
-                    className="ml-1 text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-200"
+                    onClick={() => setSelectedCondition('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1526,12 +1589,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedAvailability !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-teal-100 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200">
+              {selectedAvailability && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedAvailability}
                   <button 
-                    onClick={() => setSelectedAvailability('All')} 
-                    className="ml-1 text-teal-500 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-200"
+                    onClick={() => setSelectedAvailability('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1539,12 +1602,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedStorage !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200">
+              {selectedStorage && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedStorage}
                   <button 
-                    onClick={() => setSelectedStorage('All')} 
-                    className="ml-1 text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-200"
+                    onClick={() => setSelectedStorage('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1552,12 +1615,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedColor !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-900/20 text-pink-800 dark:text-pink-200">
+              {selectedColor && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedColor}
                   <button 
-                    onClick={() => setSelectedColor('All')} 
-                    className="ml-1 text-pink-500 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-200"
+                    onClick={() => setSelectedColor('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1565,12 +1628,12 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </span>
               )}
-              {selectedWarranty !== 'All' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200">
+              {selectedWarranty && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm">
                   {selectedWarranty}
                   <button 
-                    onClick={() => setSelectedWarranty('All')} 
-                    className="ml-1 text-yellow-500 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-200"
+                    onClick={() => setSelectedWarranty('')}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1596,8 +1659,8 @@ const ProductsPage: React.FC = () => {
 
           {/* Results Count */}
           {!isLoading && (
-            <div className="mb-6">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="mb-3">
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
                 Showing {Math.min(visibleProducts, filteredProducts.length)} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
               </Text>
             </div>
@@ -1606,10 +1669,10 @@ const ProductsPage: React.FC = () => {
           {/* Products Grid */}
           {isLoading ? (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 12 }).map((_, idx) => (
                   <div key={idx} className="flex flex-col h-full relative rounded-2xl overflow-hidden">
-                    <div className="overflow-hidden rounded-xl aspect-square mb-4 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+                    <div className="overflow-hidden rounded-xl aspect-[4/5] mb-3 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
                     <div className="px-3 mb-2 space-y-2">
                       <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
                       <div className="h-4 w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
@@ -1625,7 +1688,7 @@ const ProductsPage: React.FC = () => {
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {/* Hardcoded test card */}
                 <div 
                   key="test-card" 
@@ -1634,13 +1697,23 @@ const ProductsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProduct)}>
                     <div
-                      className="overflow-hidden rounded-xl aspect-square mb-4 transition-transform duration-300 group-hover:scale-[1.02] relative"
+                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
                       onMouseMove={handleTestCardImageHover}
                       onMouseLeave={handleTestCardImageLeave}
                     >
-                      {/* Badges */}
+                      {/* Favorite */}
+                      <button
+                        onClick={(e) => toggleFavorite('test-card', e)}
+                        aria-label="Add to favorites"
+                        className="absolute right-2 top-2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-900/70 hover:bg-white text-red-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFavorite('test-card') ? 'currentColor' : 'none'} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                        </svg>
+                      </button>
+                      {/* Badges at bottom */}
                       {testProduct.tags?.includes('new') && (
-                        <span className="absolute left-2 top-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-600 text-white">New</span>
+                        <span className="absolute left-2 bottom-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-600 text-white">New</span>
                       )}
                       <img
                         src={testCardImages[hoveredProductImages['test-card'] ?? 0]}
@@ -1662,33 +1735,34 @@ const ProductsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="px-3 mb-2">
-                      <Text size="xs" color="secondary" className="mb-1">{testProduct.category}</Text>
-                      <Text size="base" className="font-bold mb-2 text-black dark:text-white">{testProduct.name}</Text>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        {testProduct.colors.map((color, idx) => (
-                          <span
-                            key={idx}
-                            className="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-700"
-                            style={{ backgroundColor: color }}
-                            aria-label={`Color option ${idx + 1}`}
-                          />
-                        ))}
+                    <div className="px-3 mb-1 min-h-[120px]">
+                      {/* Pricing stack */}
+                      <div className="mb-1">
+                        <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProduct.priceFrom}</Text>
+                        {/* Show a sample original price for the demo card */}
+                        <Text size="xs" color="tertiary" className="line-through">{computeOriginalPrice(testProduct.priceFrom)}</Text>
+                        <Text size="xs" color="secondary">{shortMonthlyLabel(testProduct.priceFrom)}</Text>
                       </div>
-                      <Text className="font-bold mb-1 text-black dark:text-white text-lg">{testProduct.priceFrom}</Text>
-                      <Text size="xs" color="secondary" className="mb-1">{testProduct.monthlyFrom}</Text>
+                      {/* Title small */}
+                      <div className="mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        <Text size="sm" className="font-medium text-black dark:text-white">{testProduct.name}</Text>
+                      </div>
+                      {/* Stars */}
+                      <div className="flex items-center gap-0.5 mb-0 text-amber-500">
+                        {renderStars(4.5)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="px-3 pb-3 relative z-10">
-                    <button
-                      onClick={(e) => handleAddToCart('test-card', e)}
-                      className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                      Add to Cart
-                    </button>
+                    <div className="px-3 pb-3 relative z-10">
+                      <button
+                        onClick={(e) => handleAddToCart('test-card', e)}
+                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1700,13 +1774,23 @@ const ProductsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProductSecondHand)}>
                     <div
-                      className="overflow-hidden rounded-xl aspect-square mb-4 transition-transform duration-300 group-hover:scale-[1.02] relative"
+                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
                       onMouseMove={handleTestCard2ImageHover}
                       onMouseLeave={handleTestCard2ImageLeave}
                     >
-                      {/* Badges */}
+                      {/* Favorite */}
+                      <button
+                        onClick={(e) => toggleFavorite('test-card-2', e)}
+                        aria-label="Add to favorites"
+                        className="absolute right-2 top-2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-900/70 hover:bg-white text-red-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFavorite('test-card-2') ? 'currentColor' : 'none'} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                        </svg>
+                      </button>
+                      {/* Badges at bottom */}
                       {testProductSecondHand.tags?.includes('second-hand') && (
-                        <span className="absolute left-2 top-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-600 text-white">Second hand</span>
+                        <span className="absolute left-2 bottom-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-600 text-white">Second hand</span>
                       )}
                       <img
                         src={testCard2Images[hoveredProductImages['test-card-2'] ?? 0]}
@@ -1728,33 +1812,33 @@ const ProductsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="px-3 mb-2">
-                      <Text size="xs" color="secondary" className="mb-1">{testProductSecondHand.category}</Text>
-                      <Text size="base" className="font-bold mb-2 text-black dark:text-white">{testProductSecondHand.name}</Text>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        {testProductSecondHand.colors.map((color, idx) => (
-                          <span
-                            key={idx}
-                            className="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-700"
-                            style={{ backgroundColor: color }}
-                            aria-label={`Color option ${idx + 1}`}
-                          />
-                        ))}
+                    <div className="px-3 mb-1 min-h-[120px]">
+                      {/* Pricing stack */}
+                      <div className="mb-1">
+                        <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProductSecondHand.priceFrom}</Text>
+                        <Text size="xs" color="tertiary" className="line-through">{computeOriginalPrice(testProductSecondHand.priceFrom)}</Text>
+                        <Text size="xs" color="secondary">{shortMonthlyLabel(testProductSecondHand.priceFrom)}</Text>
                       </div>
-                      <Text className="font-bold mb-1 text-black dark:text-white text-lg">{testProductSecondHand.priceFrom}</Text>
-                      <Text size="xs" color="secondary" className="mb-1">{testProductSecondHand.monthlyFrom}</Text>
+                      {/* Title small */}
+                      <div className="mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        <Text size="sm" className="font-medium text-black dark:text-white">{testProductSecondHand.name}</Text>
+                      </div>
+                      {/* Stars */}
+                      <div className="flex items-center gap-0.5 mb-0 text-amber-500">
+                        {renderStars(4.2)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="px-3 pb-3 relative z-10">
-                    <button
-                      onClick={(e) => handleAddToCart('test-card-2', e)}
-                      className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                      Add to Cart
-                    </button>
+                    <div className="px-3 pb-3 relative z-10">
+                      <button
+                        onClick={(e) => handleAddToCart('test-card-2', e)}
+                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {filteredProducts.slice(0, visibleProducts).map((product) => (
@@ -1768,16 +1852,26 @@ const ProductsPage: React.FC = () => {
                       className="cursor-pointer flex-grow relative z-10"
                     >
                       <div 
-                        className="overflow-hidden rounded-xl aspect-square mb-4 transition-transform duration-300 group-hover:scale-[1.02] relative"
+                        className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
                         onMouseMove={(e) => handleProductImageHover(product.id, e)}
                         onMouseLeave={() => handleProductImageLeave(product.id)}
                       >
-                        {/* Badges */}
+                        {/* Favorite */}
+                        <button
+                          onClick={(e) => toggleFavorite(product.id, e)}
+                          aria-label="Add to favorites"
+                          className="absolute right-2 top-2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-900/70 hover:bg-white text-red-500"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFavorite(product.id) ? 'currentColor' : 'none'} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                          </svg>
+                        </button>
+                        {/* Badges at bottom */}
                         {product.tags?.includes('new') && (
-                          <span className="absolute left-2 top-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-600 text-white">New</span>
+                          <span className="absolute left-2 bottom-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-600 text-white">New</span>
                         )}
                         {product.tags?.includes('second-hand') && (
-                          <span className="absolute left-2 top-2 z-10 mt-6 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-600 text-white">Second hand</span>
+                          <span className="absolute left-2 bottom-2 z-10 ml-16 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-600 text-white">Second hand</span>
                         )}
                         <img 
                           src={hoveredProductImages[product.id] !== undefined && product.images ? 
@@ -1802,27 +1896,22 @@ const ProductsPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <div className="px-3 mb-2">
-                        <Text size="xs" color="secondary" className="mb-1">{getUiCategoryLabel(product)}</Text>
-                        <Text size="base" className="font-bold mb-2 text-black dark:text-white">{product.name}</Text>
-                        {/* Color swatches */}
-                        {product.colors && product.colors.length > 0 && (
-                          <div className="flex items-center gap-1.5 mb-2">
-                            {product.colors.slice(0, 6).map((color, idx) => (
-                              <span
-                                key={idx}
-                                className="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-700"
-                                style={{ backgroundColor: color }}
-                                aria-label={`Color option ${idx + 1}`}
-                              />
-                            ))}
-                            {product.colors.length > 6 && (
-                              <span className="text-xs text-gray-500">+{product.colors.length - 6}</span>
-                            )}
-                          </div>
-                        )}
-                        <Text className="font-bold mb-1 text-black dark:text-white text-lg">{product.priceFrom}</Text>
-                        <Text size="xs" color="secondary" className="mb-1">{product.monthlyFrom}</Text>
+                      <div className="px-3 mb-1 min-h-[120px]">
+                        {/* Pricing stack */}
+                        <div className="mb-1">
+                          <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{product.priceFrom}</Text>
+                          {/* Original price only if available in future */}
+                          {null /* placeholder to optionally render original price when available */}
+                          <Text size="xs" color="secondary">{shortMonthlyLabel(product.priceFrom)}</Text>
+                        </div>
+                        {/* Title small */}
+                        <div className="mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          <Text size="sm" className="font-medium text-black dark:text-white">{product.name}</Text>
+                        </div>
+                        {/* Stars */}
+                        <div className="flex items-center gap-0.5 mb-0 text-amber-500">
+                          {renderStars(4.4)}
+                        </div>
                       </div>
                     </div>
                     <div className="px-3 pb-3 relative z-10">
