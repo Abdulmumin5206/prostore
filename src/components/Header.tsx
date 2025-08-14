@@ -152,7 +152,14 @@ const Header = () => {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               <Search className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
-              <ShoppingBag className="h-4 w-4 text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 cursor-pointer transition-colors duration-200" />
+              <Link
+                to="/cart"
+                className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+                onClick={closeDropdownNow}
+                aria-label="Cart"
+              >
+                <ShoppingBag className="h-4 w-4" />
+              </Link>
               
               {/* Auth Section */}
               {user || isAdminOverride ? (

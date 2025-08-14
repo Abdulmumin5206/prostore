@@ -6,6 +6,7 @@ import ProductModal from '../components/ProductModal';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { listPublicProducts, PublicProduct } from '../lib/db';
 import { useSearchParams } from 'react-router-dom';
+import { useCart } from '../contexts/CartContext';
 
 // Fetch live products when Supabase is configured
 async function fetchLiveProducts(): Promise<Product[]> {
@@ -208,6 +209,7 @@ const ProductsPage: React.FC = () => {
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const { addItem } = useCart();
   
   // Price range filters
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 3000 });
@@ -227,6 +229,13 @@ const ProductsPage: React.FC = () => {
   // New state for expanded filter sections
   const [expandedFilters, setExpandedFilters] = useState<{[key: string]: boolean}>({});
   const [showAllFilterSections, setShowAllFilterSections] = useState<boolean>(false);
+
+  const toggleFilterExpansion = (filterName: string) => {
+    setExpandedFilters(prev => ({
+      ...prev,
+      [filterName]: !prev[filterName]
+    }));
+  };
 
   // Track that the initial fetch has completed to avoid flicker
   const [hasLoadedOnce, setHasLoadedOnce] = useState<boolean>(false);
@@ -399,84 +408,81 @@ const ProductsPage: React.FC = () => {
       );
     }
 
-    // Apply sorting
-    if (sortBy === 'price-low') {
-      result.sort((a, b) => parseFloat(a.priceFrom.replace('$', '')) - parseFloat(b.priceFrom.replace('$', '')));
-    } else if (sortBy === 'price-high') {
-      result.sort((a, b) => parseFloat(b.priceFrom.replace('$', '')) - parseFloat(a.priceFrom.replace('$', '')));
-    } else if (sortBy === 'name') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort results
+    switch (sortBy) {
+      case 'price-low':
+        result.sort((a, b) => parseFloat(a.priceFrom.replace('$', '')) - parseFloat(b.priceFrom.replace('$', '')));
+        break;
+      case 'price-high':
+        result.sort((a, b) => parseFloat(b.priceFrom.replace('$', '')) - parseFloat(a.priceFrom.replace('$', '')));
+        break;
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
     }
 
     setFilteredProducts(result);
-    setVisibleProducts(12); // Reset pagination when filters change
-  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, searchQuery, sortBy, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, sourceProducts, hasLoadedOnce]);
+  }, [selectedCategory, selectedSubcategory, selectedTag, selectedQuickFilter, selectedPriceRange, selectedBrand, selectedCondition, selectedAvailability, selectedStorage, selectedColor, selectedWarranty, searchQuery, sortBy, sourceProducts, hasLoadedOnce]);
 
-  // Debounce user typing before applying search filter
+  // Debounce search input and update query params
   useEffect(() => {
     if (searchDebounceRef.current) {
       window.clearTimeout(searchDebounceRef.current);
     }
+
     searchDebounceRef.current = window.setTimeout(() => {
       setSearchQuery(searchInput);
-    }, 250);
+      const params = new URLSearchParams(searchParams);
+      if (searchInput) params.set('q', searchInput); else params.delete('q');
+      setSearchParams(params, { replace: true });
+    }, 300);
+
     return () => {
-      if (searchDebounceRef.current) window.clearTimeout(searchDebounceRef.current);
+      if (searchDebounceRef.current) {
+        window.clearTimeout(searchDebounceRef.current);
+      }
     };
   }, [searchInput]);
 
-  // Toggle filter expansion
-  const toggleFilterExpansion = (filterName: string) => {
-    setExpandedFilters(prev => ({
-      ...prev,
-      [filterName]: !prev[filterName]
-    }));
-  };
-
-  // Reset filters
   const resetFilters = () => {
     setSelectedCategory('All');
     setSelectedSubcategory('');
     setSelectedTag('All');
     setSelectedQuickFilter(null);
-    setSearchQuery('');
-    setSortBy('default');
-    setExpandedCategory(null);
-    setSelectedPriceRange({ min: 0, max: 3000 });
     setSelectedBrand('All');
     setSelectedCondition('All');
     setSelectedAvailability('All');
     setSelectedStorage('All');
     setSelectedColor('All');
     setSelectedWarranty('All');
-    setExpandedFilters({}); // Reset expanded filters
-    setShowAllFilterSections(false); // Hide additional filter sections
+    setSelectedPriceRange({ min: 0, max: 3000 });
+    setSearchInput('');
+    setSortBy('default');
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   // Handle category click
-  const handleCategoryClick = (categoryName: string) => {
-    let nextCategory = 'All';
-    if (selectedCategory === categoryName) {
-      nextCategory = 'All';
-      setSelectedCategory('All');
-      setSelectedSubcategory('');
-      setExpandedCategory(null);
-    } else {
-      nextCategory = categoryName;
-      setSelectedCategory(categoryName);
-      setSelectedSubcategory('');
-      setExpandedCategory(categoryName);
-    }
-    // Update URL params
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+    setExpandedCategory(category);
+    setSelectedSubcategory('');
+    setSelectedTag('All');
+    setSelectedQuickFilter(null);
+
+    // Update query parameters when category changes
     const params = new URLSearchParams(searchParams);
-    if (nextCategory !== 'All') params.set('category', nextCategory); else params.delete('category');
+    if (category && category !== 'All') params.set('category', category); else params.delete('category');
     params.delete('subcategory');
+    params.delete('brand');
     setSearchParams(params, { replace: true });
   };
 
   // Handle subcategory click
   const handleSubcategoryClick = (subcategory: string) => {
     setSelectedSubcategory(subcategory);
+
     const params = new URLSearchParams(searchParams);
     if (selectedCategory && selectedCategory !== 'All') params.set('category', selectedCategory);
     params.set('subcategory', subcategory);
@@ -499,9 +505,26 @@ const ProductsPage: React.FC = () => {
   };
 
   // Add to cart
+  const parseCurrency = (priceFrom: string): { currency: string; amount: number } => {
+    const hasDollar = priceFrom.trim().startsWith('$');
+    const amount = parseFloat(priceFrom.replace(/[^0-9.]/g, '')) || 0;
+    return { currency: hasDollar ? 'USD' : 'USD', amount };
+  };
+
   const handleAddToCart = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setCartItems(prev => [...prev, productId]);
+    const product = filteredProducts.find(p => p.id === productId) || sourceProducts.find(p => p.id === productId);
+    if (product) {
+      const { amount, currency } = parseCurrency(product.priceFrom);
+      addItem({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        unitPrice: amount,
+        currency,
+      }, 1);
+    }
     // Show a brief notification or animation here if desired
   };
 
@@ -519,7 +542,7 @@ const ProductsPage: React.FC = () => {
   const handlePriceRangeChange = (type: 'min' | 'max', value: number) => {
     setSelectedPriceRange(prev => ({
       ...prev,
-      [type]: value
+      [type]: value,
     }));
   };
 
@@ -1658,7 +1681,7 @@ const ProductsPage: React.FC = () => {
                   </div>
                   <div className="px-3 pb-3 relative z-10">
                     <button
-                      onClick={(e) => { e.stopPropagation(); }}
+                      onClick={(e) => handleAddToCart('test-card', e)}
                       className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1724,7 +1747,7 @@ const ProductsPage: React.FC = () => {
                   </div>
                   <div className="px-3 pb-3 relative z-10">
                     <button
-                      onClick={(e) => { e.stopPropagation(); }}
+                      onClick={(e) => handleAddToCart('test-card-2', e)}
                       className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
