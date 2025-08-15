@@ -19,9 +19,13 @@ import {
   getOptionPresetForModel,
   getOptionPresetForVariant,
   createSecondHandItem,
+  createProductWithSkus,
 } from '../../lib/db'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import AdminSelect, { AdminSelectOption } from './AdminSelect'
+import { guessColorName, normalizeHex } from '../../lib/colorNames'
+import ProductCard from '../ProductCard'
+import { AppleProductTitle, Text, Label, ApplePrice, H3, Caption } from '../Typography'
 
 type Step = 1 | 2
 
@@ -70,11 +74,15 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [modelId, setModelId] = useState<string>('')
   const [variantId, setVariantId] = useState<string>('')
   const [title, setTitle] = useState<string>('')
-  const [published, setPublished] = useState<boolean>(false)
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState<boolean>(false)
 
   const [storage, setStorage] = useState<string>('')
   const [color, setColor] = useState<string>('')
   const [colorName, setColorName] = useState<string>('')
+  const [selectedStorages, setSelectedStorages] = useState<string[]>([])
+  const [selectedColors, setSelectedColors] = useState<string[]>([])
+  const [lastSelectedStorage, setLastSelectedStorage] = useState<string>('')
+  const [lastSelectedColorHex, setLastSelectedColorHex] = useState<string>('')
 
   const [basePrice, setBasePrice] = useState<string>('999')
   const [currency, setCurrency] = useState<string>('USD')
@@ -82,7 +90,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [discountAmount, setDiscountAmount] = useState<string>('')
   const [quantity, setQuantity] = useState<string>('10')
 
-  const [images, setImages] = useState<{ url: string; is_primary?: boolean }[]>([])
+  const [images, setImages] = useState<{ url: string; is_primary?: boolean; color?: string | null }[]>([])
 
   const [secondHandGrade, setSecondHandGrade] = useState<'A'|'B'|'C'>('A')
   const [secondHandBatteryHealth, setSecondHandBatteryHealth] = useState<string>('')
@@ -93,21 +101,40 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const modelName = useMemo(() => models.find(m=>m.id===modelId)?.name || '', [models, modelId])
   const variantName = useMemo(() => variants.find(v=>v.id===variantId)?.name || '', [variants, variantId])
 
-  const titleSuggestion = useMemo(() => {
-    const parts = [brandName, selectedLine, modelName, variantName, storage]
-    const base = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
-    const conditionLabel = condition === 'second_hand' ? 'Second‑hand' : condition === 'new' ? 'New' : ''
-    if (!base) return ''
-    // Simple SEO-friendly suggestion
-    const suffix = conditionLabel ? ` – ${conditionLabel}` : ''
-    return `${base}${suffix} | Best Price in ${currency}`
-  }, [brandName, selectedLine, modelName, variantName, storage, condition, currency])
-
   // Derive parsed colors from presets or defaults for rendering and selection
   const availableColors = useMemo(() => {
     const source = (presetColors ?? defaultColors)
-    return source.map(parseColorToken)
+    return source.map(parseColorToken).map(({ name, hex }) => {
+      const normalized = normalizeHex(hex)
+      const finalName = name && name !== hex ? name : (guessColorName(normalized) || normalized)
+      return { name: finalName, hex: normalized }
+    })
   }, [presetColors])
+
+  const colorLabelByHex = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const { name, hex } of availableColors) {
+      if (name && name !== hex) map[hex] = name
+    }
+    return map
+  }, [availableColors])
+
+  // Simple, user-facing title suggestion: Model, Storage, Color
+  const simpleTitleSuggestion = useMemo(() => {
+    const baseParts = [modelName, variantName].filter(Boolean)
+    const baseName = (baseParts.length > 0 ? baseParts.join(' ') : [selectedLine, modelName, variantName].filter(Boolean).join(' ')).trim()
+    if (!baseName) return ''
+
+    const storageChoiceRaw = (lastSelectedStorage || selectedStorages[selectedStorages.length - 1] || storage || '').trim()
+    const storageChoice = storageChoiceRaw.replace(/\s?(GB|TB)$/i, ' $1')
+    const colorHex = (lastSelectedColorHex || selectedColors[selectedColors.length - 1] || color || '').trim()
+    const colorLabel = colorHex ? (colorLabelByHex[colorHex] || guessColorName(colorHex) || colorHex) : ''
+
+    if (storageChoice && colorLabel) return `${baseName}, ${storageChoice} ${colorLabel}`
+    if (storageChoice) return `${baseName}, ${storageChoice}`
+    if (colorLabel) return `${baseName}, ${colorLabel}`
+    return baseName
+  }, [modelName, variantName, selectedLine, lastSelectedStorage, selectedStorages, storage, lastSelectedColorHex, selectedColors, color, colorLabelByHex])
 
   const previewCard = useMemo(() => ({
     id: 'preview',
@@ -347,6 +374,28 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     })()
   }, [variantId, modelId])
 
+  // Keep single-value storage synced (for title suggestion compatibility)
+  useEffect(() => {
+    if (selectedStorages.length > 0) {
+      setStorage(selectedStorages[0])
+    } else if (storage) {
+      setStorage('')
+    }
+  }, [selectedStorages])
+
+  // Clear multi-selects when dependencies change
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [brandId])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [selectedLine])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [modelId])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [variantId])
+
+  // Auto-apply simple title unless user manually edits
+  useEffect(() => {
+    if (!titleManuallyEdited) {
+      setTitle(simpleTitleSuggestion)
+    }
+  }, [simpleTitleSuggestion, titleManuallyEdited])
+
   const handleUploadImages = async (files: FileList | null) => {
     if (!files || !supabase) return
     setLoading(true)
@@ -363,7 +412,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         const { data } = supabase.storage.from('product-images').getPublicUrl(path)
         uploaded.push({ url: data.publicUrl })
       }
-      setImages(prev => [...prev, ...uploaded])
+      setImages(prev => [...prev, ...uploaded.map(x => ({ url: x.url, color: null }))])
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -427,7 +476,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     if (step === 1) {
       return Boolean(
         condition && brandId && selectedLine && categoryId &&
-        storage && color &&
+        (selectedStorages.length > 0) && (selectedColors.length > 0) &&
         basePrice && quantity &&
         images.length > 0
       )
@@ -440,7 +489,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setError(null)
     setSuccess(null)
     try {
-      const { product_id, sku_id } = await createProductWithSku({
+      const { product_id, sku_ids } = await createProductWithSkus({
         brand_id: brandId,
         category_id: categoryId,
         family: selectedLine || null,
@@ -448,11 +497,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         variant: variantName || null,
         title,
         description: null,
-        published,
-        images: images.map((im, i) => ({ url: im.url, is_primary: i === 0 })),
-        sku: {
+        published: true,
+        images: images.map((im, i) => ({ url: im.url, is_primary: i === 0, color: im.color ?? null })),
+        skus: selectedStorages.flatMap(s => selectedColors.map(c => ({
           condition: (condition as 'new'|'second_hand'),
-          attributes: { storage, color, ...(colorName ? { color_name: colorName } : {}) },
+          attributes: { storage: s, color: c, ...(colorLabelByHex[c] ? { color_name: colorLabelByHex[c] } : {}) },
           price: {
             currency,
             base_price: Number(basePrice),
@@ -460,13 +509,14 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
             discount_amount: discountAmount ? Number(discountAmount) : null,
           },
           inventory: { quantity: Number(quantity) },
-        },
+        }))),
       })
 
       // If second-hand, optionally create an initial unique unit
       if (condition === 'second_hand') {
-        await createSecondHandItem({
-          sku_id,
+        const firstSku = sku_ids?.[0]
+        if (firstSku) await createSecondHandItem({
+          sku_id: firstSku,
           grade: secondHandGrade,
           serial_number: secondHandSerial || null,
           battery_health: secondHandBatteryHealth ? Number(secondHandBatteryHealth) : null,
@@ -500,7 +550,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setModelId('')
     setVariantId('')
     setTitle('')
-    setPublished(false)
+    setTitleManuallyEdited(false)
     setStorage('')
     setColor('')
     setColorName('')
@@ -516,6 +566,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setSecondHandNotes('')
     setPresetStorages(null)
     setPresetColors(null)
+    setSelectedStorages([])
+    setSelectedColors([])
+    setLastSelectedStorage('')
+    setLastSelectedColorHex('')
   }
 
   return (
@@ -606,52 +660,75 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               />
             </div>
             <div>
-              <label className="text-xs text-white/60">Storage</label>
-              <AdminSelect
-                disabled={!modelId}
-                value={storage}
-                onChange={setStorage}
-                placeholder={modelId ? 'Select storage' : 'Select model first'}
-                options={(presetStorages ?? defaultStorages).map(s => ({ value: s, label: s }))}
-              />
+              <label className="text-xs text-white/60">Storages</label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {(presetStorages ?? defaultStorages).map((s: string) => {
+                  const active = selectedStorages.includes(s)
+                  return (
+                    <button
+                      type="button"
+                      key={s}
+                      disabled={!modelId}
+                      onClick={() => {
+                        if (!modelId) return
+                        setSelectedStorages(prev => {
+                          const wasActive = prev.includes(s)
+                          let next: string[]
+                          if (condition === 'second_hand') {
+                            next = wasActive ? [] : [s]
+                          } else {
+                            next = wasActive ? prev.filter(x => x !== s) : [...prev, s]
+                          }
+                          setLastSelectedStorage(wasActive ? (next[0] || '') : s)
+                          return next
+                        })
+                      }}
+                      className={`px-3 py-1.5 rounded-md border text-xs ${active ? 'border-white bg-white text-black' : 'border-white/15 bg-white/5 text-white/80 hover:bg-white/10'}`}
+                    >
+                      {s}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs text-white/60">Color</label>
+              <label className="text-xs text-white/60">Colors</label>
               <div className="flex gap-2 flex-wrap mt-1">
-                {availableColors.map(({ name, hex }) => (
-                  <div key={name + hex} className="relative group">
-                    <button
-                      className={`h-8 w-8 rounded-full border ${color===hex?'ring-2 ring-white':''} ${!modelId ? 'opacity-40 cursor-not-allowed' : ''}`}
-                      style={{ backgroundColor: hex }}
-                      onClick={() => { if (!modelId) return; setColor(hex); setColorName(name) }}
-                    />
-                    {/* Enhanced tooltip showing color name */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                      {name || hex}
+                {availableColors.map(({ name, hex }) => {
+                  const active = selectedColors.includes(hex)
+                  return (
+                    <div key={name + hex} className="relative group">
+                      <button
+                        className={`h-8 w-8 rounded-full border ${active?'ring-2 ring-white':''} ${!modelId ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        style={{ backgroundColor: hex }}
+                        onClick={() => {
+                          if (!modelId) return
+                          setSelectedColors(prev => {
+                            const wasActive = prev.includes(hex)
+                            let next: string[]
+                            if (condition === 'second_hand') {
+                              next = wasActive ? [] : [hex]
+                            } else {
+                              next = wasActive ? prev.filter(x => x !== hex) : [...prev, hex]
+                            }
+                            setLastSelectedColorHex(wasActive ? (next[0] || '') : hex)
+                            return next
+                          })
+                        }}
+                      />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                        {name || hex}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
             {/* Title moved below Storage/Color */}
             <div className="md:col-span-4">
               <label className="text-xs text-white/60">Title</label>
               <div className="flex gap-2 items-center mt-1">
-                <input className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Product title shown to users" />
-                {titleSuggestion && (
-                  <button type="button" className="text-xs px-2 py-1 rounded-md bg-white/10 border border-white/10" onClick={()=>setTitle(titleSuggestion)}>Use suggestion</button>
-                )}
-              </div>
-              {titleSuggestion && (
-                <div className="text-xs text-white/50 mt-1">Suggested: {titleSuggestion}</div>
-              )}
-            </div>
-            {/* Publish toggle */}
-            <div className="md:col-span-2">
-              <label className="text-xs text-white/60">Publish</label>
-              <div className="mt-1 flex items-center gap-2">
-                <input id="publishToggle" type="checkbox" checked={published} onChange={(e)=>setPublished(e.target.checked)} />
-                <label htmlFor="publishToggle" className="text-xs text-white/70 cursor-pointer">{published ? 'Published (visible in store)' : 'Draft (hidden from store)'}</label>
+                <input className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={title} onChange={e=>{ setTitle(e.target.value); setTitleManuallyEdited(true) }} placeholder="e.g., iPhone 16 Plus, 512 GB Black" />
               </div>
             </div>
             <div>
@@ -688,14 +765,43 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <input ref={fileInputRef} type="file" multiple onChange={e=>handleUploadImages(e.target.files)} className="hidden" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                 {images.map((im, idx) => (
-                  <div key={idx} className="relative">
-                    <img src={im.url} className="w-full h-32 object-cover rounded-lg border border-white/10" />
-                    <button className={`absolute top-2 left-2 text-[10px] px-2 py-1 rounded ${idx===0?'bg-white text-black':'bg-white/10 border border-white/20'}`} onClick={()=>{
-                      const arr=[...images];
-                      const [chosen]=arr.splice(idx,1)
-                      arr.unshift(chosen)
-                      setImages(arr)
-                    }}>Primary</button>
+                  <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                    <div className="relative aspect-[4/5] bg-black/20 flex items-center justify-center">
+                      <img src={im.url} className="w-full h-full object-contain" />
+                      <button className={`absolute top-2 left-2 text-[10px] px-2 py-1 rounded ${idx===0?'bg-white text-black':'bg-white/10 border border-white/20'}`} onClick={()=>{
+                        const arr=[...images];
+                        const [chosen]=arr.splice(idx,1)
+                        arr.unshift(chosen)
+                        setImages(arr)
+                      }}>Primary</button>
+                    </div>
+                    <div className="p-2">
+                      <select
+                        className="w-full text-[11px] bg-white/5 border border-white/15 rounded-md px-2 py-1"
+                        value={im.color ?? ''}
+                        onChange={e => {
+                          const val = e.target.value || null
+                          setImages(prev => prev.map((p,i) => i===idx ? { ...p, color: val } : p))
+                        }}
+                      >
+                        <option value="">All colors</option>
+                        {selectedColors.map((c: string) => (
+                          <option key={c} value={c}>{colorLabelByHex[c] || c}</option>
+                        ))}
+                      </select>
+                      <div className="mt-1 text-[10px] text-white/70 truncate" title={im.url}>
+                        {(() => {
+                          try {
+                            const path = new URL(im.url).pathname
+                            const base = path.split('/').pop() || ''
+                            return base
+                          } catch {
+                            const raw = im.url.split('?')[0]
+                            return (raw.split('/').pop() || im.url)
+                          }
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -733,55 +839,305 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         )}
 
         {step === 2 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <div className="text-sm text-white/80 mb-1.5">Preview</div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
-                <div className="text-xs text-white/60">{previewCard.category}</div>
-                <div className="font-semibold mt-0.5 text-sm md:text-base">{previewCard.name}</div>
-                <div className="mt-2">
-                  <img
-                    src={(images[previewImageIndex]?.url) || previewCard.image}
-                    className="rounded-lg w-full h-44 object-cover"
-                  />
+          <div className="space-y-6">
+            {/* Enhanced Product Preview - Matching ProductPage Layout */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <div className="text-sm text-white/80 mb-4">Product Preview</div>
+              
+              {/* Product Title Section */}
+              <div className="mb-6">
+                <AppleProductTitle size="sm" className="text-white">
+                  {title || simpleTitleSuggestion || 'New Product'}
+                </AppleProductTitle>
+                <Text size="sm" color="tertiary" className="mt-1">
+                  {selectedLine || categories.find(c=>c.id===categoryId)?.name || 'Product'}
+                </Text>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left side - Product Images (9 columns) */}
+                <div className="flex flex-col lg:col-span-9">
+                  <div className="flex gap-4">
+                    {/* Vertical thumbnails (desktop/tablet) */}
+                    {images.length > 0 && (
+                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px]">
+                        {/* Up arrow */}
+                        {images.length > 6 && (
+                          <button
+                            type="button"
+                            className="p-1.5 rounded-full bg-white/80 shadow hover:bg-white"
+                            aria-label="Previous thumbnails"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-800">
+                              <path fillRule="evenodd" d="M10 6l4 5H6l4-5z" clipRule="evenodd"/>
+                            </svg>
+                          </button>
+                        )}
+                        
+                        <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '520px' }}>
+                          {images.slice(0, 6).map((img, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setPreviewImageIndex(index)}
+                              className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                                previewImageIndex === index 
+                                  ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-black/20' 
+                                  : 'opacity-60 hover:opacity-100'
+                              }`}
+                              aria-label={`Thumbnail ${index + 1}`}
+                            >
+                              <img src={img.url} alt={`Product thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Down arrow */}
+                        {images.length > 6 && (
+                          <button
+                            type="button"
+                            className="p-1.5 rounded-full bg-white/80 shadow hover:bg-white"
+                            aria-label="Next thumbnails"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-800">
+                              <path fillRule="evenodd" d="M10 14l-4-5h8l-4 5z" clipRule="evenodd"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Two large image containers */}
+                    <div className="flex-1 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Left large container (current image) */}
+                      <div className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                        {images.length > 0 ? (
+                          <img 
+                            src={images[previewImageIndex]?.url || images[0]?.url} 
+                            alt={title || simpleTitleSuggestion}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full w-full text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <Text color="tertiary">Image not available</Text>
+                          </div>
+                        )}
+
+                        {images.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                            aria-label="Previous image"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-gray-800">
+                              <path fillRule="evenodd" d="M12.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right large container (next image) */}
+                      <div className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                        {images.length > 1 ? (
+                          <img 
+                            src={images[(previewImageIndex + 1) % images.length]?.url} 
+                            alt={`${title || simpleTitleSuggestion} alt view`} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full">
+                            <Text color="tertiary">Add more images to preview here</Text>
+                          </div>
+                        )}
+
+                        {images.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white shadow"
+                            aria-label="Next image"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-gray-800">
+                              <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal thumbnails for mobile */}
+                  {images.length > 1 && (
+                    <div className="flex justify-center space-x-3 sm:hidden">
+                      {images.slice(0, 5).map((img, index) => (
+                        <button 
+                          key={index}
+                          onClick={() => setPreviewImageIndex(index)}
+                          className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                            previewImageIndex === index 
+                              ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-black/20' 
+                              : 'opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={img.url} alt={`Product thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {images.length > 1 && (
-                  <div className="flex gap-2 mt-2 overflow-x-auto">
-                    {images.map((im, idx) => (
-                      <button
-                        key={idx}
-                        className={`h-14 w-14 flex-shrink-0 rounded-md border ${idx===previewImageIndex? 'ring-2 ring-white border-white' : 'border-white/10'}`}
-                        onClick={()=> setPreviewImageIndex(idx)}
-                      >
-                        <img src={im.url} className="h-full w-full object-cover rounded-md" />
-                      </button>
-                    ))}
+
+                {/* Right side - Product Details (3 columns) */}
+                <div className="flex flex-col lg:col-span-3">
+                  <div className="rounded-2xl border border-white/20 bg-white/10 shadow-sm p-6 space-y-8">
+                    
+                    {/* Color Selection */}
+                    {selectedColors.length > 0 && (
+                      <div>
+                        <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
+                        <div className="flex flex-wrap gap-3">
+                          {selectedColors.map((colorHex, index) => (
+                            <button
+                              key={colorHex}
+                              onClick={() => {
+                                setLastSelectedColorHex(colorHex)
+                                // Switch to corresponding image if available
+                                const colorImage = images.findIndex(img => img.color === colorHex)
+                                if (colorImage !== -1) setPreviewImageIndex(colorImage)
+                              }}
+                              className={`w-10 h-10 rounded-full transition-all duration-300 flex items-center justify-center ${
+                                lastSelectedColorHex === colorHex || (index === 0 && !lastSelectedColorHex)
+                                  ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-black/20' 
+                                  : ''
+                              }`}
+                              title={colorLabelByHex[colorHex] || colorHex}
+                            >
+                              <span className="w-8 h-8 rounded-full" style={{backgroundColor: colorHex}}></span>
+                            </button>
+                          ))}
+                        </div>
+                        <Text size="sm" color="tertiary" className="mt-2">
+                          {colorLabelByHex[lastSelectedColorHex] || colorLabelByHex[selectedColors[0]] || selectedColors[0] || 'Select a color'}
+                        </Text>
+                      </div>
+                    )}
+
+                    {/* Storage Selection */}
+                    {selectedStorages.length > 0 && (
+                      <div>
+                        <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Storage</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedStorages.map((storageOption, index) => (
+                            <button
+                              key={storageOption}
+                              onClick={() => setLastSelectedStorage(storageOption)}
+                              className={`px-4 py-2 rounded-lg border transition-all ${
+                                lastSelectedStorage === storageOption || (index === 0 && !lastSelectedStorage)
+                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                  : 'border-white/20 text-white/70'
+                              }`}
+                            >
+                              <div className="text-sm font-medium">{storageOption}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Options */}
+                    <div>
+                      <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Payment Options</Label>
+                      <div className="flex space-x-3 mb-8">
+                        <button
+                          className="flex-1 py-3 px-4 rounded-lg border border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400"
+                        >
+                          <Text size="sm" weight="medium" color="accent" align="center">Full Payment</Text>
+                        </button>
+                        <button
+                          className="flex-1 py-3 px-4 rounded-lg border border-white/20"
+                        >
+                          <Text size="sm" weight="normal" align="center" className="text-white/70">Nasiya</Text>
+                        </button>
+                      </div>
+
+                      {/* Full Payment Display */}
+                      <div className="mb-8">
+                        <ApplePrice className="text-3xl text-white">
+                          {currency === 'USD' ? '$' : currency}{Number(basePrice || '0').toFixed(2)}
+                        </ApplePrice>
+                        <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
+                      </div>
+                    </div>
+
+                    {/* Stock Status */}
+                    <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                        <Text size="sm" weight="medium" className="text-emerald-300">In Stock</Text>
+                      </div>
+                      <Text size="sm" color="tertiary">
+                        {quantity || '0'} {condition === 'second_hand' ? 'refurbished unit' : 'new units'} available
+                      </Text>
+                      {condition === 'second_hand' && secondHandGrade && (
+                        <Text size="sm" color="tertiary">
+                          Grade: {secondHandGrade} • {secondHandBatteryHealth}% Battery
+                        </Text>
+                      )}
+                    </div>
                   </div>
-                )}
-                {previewCard.colors.length > 0 && (
-                  <div className="flex gap-2 mt-2">
-                    {previewCard.colors.map((c,i)=> (
-                      <div key={i} className="w-4 h-4 rounded-full border" style={{ backgroundColor: c }} />
-                    ))}
-                  </div>
-                )}
-                <div className="text-sm mt-2">From {previewCard.priceFrom}</div>
-                <div className="text-xs text-white/60">or {previewCard.monthlyFrom}</div>
+                </div>
               </div>
             </div>
-            <div className="self-start">
-              <div className="text-sm text-white/80 mb-1.5">Summary</div>
-              <ul className="text-xs text-white/80 space-y-1">
-                <li>Brand: {brandName || '-'}</li>
-                <li>Category: {categories.find(c=>c.id===categoryId)?.name || '-'}</li>
-                <li>Line/Model/Variant: {[selectedLine, modelName, variantName].filter(Boolean).join(' / ') || '-'}</li>
-                <li>Attributes: Storage {storage}, Color {color}</li>
-                <li>Price: {currency} {basePrice} {discountPercent && `(−${discountPercent}%)`} {discountAmount && `(−${discountAmount})`}</li>
-                <li>Quantity: {quantity}</li>
-                <li>Images: {images.length}</li>
-                <li>Title: {title || titleSuggestion || '-'}</li>
-                <li>Status: {published ? 'Published' : 'Draft'}</li>
-              </ul>
+
+            {/* Summary Section */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <div className="text-sm text-white/80 mb-4">Product Summary</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Brand:</span>
+                      <span className="text-white">{brandName || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Category:</span>
+                      <span className="text-white">{categories.find(c=>c.id===categoryId)?.name || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Model:</span>
+                      <span className="text-white">{[selectedLine, modelName, variantName].filter(Boolean).join(' ') || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Condition:</span>
+                      <span className={`text-sm px-2 py-0.5 rounded ${condition === 'new' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}`}>
+                        {condition === 'new' ? 'New' : 'Refurbished'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Storage Options:</span>
+                      <span className="text-white text-right">{selectedStorages.length ? selectedStorages.join(', ') : '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Color Options:</span>
+                      <span className="text-white text-right">{selectedColors.length ? selectedColors.map(c => colorLabelByHex[c] || c).join(', ') : '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Images:</span>
+                      <span className="text-white">{images.length} uploaded</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Stock:</span>
+                      <span className="text-white">{quantity || '0'} units</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -805,7 +1161,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <svg className="h-5 w-5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.378 7.377a1 1 0 01-1.415 0L3.296 9.768a1 1 0 111.415-1.415l3.2 3.2 6.67-6.67a1 1 0 011.415 0z" clipRule="evenodd"/></svg>
               <div className="font-semibold">Success</div>
             </div>
-            <div className="text-sm text-white/80 mb-4">Product has been saved{published ? ' and published' : ''} successfully.</div>
+            <div className="text-sm text-white/80 mb-4">Product has been saved and published successfully.</div>
             <div className="flex justify-end">
               <button
                 type="button"

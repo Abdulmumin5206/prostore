@@ -222,7 +222,7 @@ export type NewProductInput = {
   title: string
   description?: string | null
   published: boolean
-  images: { url: string; is_primary?: boolean; sort_order?: number }[]
+  images: { url: string; is_primary?: boolean; sort_order?: number; color?: string | null }[]
   sku: {
     condition: 'new' | 'second_hand'
     attributes: Record<string, any>
@@ -231,6 +231,16 @@ export type NewProductInput = {
     inventory: { quantity: number }
   }
 }
+
+export type NewSkuInput = {
+  condition: 'new' | 'second_hand'
+  attributes: Record<string, any>
+  is_active?: boolean
+  price: { currency?: string; base_price: number; discount_percent?: number | null; discount_amount?: number | null }
+  inventory: { quantity: number }
+}
+
+export type NewProductWithSkusInput = Omit<NewProductInput, 'sku'> & { skus: NewSkuInput[] }
 
 export async function createProductWithSku(input: NewProductInput): Promise<{ product_id: string; sku_id: string }>
 {
@@ -304,12 +314,92 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
         url: im.url,
         is_primary: im.is_primary ?? idx === 0,
         sort_order: im.sort_order ?? idx,
+        color: im.color ?? null,
       }))
     )
     if (imgErr) throw imgErr
   }
 
   return { product_id: product.id, sku_id: sku.id }
+}
+
+export async function createProductWithSkus(input: NewProductWithSkusInput): Promise<{ product_id: string; sku_ids: string[] }>
+{
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+
+  const productPublicId = generateProductPublicId(input)
+  const { data: product, error: productErr } = await supabase
+    .from('products')
+    .insert({
+      brand_id: input.brand_id,
+      category_id: input.category_id,
+      family: input.family ?? null,
+      model: input.model ?? null,
+      variant: input.variant ?? null,
+      title: input.title,
+      description: input.description ?? null,
+      published: input.published,
+      public_id: productPublicId,
+    })
+    .select('id')
+    .single()
+  if (productErr || !product) throw productErr
+
+  // Insert images once per product
+  if (input.images && input.images.length > 0) {
+    const { error: imgErr } = await supabase.from('product_images').insert(
+      input.images.map((im, idx) => ({
+        product_id: product.id,
+        url: im.url,
+        is_primary: im.is_primary ?? idx === 0,
+        sort_order: im.sort_order ?? idx,
+        color: im.color ?? null,
+      }))
+    )
+    if (imgErr) throw imgErr
+  }
+
+  const skuIds: string[] = []
+  for (const skuInput of input.skus) {
+    const skuCode = generateSkuCode({
+      productPublicId,
+      condition: skuInput.condition,
+      attributes: skuInput.attributes,
+    })
+    const { data: sku, error: skuErr } = await supabase
+      .from('product_skus')
+      .insert({
+        product_id: product.id,
+        condition: skuInput.condition,
+        attributes: skuInput.attributes,
+        is_active: skuInput.is_active ?? true,
+        sku_code: skuCode,
+      })
+      .select('id')
+      .single()
+    if (skuErr || !sku) throw skuErr
+
+    const price = skuInput.price
+    const { error: priceErr } = await supabase
+      .from('sku_prices')
+      .insert({
+        sku_id: sku.id,
+        currency: price.currency ?? 'USD',
+        base_price: price.base_price,
+        discount_percent: price.discount_percent ?? null,
+        discount_amount: price.discount_amount ?? null,
+      })
+    if (priceErr) throw priceErr
+
+    const { error: invErr } = await supabase
+      .from('sku_inventory')
+      .insert({ sku_id: sku.id, quantity: skuInput.inventory.quantity })
+    if (invErr) throw invErr
+
+    skuIds.push(sku.id)
+  }
+
+  return { product_id: product.id, sku_ids: skuIds }
 }
 
 export function generateProductPublicId(input: { brand_id: string; category_id: string; family?: string | null; model?: string | null; variant?: string | null; title: string }): string {

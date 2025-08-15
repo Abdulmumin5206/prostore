@@ -15,6 +15,7 @@ import ContentBlock from '../components/ContentBlock';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { PublicProduct } from '../lib/db';
 import { useCart } from '../contexts/CartContext';
+import { guessColorName } from '../lib/colorNames';
 
 interface DetailProduct {
   id: string;
@@ -26,6 +27,8 @@ interface DetailProduct {
   storage: string[];
   currency: string;
   basePrice: number; // effective price
+  colorToImages?: Record<string, string[]>; // images tagged to a color
+  colorNames?: Record<string, string>; // hex -> human name
 }
 
 const ProductPage: React.FC = () => {
@@ -73,6 +76,8 @@ const ProductPage: React.FC = () => {
               storage: [],
               currency: 'USD',
               basePrice: 0,
+              colorToImages: {},
+              colorNames: {},
             });
           }
           setLoading(false);
@@ -99,32 +104,47 @@ const ProductPage: React.FC = () => {
               storage: [],
               currency: 'USD',
               basePrice: 0,
+              colorToImages: {},
+              colorNames: {},
             });
           }
           setLoading(false);
           return;
         }
 
-        // Fetch all product images (including non-primary) and sort
+        // Fetch all product images with optional color tag and sort
         const { data: imagesRows, error: imagesErr } = await supabase
           .from('product_images')
-          .select('url, is_primary, sort_order')
+          .select('url, is_primary, sort_order, color')
           .eq('product_id', productId);
         if (imagesErr) throw imagesErr;
 
-        const sortedImages = (imagesRows || [])
+        const sortedImagesRaw = (imagesRows || [])
           .sort((a: any, b: any) => Number(b.is_primary) - Number(a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((x: any) => x.url as string);
+          .map((x: any) => x);
+        const sortedImages = sortedImagesRaw.map((x: any) => x.url as string);
+        const colorToImages: Record<string, string[]> = {};
+        for (const row of sortedImagesRaw) {
+          const c = (row as any).color as string | null;
+          if (c) {
+            if (!colorToImages[c]) colorToImages[c] = [];
+            colorToImages[c].push(row.url as string);
+          }
+        }
 
         // Aggregate attributes
         const colorSet = new Set<string>();
         const storageSet = new Set<string>();
+        const colorNames: Record<string, string> = {};
         let minPrice = Number.POSITIVE_INFINITY;
         let currency: string = 'USD';
         for (const r of list) {
           const attrs: any = (r as any).attributes || {};
           if (typeof attrs.color === 'string' && attrs.color) colorSet.add(attrs.color);
           if (typeof attrs.storage === 'string' && attrs.storage) storageSet.add(attrs.storage);
+          if (typeof attrs.color === 'string' && typeof attrs.color_name === 'string' && attrs.color && attrs.color_name) {
+            colorNames[attrs.color] = attrs.color_name;
+          }
           if (typeof r.effective_price === 'number') minPrice = Math.min(minPrice, Number(r.effective_price));
           if (r.currency) currency = r.currency;
         }
@@ -140,6 +160,8 @@ const ProductPage: React.FC = () => {
           storage: Array.from(storageSet),
           currency,
           basePrice: Number.isFinite(minPrice) ? minPrice : Number(r0.effective_price ?? 0),
+          colorToImages,
+          colorNames,
         };
         if (isMounted) setProduct(detail);
       } catch (e: any) {
@@ -168,6 +190,32 @@ const ProductPage: React.FC = () => {
     return product.storage[idx];
   }, [product, selectedStorage]);
 
+  const imagesForCurrentSelection = useMemo(() => {
+    if (!product) return [] as string[];
+    const universalImages = product.images || [];
+    const colorImages = currentColor && product.colorToImages ? (product.colorToImages[currentColor] || []) : [];
+    // Include universal images plus color-specific, keeping order with color-specific first
+    const combined = [...colorImages, ...universalImages];
+    // De-duplicate while preserving order
+    const seen = new Set<string>();
+    const deduped: string[] = [];
+    for (const url of combined) {
+      if (!seen.has(url)) { seen.add(url); deduped.push(url); }
+    }
+    return deduped;
+  }, [product, currentColor]);
+
+  const currentColorLabel = useMemo(() => {
+    if (!product) return '';
+    return (product.colorNames && product.colorNames[currentColor]) ? product.colorNames[currentColor] : (guessColorName(currentColor) || currentColor);
+  }, [product, currentColor]);
+
+  const selectedTitle = useMemo(() => {
+    if (!product) return '';
+    const parts = [product.name, currentStorage || '', currentColorLabel || ''].filter(Boolean);
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
+  }, [product, currentStorage, currentColorLabel]);
+
   const basePrice = product?.basePrice ?? 0;
   const nasiyaMarkup = 1.3;
   const nasiyaTotalPrice = Math.round(basePrice * nasiyaMarkup) * quantity;
@@ -181,16 +229,16 @@ const ProductPage: React.FC = () => {
   const handleAddToBag = () => {
     if (!product) return;
     addItem({
-      id: product.id,
-      name: product.name,
-      image: product.images[0] || '',
+      id: `${product.id}:${currentStorage}:${currentColor}`,
+      name: `${product.name}${currentStorage ? ' ' + currentStorage : ''}${currentColorLabel ? ' ' + currentColorLabel : ''}`,
+      image: imagesForCurrentSelection[0] || product.images[0] || '',
       unitPrice: basePrice,
       currency: product.currency || 'USD',
     }, quantity);
   };
 
   // Image carousel helpers
-  const imagesCount = product?.images?.length || 0;
+  const imagesCount = imagesForCurrentSelection.length || 0;
   const stepSize = 2; // show two images side-by-side, advance by two
  
   // Vertical thumbnails slider state
@@ -200,7 +248,7 @@ const ProductPage: React.FC = () => {
   const thumbsStart = Math.min(thumbOffset, maxThumbOffset);
   const canThumbPrev = thumbsStart > 0;
   const canThumbNext = thumbsStart < maxThumbOffset;
-  const showThumbs = (product?.images?.length || 0) > 0;
+  const showThumbs = (imagesForCurrentSelection.length || 0) > 0;
 
   const nextImage = () => {
     if (!imagesCount) return;
@@ -269,7 +317,7 @@ const ProductPage: React.FC = () => {
                 <div className="flex flex-col lg:col-span-9">
                   <div className="flex gap-4">
                     {/* Vertical thumbnails (desktop/tablet) */}
-                    {product.images.length > 0 && (
+                    {imagesForCurrentSelection.length > 0 && (
                       <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px]">
                         {/* Up arrow */}
                         {imagesCount > visibleThumbs && (
@@ -284,7 +332,7 @@ const ProductPage: React.FC = () => {
                           </button>
                         )}
                         <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '520px' }}>
-                          {(product.images.slice(thumbsStart, thumbsStart + visibleThumbs)).map((image, index) => {
+                          {(imagesForCurrentSelection.slice(thumbsStart, thumbsStart + visibleThumbs)).map((image, index) => {
                             const actualIndex = thumbsStart + index;
                             return (
                               <button
@@ -326,9 +374,9 @@ const ProductPage: React.FC = () => {
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
                       >
-                        {product.images.length > 0 ? (
+                        {imagesForCurrentSelection.length > 0 ? (
                           <img 
-                            src={product.images[selectedImage]} 
+                            src={imagesForCurrentSelection[selectedImage]} 
                             alt={product.name} 
                             className="w-full h-full object-cover"
                           />
@@ -338,7 +386,7 @@ const ProductPage: React.FC = () => {
                           </div>
                         )}
 
-                        {product.images.length > 1 && (
+                        {imagesForCurrentSelection.length > 1 && (
                           <button
                             type="button"
                             onClick={prevImage}
@@ -359,9 +407,9 @@ const ProductPage: React.FC = () => {
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
                       >
-                        {product.images.length > 1 ? (
+                        {imagesForCurrentSelection.length > 1 ? (
                           <img 
-                            src={product.images[(selectedImage + 1) % product.images.length]} 
+                            src={imagesForCurrentSelection[(selectedImage + 1) % imagesForCurrentSelection.length]} 
                             alt={`${product.name} alt view`} 
                             className="w-full h-full object-cover"
                           />
@@ -371,7 +419,7 @@ const ProductPage: React.FC = () => {
                           </div>
                         )}
 
-                        {product.images.length > 1 && (
+                        {imagesForCurrentSelection.length > 1 && (
                           <button
                             type="button"
                             onClick={nextImage}
@@ -388,9 +436,9 @@ const ProductPage: React.FC = () => {
                   </div>
 
                   {/* Horizontal thumbnails for mobile */}
-                  {product.images.length > 1 && (
+                  {imagesForCurrentSelection.length > 1 && (
                     <div className="flex justify-center space-x-3 sm:hidden">
-                      {product.images.map((image, index) => (
+                      {imagesForCurrentSelection.map((image, index) => (
                         <button 
                           key={index}
                           onClick={() => setSelectedImage(index)}
@@ -411,7 +459,7 @@ const ProductPage: React.FC = () => {
                 <div className="flex flex-col lg:col-span-3">
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
                   
- 
+                  
                   {product.colors && product.colors.length > 0 && (
                     <div className="mb-8">
                       <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
@@ -419,19 +467,19 @@ const ProductPage: React.FC = () => {
                         {product.colors.map((color, index) => (
                           <button
                             key={index}
-                            onClick={() => setSelectedColor(index)}
+                            onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
                             className={`w-10 h-10 rounded-full transition-all duration-300 flex items-center justify-center ${
                               selectedColor === index 
                                 ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
                                 : ''
                             }`}
-                            title={color}
+                            title={product.colorNames?.[color] || guessColorName(color) || color}
                           >
                             <span className="w-8 h-8 rounded-full" style={{backgroundColor: color}}></span>
                           </button>
                         ))}
                       </div>
-                      <Text size="sm" color="tertiary" className="mt-2">{currentColor}</Text>
+                      <Text size="sm" color="tertiary" className="mt-2">{currentColorLabel}</Text>
                     </div>
                   )}
 
@@ -563,15 +611,15 @@ const ProductPage: React.FC = () => {
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {product.images.length > 0 && (
+              {imagesForCurrentSelection.length > 0 && (
                 <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
-                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                  <img src={imagesForCurrentSelection[0]} alt={product.name} className="w-full h-full object-cover" />
                 </div>
               )}
               <div>
-                <Text size="sm" weight="medium" color="primary">{product.name}</Text>
+                <Text size="sm" weight="medium" color="primary">{selectedTitle || product.name}</Text>
                 <Caption>
-                  {currentColor}{currentStorage ? ` • ${currentStorage}` : ''}
+                  {currentColorLabel}{currentStorage ? ` • ${currentStorage}` : ''}
                 </Caption>
               </div>
               <div className="flex items-center space-x-2">

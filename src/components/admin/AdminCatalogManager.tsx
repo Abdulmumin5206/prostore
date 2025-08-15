@@ -11,6 +11,7 @@ import {
   getOptionPresetForVariant,
   upsertOptionPresetForVariant,
 } from '../../lib/db'
+import { guessColorName, normalizeHex } from '../../lib/colorNames'
 
 const pill = 'px-2 py-1 rounded-md text-xs border transition-colors'
 
@@ -59,7 +60,11 @@ const VariantPresetEditor: React.FC<{ variantId: string }> = ({ variantId }) => 
 
   useEffect(() => { fetchPreset() }, [variantId])
 
-  const parsedColors = colors.map(parseColorToken)
+  const parsedColors = colors.map(parseColorToken).map(({ name, hex }) => {
+    const normalized = normalizeHex(hex)
+    const finalName = name && name !== hex ? name : (guessColorName(normalized) || normalized)
+    return { name: finalName, hex: normalized }
+  })
 
   return (
     <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10 relative">

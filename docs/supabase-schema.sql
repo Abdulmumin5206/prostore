@@ -135,6 +135,8 @@ create table if not exists public.product_images (
   is_primary boolean not null default false,
   sort_order int not null default 0
 );
+-- Ensure product_images has optional color tag to map images to a specific color variant
+alter table if exists public.product_images add column if not exists color text;
 
 -- Second-hand unique units
 create table if not exists public.second_hand_items (

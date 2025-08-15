@@ -6,6 +6,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { listPublicProducts, PublicProduct } from '../lib/db';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { guessColorName } from '../lib/colorNames';
 
 // Fetch live products when Supabase is configured
 async function fetchLiveProducts(): Promise<Product[]> {
@@ -1900,6 +1901,27 @@ const ProductsPage: React.FC = () => {
                         <div className="flex items-center gap-0.5 mb-0 text-amber-500">
                           {renderStars(4.4)}
                         </div>
+                        {/* Color label and swatches */}
+                        {product.colors && product.colors.length > 0 && (
+                          <div className="mt-1">
+                            <Text size="xs" color="tertiary">
+                              Color: <span className="font-medium text-black dark:text-white">{guessColorName(product.colors[0]) || product.colors[0]}</span>
+                            </Text>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {product.colors.slice(0, 4).map((c, idx) => (
+                                <span
+                                  key={c + idx}
+                                  className="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-700"
+                                  style={{ backgroundColor: c }}
+                                  title={guessColorName(c) || c}
+                                />
+                              ))}
+                              {product.colors.length > 4 && (
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400">+{product.colors.length - 4}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="px-3 pb-3 relative z-10">
