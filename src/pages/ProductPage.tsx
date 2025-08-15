@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   H1, H2, H3, H4,
@@ -12,60 +12,30 @@ import {
 import Button from '../components/Button';
 import Section from '../components/Section';
 import ContentBlock from '../components/ContentBlock';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { PublicProduct } from '../lib/db';
+import { useCart } from '../contexts/CartContext';
 
-// Mock product data - in a real app, this would come from an API
-const productData = {
-  'iphone-16-black': {
-    name: 'iPhone 16',
-    color: 'Black',
-    basePrice: 1299,
-    description: 'The most powerful iPhone ever with A18 chip, advanced camera system, and all-day battery life.',
-    features: [
-      '6.7-inch Super Retina XDR display',
-      'A18 Bionic chip',
-      'Pro camera system',
-      'Up to 28 hours of video playback',
-      'Face ID'
-    ],
-    images: [
-      'https://placehold.co/600x800/222/white?text=iPhone+16+Black+Front',
-      'https://placehold.co/600x800/222/white?text=iPhone+16+Black+Back',
-      'https://placehold.co/600x800/222/white?text=iPhone+16+Black+Side',
-      'https://placehold.co/600x800/222/white?text=iPhone+16+Black+Camera',
-    ],
-    colors: [
-      { name: 'Black', value: '#222222' },
-      { name: 'Silver', value: '#E0E0E0' },
-      { name: 'Gold', value: '#F9D8AD' },
-      { name: 'Deep Blue', value: '#1E3A5F' }
-    ],
-    storage: [
-      { size: '128GB', price: 1299 },
-      { size: '256GB', price: 1399 },
-      { size: '512GB', price: 1599 },
-      { size: '1TB', price: 1799 }
-    ],
-    characteristics: {
-      display: '6.7-inch Super Retina XDR display with ProMotion technology',
-      processor: 'A18 Bionic chip with 6-core CPU and 5-core GPU',
-      camera: 'Pro camera system with 48MP main camera, 12MP ultra-wide, and 12MP telephoto',
-      battery: 'Up to 28 hours of video playback',
-      storage: '128GB, 256GB, 512GB, or 1TB options',
-      connectivity: '5G capable, Wi-Fi 6E, Bluetooth 5.3',
-      security: 'Face ID, Touch ID, and advanced encryption'
-    },
-    nasiyaDetails: {
-      eligibility: 'Available for all customers with valid ID and proof of income',
-      requirements: 'Minimum 3 months employment, clean credit history',
-      documents: 'Passport, employment certificate, bank statement',
-      process: 'Online application with instant approval, delivery within 24 hours',
-      benefits: 'No hidden fees, flexible payment schedules, early repayment options'
-    }
-  }
-};
+interface DetailProduct {
+  id: string;
+  name: string;
+  category?: string;
+  description?: string | null;
+  images: string[];
+  colors: string[];
+  storage: string[];
+  currency: string;
+  basePrice: number; // effective price
+}
 
 const ProductPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
+  const { addItem } = useCart();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [product, setProduct] = useState<DetailProduct | null>(null);
+
   const [selectedPaymentType, setSelectedPaymentType] = useState<'full' | 'nasiya'>('full');
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -73,559 +43,562 @@ const ProductPage: React.FC = () => {
   const [selectedStorage, setSelectedStorage] = useState(0);
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
-  
-  // Fallback product data if the ID doesn't match
-  const product = productData[productId as keyof typeof productData] || {
-    name: 'Product Not Found',
-    color: '',
-    basePrice: 0,
-    description: 'The requested product could not be found.',
-    features: [],
-    images: [],
-    colors: [],
-    storage: [],
-    characteristics: {},
-    nasiyaDetails: {}
-  };
 
-  // Get current price based on selected storage option
-  const basePrice = product.storage && product.storage.length > 0 
-    ? product.storage[selectedStorage].price 
-    : product.basePrice;
+  // Touch swipe state for image carousel
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
 
-  // Calculate nasiya markup (30% more than full payment)
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      if (!productId) {
+        setError('No product specified');
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        if (!isSupabaseConfigured || !supabase) {
+          // Fallback minimal placeholder when Supabase not configured
+          if (isMounted) {
+            setProduct({
+              id: productId,
+              name: 'Product',
+              category: '',
+              description: 'Product details are unavailable in demo mode.',
+              images: [],
+              colors: [],
+              storage: [],
+              currency: 'USD',
+              basePrice: 0,
+            });
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Fetch rows for this product from the public view
+        const { data: rows, error: rowsErr } = await supabase
+          .from('public_products_view')
+          .select('*')
+          .eq('product_id', productId);
+        if (rowsErr) throw rowsErr;
+
+        const list = (rows || []) as unknown as PublicProduct[];
+        if (!list || list.length === 0) {
+          if (isMounted) {
+            setProduct({
+              id: productId,
+              name: 'Product Not Found',
+              category: '',
+              description: 'The requested product could not be found.',
+              images: [],
+              colors: [],
+              storage: [],
+              currency: 'USD',
+              basePrice: 0,
+            });
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Fetch all product images (including non-primary) and sort
+        const { data: imagesRows, error: imagesErr } = await supabase
+          .from('product_images')
+          .select('url, is_primary, sort_order')
+          .eq('product_id', productId);
+        if (imagesErr) throw imagesErr;
+
+        const sortedImages = (imagesRows || [])
+          .sort((a: any, b: any) => Number(b.is_primary) - Number(a.is_primary) || (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((x: any) => x.url as string);
+
+        // Aggregate attributes
+        const colorSet = new Set<string>();
+        const storageSet = new Set<string>();
+        let minPrice = Number.POSITIVE_INFINITY;
+        let currency: string = 'USD';
+        for (const r of list) {
+          const attrs: any = (r as any).attributes || {};
+          if (typeof attrs.color === 'string' && attrs.color) colorSet.add(attrs.color);
+          if (typeof attrs.storage === 'string' && attrs.storage) storageSet.add(attrs.storage);
+          if (typeof r.effective_price === 'number') minPrice = Math.min(minPrice, Number(r.effective_price));
+          if (r.currency) currency = r.currency;
+        }
+
+        const r0 = list[0];
+        const detail: DetailProduct = {
+          id: r0.product_id,
+          name: r0.title,
+          category: r0.category,
+          description: r0.description,
+          images: sortedImages.length > 0 ? sortedImages : (r0.primary_image ? [r0.primary_image] : []),
+          colors: Array.from(colorSet),
+          storage: Array.from(storageSet),
+          currency,
+          basePrice: Number.isFinite(minPrice) ? minPrice : Number(r0.effective_price ?? 0),
+        };
+        if (isMounted) setProduct(detail);
+      } catch (e: any) {
+        if (isMounted) setError(e?.message || 'Failed to load product');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
+
+  const decreaseQuantity = () => { if (quantity > 1) setQuantity(quantity - 1); };
+  const increaseQuantity = () => { setQuantity(quantity + 1); };
+
+  const currentColor = useMemo(() => {
+    if (!product || !product.colors || product.colors.length === 0) return '';
+    const idx = Math.max(0, Math.min(selectedColor, product.colors.length - 1));
+    return product.colors[idx];
+  }, [product, selectedColor]);
+
+  const currentStorage = useMemo(() => {
+    if (!product || !product.storage || product.storage.length === 0) return '';
+    const idx = Math.max(0, Math.min(selectedStorage, product.storage.length - 1));
+    return product.storage[idx];
+  }, [product, selectedStorage]);
+
+  const basePrice = product?.basePrice ?? 0;
   const nasiyaMarkup = 1.3;
-  const nasiyaTotalPrice = Math.round(basePrice * nasiyaMarkup);
-  
-  // Calculate monthly payment based on selected plan
-  const monthlyPayment = Math.round(nasiyaTotalPrice / selectedInstallmentPlan);
-
-  // Calculate total price based on quantity
+  const nasiyaTotalPrice = Math.round(basePrice * nasiyaMarkup) * quantity;
+  const monthlyPayment = Math.round((basePrice * nasiyaMarkup) / selectedInstallmentPlan) * quantity;
   const totalPrice = basePrice * quantity;
-  const totalNasiyaPrice = nasiyaTotalPrice * quantity;
-  const totalMonthlyPayment = monthlyPayment * quantity;
 
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
-  const increaseQuantity = () => {
-    setQuantity(quantity + 1);
-  };
-
-  // Get current color and storage information
-  const currentColor = product.colors && product.colors.length > 0 
-    ? product.colors[selectedColor].name 
-    : product.color;
-  
-  const currentStorage = product.storage && product.storage.length > 0 
-    ? product.storage[selectedStorage].size 
-    : '';
-
-  // Get current price display based on payment type
   const currentPriceDisplay = selectedPaymentType === 'full' 
-    ? `$${totalPrice}` 
-    : `$${totalMonthlyPayment}/mo for ${selectedInstallmentPlan} months`;
+    ? `${product?.currency === 'USD' ? '$' : product?.currency || ''}${totalPrice}` 
+    : `${product?.currency === 'USD' ? '$' : product?.currency || ''}${monthlyPayment}/mo for ${selectedInstallmentPlan} months`;
+
+  const handleAddToBag = () => {
+    if (!product) return;
+    addItem({
+      id: product.id,
+      name: product.name,
+      image: product.images[0] || '',
+      unitPrice: basePrice,
+      currency: product.currency || 'USD',
+    }, quantity);
+  };
+
+  // Image carousel helpers
+  const imagesCount = product?.images?.length || 0;
+  const stepSize = 2; // show two images side-by-side, advance by two
+ 
+  // Vertical thumbnails slider state
+  const [thumbOffset, setThumbOffset] = useState(0);
+  const visibleThumbs = 6;
+  const maxThumbOffset = Math.max(0, imagesCount - visibleThumbs);
+  const thumbsStart = Math.min(thumbOffset, maxThumbOffset);
+  const canThumbPrev = thumbsStart > 0;
+  const canThumbNext = thumbsStart < maxThumbOffset;
+  const showThumbs = (product?.images?.length || 0) > 0;
+
+  const nextImage = () => {
+    if (!imagesCount) return;
+    setSelectedImage((prev) => (prev + stepSize) % imagesCount);
+  };
+  const prevImage = () => {
+    if (!imagesCount) return;
+    setSelectedImage((prev) => (prev - stepSize + imagesCount * 1000) % imagesCount);
+  };
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+  const onTouchEnd = () => {
+    if (touchStart === null || touchEnd === null) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) nextImage();
+    if (isRightSwipe) prevImage();
+  };
 
   return (
     <div className="min-h-screen pb-20 bg-white dark:bg-gray-950 transition-colors duration-300">
-      {/* Breadcrumb navigation - simplified and more subtle */}
+      {/* Breadcrumb navigation */}
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
         <nav className="flex items-center">
           <Link to="/" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
             <Text size="xs" color="tertiary">Home</Text>
           </Link>
-          <span className="mx-1.5">
-            <Text size="xs" color="tertiary">›</Text>
-          </span>
-          <Link to="/store" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+          <span className="mx-1.5"><Text size="xs" color="tertiary">›</Text></span>
+          <Link to="/products" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
             <Text size="xs" color="tertiary">Store</Text>
           </Link>
-          <span className="mx-1.5">
-            <Text size="xs" color="tertiary">›</Text>
-          </span>
-          <Link to="/iphone" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <Text size="xs" color="tertiary">iPhone</Text>
-          </Link>
-          <span className="mx-1.5">
-            <Text size="xs" color="tertiary">›</Text>
-          </span>
-          <Text size="xs" color="secondary">{product.name}</Text>
+          <span className="mx-1.5"><Text size="xs" color="tertiary">›</Text></span>
+          <Text size="xs" color="secondary">{product?.name || 'Product'}</Text>
         </nav>
       </div>
-      
+
       <Section background="light" size="lg">
         <ContentBlock spacing="md">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 py-8">
-            {/* Left side - Product Images - Simplified and more focused */}
-            <div className="flex flex-col">
-              <div className="mb-6 flex items-center justify-center h-[600px]">
-                {product.images.length > 0 ? (
-                  <img 
-                    src={product.images[selectedImage]} 
-                    alt={`${product.name} ${product.color}`} 
-                    className="max-h-full max-w-full object-contain transition-all duration-500 hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full w-full">
-                    <Text color="tertiary">Image not available</Text>
-                  </div>
+          {loading ? (
+            <div className="py-16 text-center">
+              <Text>Loading product…</Text>
+            </div>
+          ) : error ? (
+            <div className="py-16 text-center">
+              <Text color="error">{error}</Text>
+            </div>
+          ) : !product ? (
+            <div className="py-16 text-center">
+              <Text>Product not found.</Text>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 py-8">
+              <div className="lg:col-span-9">
+                <AppleProductTitle size="sm">{product.name}</AppleProductTitle>
+                {product.category && (
+                  <Text size="sm" color="tertiary" className="mt-1">{product.category}</Text>
                 )}
               </div>
-              
-              {/* Thumbnail gallery - more subtle and minimal */}
-              <div className="flex justify-center space-x-3">
-                {product.images.map((image, index) => (
-                  <button 
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
-                      selectedImage === index 
-                        ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
-                        : 'opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img 
-                      src={image} 
-                      alt={`${product.name} thumbnail ${index + 1}`} 
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Right side - Product Details - Cleaner and more spacious */}
-            <div className="flex flex-col">
-              {/* Product title - simplified header */}
-              <div className="mb-8">
-                <AppleProductTitle className="text-4xl">{product.name}</AppleProductTitle>
-              </div>
-              
-              {/* Color options */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="mb-8">
-                  <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
-                  <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedColor(index)}
-                        className={`w-10 h-10 rounded-full transition-all duration-300 flex items-center justify-center ${
-                          selectedColor === index 
-                            ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
-                            : ''
-                        }`}
-                        title={color.name}
+                {/* Left side - Product Images */}
+                <div className="flex flex-col lg:col-span-9">
+                  <div className="flex gap-4">
+                    {/* Vertical thumbnails (desktop/tablet) */}
+                    {product.images.length > 0 && (
+                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px]">
+                        {/* Up arrow */}
+                        {imagesCount > visibleThumbs && (
+                          <button
+                            type="button"
+                            onClick={() => setThumbOffset((v) => Math.max(0, v - 1))}
+                            disabled={!canThumbPrev}
+                            className={`p-1.5 rounded-full bg-white/80 dark:bg-gray-800/70 shadow ${!canThumbPrev ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white'}`}
+                            aria-label="Previous thumbnails"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 6l4 5H6l4-5z" clipRule="evenodd"/></svg>
+                          </button>
+                        )}
+                        <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '520px' }}>
+                          {(product.images.slice(thumbsStart, thumbsStart + visibleThumbs)).map((image, index) => {
+                            const actualIndex = thumbsStart + index;
+                            return (
+                              <button
+                                key={actualIndex}
+                                onClick={() => setSelectedImage(actualIndex)}
+                                className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                                  selectedImage === actualIndex 
+                                    ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
+                                    : 'opacity-60 hover:opacity-100'
+                                }`}
+                                aria-label={`Thumbnail ${actualIndex + 1}`}
+                              >
+                                <img src={image} alt={`${product?.name || 'Product'} thumbnail ${actualIndex + 1}`} className="h-full w-full object-cover" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Down arrow */}
+                        {imagesCount > visibleThumbs && (
+                          <button
+                            type="button"
+                            onClick={() => setThumbOffset((v) => Math.min(maxThumbOffset, v + 1))}
+                            disabled={!canThumbNext}
+                            className={`p-1.5 rounded-full bg-white/80 dark:bg-gray-800/70 shadow ${!canThumbNext ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white'}`}
+                            aria-label="Next thumbnails"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 14l-4-5h8l-4 5z" clipRule="evenodd"/></svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Two large image containers */}
+                    <div className="flex-1 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Left large container (current image) */}
+                      <div 
+                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
                       >
-                        <span 
-                          className="w-8 h-8 rounded-full" 
-                          style={{backgroundColor: color.value}}
-                        ></span>
-                      </button>
-                    ))}
+                        {product.images.length > 0 ? (
+                          <img 
+                            src={product.images[selectedImage]} 
+                            alt={product.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full">
+                            <Text color="tertiary">Image not available</Text>
+                          </div>
+                        )}
+
+                        {product.images.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={prevImage}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
+                            aria-label="Previous image"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                              <path fillRule="evenodd" d="M12.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right large container (next image) */}
+                      <div 
+                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                      >
+                        {product.images.length > 1 ? (
+                          <img 
+                            src={product.images[(selectedImage + 1) % product.images.length]} 
+                            alt={`${product.name} alt view`} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full">
+                            <Text color="tertiary">Add more images to preview here</Text>
+                          </div>
+                        )}
+
+                        {product.images.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={nextImage}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
+                            aria-label="Next image"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                              <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <Text size="sm" color="tertiary" className="mt-2">{currentColor}</Text>
-                </div>
-              )}
-              
-              {/* Storage options */}
-              {product.storage && product.storage.length > 0 && (
-                <div className="mb-8">
-                  <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Storage</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.storage.map((option, index) => {
-                      const basePrice = product.storage[0].price;
-                      const priceDifference = option.price - basePrice;
-                      const isSelected = selectedStorage === index;
-                      
-                      return (
-                        <button
+
+                  {/* Horizontal thumbnails for mobile */}
+                  {product.images.length > 1 && (
+                    <div className="flex justify-center space-x-3 sm:hidden">
+                      {product.images.map((image, index) => (
+                        <button 
                           key={index}
-                          onClick={() => setSelectedStorage(index)}
-                          className={`px-4 py-2 rounded-lg border transition-all ${
-                            isSelected 
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
-                              : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                          onClick={() => setSelectedImage(index)}
+                          className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                            selectedImage === index 
+                              ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
+                              : 'opacity-60 hover:opacity-100'
                           }`}
                         >
-                          <div className="text-sm font-medium">{option.size}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {index === 0 ? '+$0' : `+$${priceDifference}`}
-                          </div>
+                          <img src={image} alt={`${product.name} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
                         </button>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* Payment Options - cleaner design */}
-              <div className="mb-10">
-                <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Payment Options</Label>
-                <div className="flex space-x-3 mb-8">
-                  <button
-                    onClick={() => setSelectedPaymentType('full')}
-                    className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
-                      selectedPaymentType === 'full' 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
-                        : 'border-gray-200 dark:border-gray-800'
-                    }`}
-                  >
-                    <Text 
-                      size="sm" 
-                      weight={selectedPaymentType === 'full' ? "medium" : "normal"}
-                      color={selectedPaymentType === 'full' ? "accent" : "inherit"}
-                      align="center"
-                    >
-                      Full Payment
-                    </Text>
-                  </button>
+
+                {/* Right side - Product Details */}
+                <div className="flex flex-col lg:col-span-3">
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
                   
-                  <button
-                    onClick={() => setSelectedPaymentType('nasiya')}
-                    className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
-                      selectedPaymentType === 'nasiya' 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
-                        : 'border-gray-200 dark:border-gray-800'
-                    }`}
-                  >
-                    <Text 
-                      size="sm" 
-                      weight={selectedPaymentType === 'nasiya' ? "medium" : "normal"}
-                      color={selectedPaymentType === 'nasiya' ? "accent" : "inherit"}
-                      align="center"
-                    >
-                      Nasiya
-                    </Text>
-                  </button>
-                </div>
-                
-                {/* Price display - cleaner presentation */}
-                {selectedPaymentType === 'full' ? (
-                  <div className="mb-8">
-                    <ApplePrice className="text-3xl">${totalPrice}</ApplePrice>
-                    <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
-                  </div>
-                ) : (
-                  <div className="mb-8">
-                    {/* Installment plan selection */}
-                    <div className="mb-4">
-                      <Text size="xs" color="tertiary" className="mb-2">Select payment period:</Text>
-                      <div className="flex space-x-2">
-                        {[6, 12, 24].map((months) => (
+ 
+                  {product.colors && product.colors.length > 0 && (
+                    <div className="mb-8">
+                      <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
+                      <div className="flex flex-wrap gap-3">
+                        {product.colors.map((color, index) => (
                           <button
-                            key={months}
-                            onClick={() => setSelectedInstallmentPlan(months as 6 | 12 | 24)}
-                            className={`px-3 py-1.5 text-xs rounded-md transition-all ${
-                              selectedInstallmentPlan === months
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            key={index}
+                            onClick={() => setSelectedColor(index)}
+                            className={`w-10 h-10 rounded-full transition-all duration-300 flex items-center justify-center ${
+                              selectedColor === index 
+                                ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
+                                : ''
+                            }`}
+                            title={color}
+                          >
+                            <span className="w-8 h-8 rounded-full" style={{backgroundColor: color}}></span>
+                          </button>
+                        ))}
+                      </div>
+                      <Text size="sm" color="tertiary" className="mt-2">{currentColor}</Text>
+                    </div>
+                  )}
+
+                  {product.storage && product.storage.length > 0 && (
+                    <div className="mb-8">
+                      <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Storage</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {product.storage.map((option, index) => (
+                          <button
+                            key={option + index}
+                            onClick={() => setSelectedStorage(index)}
+                            className={`px-4 py-2 rounded-lg border transition-all ${
+                              selectedStorage === index 
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            <Text size="xs" color="inherit">
-                              {months} months
-                            </Text>
+                            <div className="text-sm font-medium">{option}</div>
                           </button>
                         ))}
                       </div>
                     </div>
-                    
-                    <ApplePrice className="text-3xl">${totalMonthlyPayment}</ApplePrice>
-                    <Text size="sm" color="tertiary" className="mt-1">
-                      per month for {selectedInstallmentPlan} months
-                    </Text>
-                    <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <div className="flex justify-between text-xs mb-1">
-                        <Text size="xs" color="tertiary">Base price:</Text>
-                        <Text size="xs" color="secondary">${totalPrice}</Text>
-                      </div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <Text size="xs" color="tertiary">Nasiya markup (30%):</Text>
-                        <Text size="xs" color="secondary">+${totalNasiyaPrice - totalPrice}</Text>
-                      </div>
-                      <div className="flex justify-between text-xs font-medium pt-1 border-t border-gray-200 dark:border-gray-800">
-                        <Text size="xs" color="secondary" weight="medium">Total cost:</Text>
-                        <Text size="xs" color="primary" weight="medium">${totalNasiyaPrice}</Text>
-                      </div>
+                  )}
+
+                  {/* Payment Options */}
+                  <div className="mb-10">
+                    <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Payment Options</Label>
+                    <div className="flex space-x-3 mb-8">
+                      <button
+                        onClick={() => setSelectedPaymentType('full')}
+                        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
+                          selectedPaymentType === 'full' 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+                            : 'border-gray-200 dark:border-gray-800'
+                        }`}
+                      >
+                        <Text size="sm" weight={selectedPaymentType === 'full' ? 'medium' : 'normal'} color={selectedPaymentType === 'full' ? 'accent' : 'inherit'} align="center">Full Payment</Text>
+                      </button>
+                      <button
+                        onClick={() => setSelectedPaymentType('nasiya')}
+                        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
+                          selectedPaymentType === 'nasiya' 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+                            : 'border-gray-200 dark:border-gray-800'
+                        }`}
+                      >
+                        <Text size="sm" weight={selectedPaymentType === 'nasiya' ? 'medium' : 'normal'} color={selectedPaymentType === 'nasiya' ? 'accent' : 'inherit'} align="center">Nasiya</Text>
+                      </button>
                     </div>
+
+                    {selectedPaymentType === 'full' ? (
+                      <div className="mb-8">
+                        <ApplePrice className="text-3xl">{product.currency === 'USD' ? '$' : product.currency}{totalPrice}</ApplePrice>
+                        <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
+                      </div>
+                    ) : (
+                      <div className="mb-8">
+                        <div className="mb-4">
+                          <Text size="xs" color="tertiary" className="mb-2">Select payment period:</Text>
+                          <div className="flex space-x-2">
+                            {[6, 12, 24].map((months) => (
+                              <button
+                                key={months}
+                                onClick={() => setSelectedInstallmentPlan(months as 6 | 12 | 24)}
+                                className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                                  selectedInstallmentPlan === months
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                <Text size="xs" color="inherit">{months} months</Text>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <ApplePrice className="text-3xl">{product.currency === 'USD' ? '$' : product.currency}{monthlyPayment}</ApplePrice>
+                        <Text size="sm" color="tertiary" className="mt-1">per month for {selectedInstallmentPlan} months</Text>
+                        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                          <div className="flex justify-between text-xs mb-1">
+                            <Text size="xs" color="tertiary">Base price:</Text>
+                            <Text size="xs" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{totalPrice}</Text>
+                          </div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <Text size="xs" color="tertiary">Nasiya markup (30%):</Text>
+                            <Text size="xs" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - totalPrice}</Text>
+                          </div>
+                          <div className="flex justify-between text-xs font-medium pt-1 border-t border-gray-200 dark:border-gray-800">
+                            <Text size="xs" color="secondary" weight="medium">Total cost:</Text>
+                            <Text size="xs" color="primary" weight="medium">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
-                )}
-                
-              </div>
-              
+                  </div>
+                </div>
             </div>
-          </div>
+          )}
         </ContentBlock>
       </Section>
-      
+
       {/* Detailed Description Section */}
-      <Section background="light" size="lg">
-        <ContentBlock spacing="md">
-          <div className="py-8">
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
-              <button
-                onClick={() => setActiveTab('description')}
-                className={`px-6 py-3 transition-colors ${
-                  activeTab === 'description'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <Text size="sm" weight="medium" color="inherit">Description</Text>
-              </button>
-              <button
-                onClick={() => setActiveTab('characteristics')}
-                className={`px-6 py-3 transition-colors ${
-                  activeTab === 'characteristics'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <Text size="sm" weight="medium" color="inherit">Characteristics</Text>
-              </button>
-              <button
-                onClick={() => setActiveTab('nasiya')}
-                className={`px-6 py-3 transition-colors ${
-                  activeTab === 'nasiya'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <Text size="sm" weight="medium" color="inherit">Nasiya Details</Text>
-              </button>
-            </div>
-            
-            {/* Tab Content */}
-            <div className="max-w-4xl">
+      {product?.description && (
+        <Section background="light" size="lg">
+          <ContentBlock spacing="md">
+            <div className="py-8">
+              <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
+                <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                  <Text size="sm" weight="medium" color="inherit">Description</Text>
+                </button>
+              </div>
               {activeTab === 'description' && (
-                <div className="space-y-6">
+                <div className="space-y-6 max-w-4xl">
                   <div>
                     <H3 className="mb-4">About This Product</H3>
-                    <AppleProductDescription className="mb-6">
-                      {product.description}
-                    </AppleProductDescription>
-                    
-                    <H4 className="mb-3">Key Features</H4>
-                    <ul className="space-y-2 mb-6">
-                      {product.features.map((feature, index) => (
-                        <li key={index} className="flex items-start">
-                          <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                          <Text color="secondary">{feature}</Text>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <H3 className="mb-4">Product Overview</H3>
-                    <AppleProductDescription>
-                      Experience the future of mobile technology with the iPhone 16. This revolutionary device combines cutting-edge innovation with timeless design, delivering an unparalleled user experience that adapts to your lifestyle.
-                    </AppleProductDescription>
-                  </div>
-                  
-                  <div>
-                    <H4 className="mb-3">What's New</H4>
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text color="secondary">Revolutionary A18 Bionic chip for lightning-fast performance</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text color="secondary">Advanced camera system with AI-powered photography</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text color="secondary">All-day battery life that keeps up with your busy schedule</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-2 mr-3"></div>
-                        <Text color="secondary">Enhanced security with Face ID and advanced encryption</Text>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div>
-                    <H4 className="mb-3">Perfect For</H4>
-                    <AppleProductDescription>
-                      Whether you're a creative professional, a business executive, or someone who simply appreciates the best technology has to offer, the iPhone 16 is designed to exceed your expectations. Its powerful capabilities make it perfect for photography, gaming, productivity, and everyday use.
-                    </AppleProductDescription>
-                  </div>
-                </div>
-              )}
-              
-              {activeTab === 'characteristics' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <H4 className="mb-3">Display</H4>
-                      <Text color="secondary">{product.characteristics?.display}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Processor</H4>
-                      <Text color="secondary">{product.characteristics?.processor}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Camera</H4>
-                      <Text color="secondary">{product.characteristics?.camera}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Battery</H4>
-                      <Text color="secondary">{product.characteristics?.battery}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Storage</H4>
-                      <Text color="secondary">{product.characteristics?.storage}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Connectivity</H4>
-                      <Text color="secondary">{product.characteristics?.connectivity}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Security</H4>
-                      <Text color="secondary">{product.characteristics?.security}</Text>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {activeTab === 'nasiya' && (
-                <div className="space-y-6">
-                  <div>
-                    <H3 className="mb-4">Nasiya Payment Information</H3>
-                    <AppleProductDescription>
-                      We offer flexible payment options through our trusted nasiya partners, making premium technology accessible to everyone.
-                    </AppleProductDescription>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <H4 className="mb-3">Eligibility</H4>
-                      <Text color="secondary">{product.nasiyaDetails?.eligibility}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Requirements</H4>
-                      <Text color="secondary">{product.nasiyaDetails?.requirements}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Required Documents</H4>
-                      <Text color="secondary">{product.nasiyaDetails?.documents}</Text>
-                    </div>
-                    <div>
-                      <H4 className="mb-3">Application Process</H4>
-                      <Text color="secondary">{product.nasiyaDetails?.process}</Text>
-                    </div>
-                    <div className="md:col-span-2">
-                      <H4 className="mb-3">Benefits</H4>
-                      <Text color="secondary">{product.nasiyaDetails?.benefits}</Text>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-4">
-                    <H4 className="text-blue-900 dark:text-blue-100 mb-2">Important Notes</H4>
-                    <ul className="space-y-1">
-                      <li className="flex items-start">
-                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
-                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">30% markup applies to all nasiya payments</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
-                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">Early repayment available with no penalties</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
-                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">Insurance coverage included for device protection</Text>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="w-1 h-1 bg-blue-800 dark:bg-blue-200 rounded-full mt-2 mr-2"></div>
-                        <Text size="sm" color="inherit" className="text-blue-800 dark:text-blue-200">24/7 customer support for payment-related queries</Text>
-                      </li>
-                    </ul>
+                    <AppleProductDescription className="mb-6">{product?.description}</AppleProductDescription>
                   </div>
                 </div>
               )}
             </div>
-          </div>
-        </ContentBlock>
-      </Section>
-      
+          </ContentBlock>
+        </Section>
+      )}
+
       {/* Persistent product summary bar at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* Product thumbnail */}
-            {product.images.length > 0 && (
-              <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
-                <img 
-                  src={product.images[0]} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            
-            {/* Product info summary */}
-            <div>
-              <Text size="sm" weight="medium" color="primary">{product.name}</Text>
-              <Caption>
-                {currentColor}{currentStorage ? ` • ${currentStorage}` : ''}
-              </Caption>
-            </div>
-            
-            {/* Quantity selector */}
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={decreaseQuantity}
-                className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                disabled={quantity <= 1}
-              >
-                <span className="text-sm">-</span>
-              </button>
-              <span className="w-4 text-center text-gray-800 dark:text-gray-200 font-medium text-sm">
-                {quantity}
-              </span>
-              <button 
-                onClick={increaseQuantity}
-                className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-              >
-                <span className="text-sm">+</span>
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Price summary */}
-            <div className="text-right hidden sm:block">
-              <Text size="sm" weight="medium" color="primary">{currentPriceDisplay}</Text>
-              {selectedPaymentType === 'nasiya' && (
-                <Caption>Total: ${totalNasiyaPrice}</Caption>
+      {product && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {product.images.length > 0 && (
+                <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                </div>
               )}
+              <div>
+                <Text size="sm" weight="medium" color="primary">{product.name}</Text>
+                <Caption>
+                  {currentColor}{currentStorage ? ` • ${currentStorage}` : ''}
+                </Caption>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button onClick={decreaseQuantity} className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors" disabled={quantity <= 1}>
+                  <span className="text-sm">-</span>
+                </button>
+                <span className="w-4 text-center text-gray-800 dark:text-gray-200 font-medium text-sm">{quantity}</span>
+                <button onClick={increaseQuantity} className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                  <span className="text-sm">+</span>
+                </button>
+              </div>
             </div>
-            
-            {/* Action buttons */}
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="small"
-                className="text-xs py-2 px-3 hidden sm:block"
-              >
-                Save
-              </Button>
-              <Button 
-                variant="primary" 
-                size="small"
-                className="text-xs py-2 px-3"
-              >
-                Add to Bag
-              </Button>
+            <div className="flex items-center space-x-4">
+              <div className="text-right hidden sm:block">
+                <Text size="sm" weight="medium" color="primary">{currentPriceDisplay}</Text>
+                {selectedPaymentType === 'nasiya' && (
+                  <Caption>Total: {product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Caption>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="small" className="text-xs py-2 px-3 hidden sm:block">Save</Button>
+                <Button variant="primary" size="small" className="text-xs py-2 px-3" onClick={handleAddToBag}>Add to Bag</Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

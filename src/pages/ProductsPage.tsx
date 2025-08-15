@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Text, H1 } from '../components/Typography';
 import ProductCard from '../components/ProductCard';
 import FilterTag from '../components/FilterTag';
-import ProductModal from '../components/ProductModal';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { listPublicProducts, PublicProduct } from '../lib/db';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 
 // Fetch live products when Supabase is configured
@@ -158,7 +157,7 @@ const tags = [
   'Touch ID', 'Face ID', 'MagSafe', 'USB-C', 'Thunderbolt', 'Wi-Fi 6', 'Bluetooth 5.0', 
   'AppleCare+', 'Trade In', 'Free Delivery', 'Student Discount', 'Business', 'Education'
 ];
-const quickFilters = ['Deals', 'New', 'Second Hand', 'Bestsellers'];
+const quickFilters = ['Deals', 'New', 'Second Hand'];
 
 // Mapping from UI categories to DB categories/tokens
 const UI_CATEGORY_PRESETS: Record<string, { dbCategories?: string[]; nameContains?: string[]; brand?: string }> = {
@@ -201,13 +200,12 @@ const ProductsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('default');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [visibleProducts, setVisibleProducts] = useState<number>(12); // Show 3 rows of 4 products initially
   const [cartItems, setCartItems] = useState<string[]>([]);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState<boolean>(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const { addItem } = useCart();
+  const navigate = useNavigate();
   
   // Price range filters
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 3000 });
@@ -444,10 +442,6 @@ const ProductsPage: React.FC = () => {
           // Simulate second hand by taking random products (in a real app, you'd have a property for this)
           result = result.filter((_, index) => index % 3 === 0);
           break;
-        case 'Bestsellers':
-          // Simulate bestsellers (in a real app, you'd have a property for this)
-          result = result.filter((_, index) => index % 4 === 0 || index % 5 === 0);
-          break;
         default:
           break;
       }
@@ -561,8 +555,7 @@ const ProductsPage: React.FC = () => {
 
   // Handle product click
   const handleProductClick = (product: Product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
+    navigate(`/store/${product.id}`);
   };
 
   // Add to cart
@@ -587,11 +580,6 @@ const ProductsPage: React.FC = () => {
       }, 1);
     }
     // Show a brief notification or animation here if desired
-  };
-
-  // Close modal
-  const closeModal = () => {
-    setIsModalOpen(false);
   };
 
   // Show more products
@@ -1955,12 +1943,7 @@ const ProductsPage: React.FC = () => {
         </main>
       </div>
       
-      {/* Product Modal */}
-      <ProductModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        product={selectedProduct}
-      />
+      
     </div>
   );
 };

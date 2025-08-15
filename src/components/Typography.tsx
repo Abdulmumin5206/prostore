@@ -433,7 +433,7 @@ export const AppleSubheadline: React.FC<TypographyProps> = ({
   return <p className={classes}>{children}</p>;
 };
 
-export const AppleProductTitle: React.FC<TypographyProps> = ({ 
+export const AppleProductTitle: React.FC<TypographyProps & { size?: 'sm' | 'md' | 'lg' }> = ({ 
   children, 
   className = '',
   weight = 'semibold',
@@ -442,10 +442,18 @@ export const AppleProductTitle: React.FC<TypographyProps> = ({
   transform,
   truncate,
   italic,
-  underline
+  underline,
+  size = 'md'
 }) => {
+  const sizeClass = size === 'sm'
+    ? 'text-xl md:text-2xl'
+    : size === 'lg'
+      ? 'text-3xl md:text-4xl'
+      : 'text-2xl md:text-3xl';
+
   const classes = [
-    'text-2xl md:text-3xl tracking-tight',
+    sizeClass,
+    'tracking-tight',
     getWeightClass(weight),
     getColorClass(color),
     getAlignClass(align),
