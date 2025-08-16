@@ -10,15 +10,17 @@ type AdminSelectProps = {
   placeholder?: string
   disabled?: boolean
   className?: string
+  menuMaxHeight?: number
 }
 
-const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, placeholder = 'Select', disabled = false, className = '' }) => {
+const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, placeholder = 'Select', disabled = false, className = '', menuMaxHeight = 320 }) => {
   const [open, setOpen] = useState(false)
   const [hoveredOption, setHoveredOption] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLUListElement>(null)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
+  const [placement, setPlacement] = useState<'down' | 'up'>('down')
 
   const selectedLabel = useMemo(() => options.find(o => o.value === value)?.label ?? '', [options, value])
 
@@ -35,6 +37,26 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Compute placement once per open to avoid flip/jump; still reposition on scroll/resize
+  useEffect(() => {
+    if (!open) return
+
+    const computePlacement = () => {
+      const btn = buttonRef.current
+      if (!btn) return 'down' as const
+      const rect = btn.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const spaceBelow = viewportHeight - rect.bottom - 8
+      const spaceAbove = rect.top - 8
+      const preferedMax = menuMaxHeight
+      const shouldOpenUp = spaceBelow < Math.min(preferedMax, spaceAbove) && spaceAbove > spaceBelow
+      return shouldOpenUp ? 'up' : 'down'
+    }
+
+    // Set placement once when opened
+    setPlacement(computePlacement())
+  }, [open, menuMaxHeight])
+
   // Position the menu via fixed coordinates to avoid nesting inside scrollable parents
   useEffect(() => {
     if (!open) return
@@ -42,13 +64,26 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
       const btn = buttonRef.current
       if (!btn) return
       const rect = btn.getBoundingClientRect()
-      setMenuStyle({
+      const viewportHeight = window.innerHeight
+      const spaceBelow = viewportHeight - rect.bottom - 8
+      const spaceAbove = rect.top - 8
+      const preferedMax = menuMaxHeight
+      const maxHeight = Math.max(160, Math.min(preferedMax, placement === 'up' ? spaceAbove : spaceBelow))
+
+      const style: React.CSSProperties = {
         position: 'fixed',
-        top: rect.bottom + 4,
         left: rect.left,
         width: rect.width,
         zIndex: 9999,
-      })
+        maxHeight,
+        overflowY: 'auto',
+      }
+      if (placement === 'up') {
+        style.bottom = viewportHeight - rect.top + 4
+      } else {
+        style.top = rect.bottom + 4
+      }
+      setMenuStyle(style)
     }
     updatePosition()
     window.addEventListener('scroll', updatePosition, true)
@@ -57,10 +92,15 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
       window.removeEventListener('scroll', updatePosition, true)
       window.removeEventListener('resize', updatePosition)
     }
+  }, [open, menuMaxHeight, placement])
+
+  // Reset placement when closing so it can be recomputed next open
+  useEffect(() => {
+    if (!open) setPlacement('down')
   }, [open])
 
   const baseButton = 'w-full flex items-center justify-between bg-white/5 text-white border border-white/10 rounded-lg px-3 py-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10'
-  const baseMenu = 'rounded-xl border border-white/10 bg-black/95 backdrop-blur-sm shadow-lg py-2'
+  const baseMenu = 'rounded-xl border border-white/10 bg-black/95 backdrop-blur-sm shadow-lg py-2 overflow-y-auto'
   const baseItem = 'px-3 py-2 text-sm hover:bg-white/15 cursor-pointer flex items-center justify-between transition-colors duration-200 group'
 
   return (

@@ -64,6 +64,25 @@ const ProductPage: React.FC = () => {
   const [showFullImage, setShowFullImage] = useState(false);
   const [fullImageIndex, setFullImageIndex] = useState(0);
 
+  // Show compact summary bar at top after scrolling past half the page
+  const [showTopSummary, setShowTopSummary] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop || 0;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      const threshold = maxScroll * 0.35; // appear a bit earlier (~35% scroll)
+      setShowTopSummary(scrollTop > threshold);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -448,7 +467,7 @@ const ProductPage: React.FC = () => {
         </nav>
       </div>
 
-      <Section background="light" size="lg">
+      <Section background="light" size="lg" containerWidth="xl">
         <ContentBlock spacing="md">
           {loading ? (
             <div className="py-16 text-center">
@@ -463,8 +482,8 @@ const ProductPage: React.FC = () => {
               <Text>Product not found.</Text>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-8">
-              <div className="lg:col-span-9">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 py-8">
+              <div className="lg:col-span-8 xl:col-span-8">
                 <AppleProductTitle size="sm">{product.name}</AppleProductTitle>
                 {product.category && (
                   <Text size="sm" color="tertiary" className="mt-1">{product.category}</Text>
@@ -475,8 +494,8 @@ const ProductPage: React.FC = () => {
                   <div className="flex gap-4">
                     {/* Vertical thumbnails (desktop/tablet) */}
                     {imagesForCurrentSelection.length > 0 && (
-                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px] relative">
-                        <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '520px' }}>
+                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[460px] md:max-h-[480px] lg:max-h-[500px] xl:max-h-[520px] relative">
+                        <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '100%' }}>
                           {/* Up arrow - positioned inside at top */}
                           {imagesCount > visibleThumbs && (
                             <button
@@ -498,7 +517,7 @@ const ProductPage: React.FC = () => {
                               <button
                                 key={actualIndex}
                                 onClick={() => setSelectedImage(actualIndex)}
-                                className={`rounded-md h-20 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                                className={`rounded-md h-16 w-14 md:h-20 md:w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
                                   selectedImage === actualIndex 
                                     ? 'border border-black dark:border-white' 
                                     : 'opacity-60 hover:opacity-100'
@@ -532,7 +551,7 @@ const ProductPage: React.FC = () => {
                     <div className="flex-1 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                       {/* Left large container (current image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden cursor-pointer"
+                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -569,7 +588,7 @@ const ProductPage: React.FC = () => {
 
                       {/* Right large container (next image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden cursor-pointer"
+                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -608,12 +627,12 @@ const ProductPage: React.FC = () => {
 
                   {/* Horizontal thumbnails for mobile */}
                   {imagesForCurrentSelection.length > 1 && (
-                    <div className="flex justify-center space-x-3 sm:hidden">
+                    <div className="flex justify-center space-x-2 sm:hidden">
                       {imagesForCurrentSelection.map((image, index) => (
                         <button 
                           key={index}
                           onClick={() => setSelectedImage(index)}
-                          className={`rounded-md h-20 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                          className={`rounded-md h-16 w-14 flex-shrink-0 overflow-hidden transition-all duration-300 ${
                             selectedImage === index 
                               ? 'border border-black dark:border-white' 
                               : 'opacity-60 hover:opacity-100'
@@ -627,7 +646,7 @@ const ProductPage: React.FC = () => {
                 </div>
 
                 {/* Right side - Product Details */}
-                <div className="flex flex-col lg:col-span-4">
+                <div className="flex flex-col lg:col-span-4 xl:col-span-4">
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
                   
                   
@@ -886,7 +905,7 @@ const ProductPage: React.FC = () => {
 
       {/* Detailed Description Section */}
       {product && (
-        <Section background="light" size="lg">
+        <Section background="light" size="lg" containerWidth="xl">
           <ContentBlock spacing="md">
             <div className="py-8">
               <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
@@ -974,9 +993,9 @@ const ProductPage: React.FC = () => {
         </Section>
       )}
 
-      {/* Persistent product summary bar at bottom */}
-      {product && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50">
+      {/* Floating product summary bar at top (appears after half-page scroll) */}
+      {product && showTopSummary && (
+                 <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-md z-50">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {imagesForCurrentSelection.length > 0 && (

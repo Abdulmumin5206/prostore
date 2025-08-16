@@ -13,6 +13,8 @@ const Header = () => {
   const { user, signOut, isAdminOverride } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const isProductPage = location.pathname.startsWith('/store/');
+  const stickyEnabled = !isProductPage;
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const navDropdownRef = useRef<HTMLDivElement>(null);
@@ -25,8 +27,8 @@ const Header = () => {
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          // Make header sticky when scrolling past the banner (40px height)
-          setIsSticky(window.scrollY > 40);
+          // Make header sticky when scrolling past the banner (40px height) unless disabled
+          setIsSticky(stickyEnabled && window.scrollY > 40);
           ticking = false;
         });
         ticking = true;
@@ -39,7 +41,7 @@ const Header = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [stickyEnabled]);
 
   // Close dropdown when navigating to a different page
   useEffect(() => {
@@ -109,7 +111,7 @@ const Header = () => {
       <header 
         ref={headerRef}
         className={`bg-black dark:bg-black text-white w-full z-50 ${
-          isSticky ? 'fixed top-0 shadow-md' : 'absolute top-10'
+          stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'absolute top-10'
         }`}
         onMouseLeave={handleHeaderMouseLeave}
         style={{ borderBottom: isDropdownVisible ? 'none' : undefined }}
