@@ -23,7 +23,19 @@ export type Category = { id: string; name: string; slug: string }
 export type Family = { id: string; brand_id: string; name: string; slug: string }
 export type Model = { id: string; family_id: string; name: string; slug: string; release_year?: number | null; display_order?: number | null }
 export type Variant = { id: string; model_id: string; name: string; slug: string }
-export type OptionPreset = { id: string; model_id: string | null; variant_id: string | null; colors: string[]; storages: string[] }
+export type OptionPreset = { 
+  id: string; 
+  model_id: string | null; 
+  variant_id: string | null; 
+  colors: string[]; 
+  storages: string[];
+  options?: {
+    ram_options?: string[];
+    gpu_cores?: number[];
+    chip_tiers?: string[];
+    [key: string]: any;
+  }
+}
 
 export async function listPublicProducts(): Promise<PublicProduct[]> {
   if (!isSupabaseConfigured || !supabase) return []
@@ -424,7 +436,9 @@ export function generateProductPublicId(input: { brand_id: string; category_id: 
 export function generateSkuCode(input: { productPublicId: string; condition: 'new' | 'second_hand'; attributes: Record<string, any> }): string {
   const attrs: string[] = []
   if (input.attributes.storage) attrs.push(String(input.attributes.storage))
+  if (input.attributes.ram) attrs.push(String(input.attributes.ram))
   if (input.attributes.color) attrs.push(String(input.attributes.color))
+  if ((input.attributes as any).chip_tier) attrs.push(String((input.attributes as any).chip_tier))
   if (input.attributes.connectivity) attrs.push(String(input.attributes.connectivity))
   const suffix = attrs
     .filter(Boolean)
@@ -570,6 +584,26 @@ export async function setSkuActive(skuId: string, isActive: boolean): Promise<vo
 
 export async function deleteProduct(productId: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  try {
+    const { data: imgs } = await supabase
+      .from('product_images')
+      .select('url')
+      .eq('product_id', productId)
+    const marker = '/storage/v1/object/public/product-images/'
+    const paths = (imgs ?? [])
+      .map((r: any) => {
+        const url: string = r.url
+        const idx = url.indexOf(marker)
+        if (idx === -1) return null
+        const raw = url.substring(idx + marker.length)
+        const noQuery = raw.split('?')[0].split('#')[0]
+        return decodeURIComponent(noQuery)
+      })
+      .filter((p: string | null): p is string => !!p)
+    if (paths.length > 0) {
+      await supabase.storage.from('product-images').remove(paths)
+    }
+  } catch {}
   const { error } = await supabase.from('products').delete().eq('id', productId)
   if (error) throw error
 }
@@ -585,6 +619,26 @@ export async function setProductsPublished(productIds: string[], published: bool
 export async function deleteProducts(productIds: string[]): Promise<void> {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
   if (!productIds || productIds.length === 0) return
+  try {
+    const { data: imgs } = await supabase
+      .from('product_images')
+      .select('url')
+      .in('product_id', productIds)
+    const marker = '/storage/v1/object/public/product-images/'
+    const paths = (imgs ?? [])
+      .map((r: any) => {
+        const url: string = r.url
+        const idx = url.indexOf(marker)
+        if (idx === -1) return null
+        const raw = url.substring(idx + marker.length)
+        const noQuery = raw.split('?')[0].split('#')[0]
+        return decodeURIComponent(noQuery)
+      })
+      .filter((p: string | null): p is string => !!p)
+    if (paths.length > 0) {
+      await supabase.storage.from('product-images').remove(paths)
+    }
+  } catch {}
   const { error } = await supabase.from('products').delete().in('id', productIds)
   if (error) throw error
 } 

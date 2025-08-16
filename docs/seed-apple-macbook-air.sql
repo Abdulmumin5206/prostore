@@ -1,6 +1,6 @@
 -- Apple MacBook Air (detailed) seed
--- Models: M1/M2/M3/M4 with per-variant screen size and GPU core count
--- Options JSON includes: year, chip, cpu_cores_total, cpu_perf_cores, cpu_eff_cores, gpu_cores, display_inches
+-- Models: M1/M2/M3/M4 with per-variant screen size
+-- Options JSON includes: year, chip, cpu_cores_total, cpu_perf_cores, cpu_eff_cores, gpu_cores, display_inches, ram_options
 -- Idempotent; safe to run multiple times
 
 -- 1) Ensure Apple brand and MacBook Air family
@@ -26,28 +26,27 @@ cross join (values
 where b.slug='apple' and f.slug='macbook-air'
 on conflict (family_id, slug) do update set display_order = excluded.display_order, name = excluded.name, release_year = excluded.release_year;
 
--- 3) Insert variants with full names + GPU core count and display order (larger/newer first)
+-- 3) Insert variants with screen sizes as the primary differentiator
 with fam as (
   select f.id as family_id from public.product_families f join public.brands b on b.id=f.brand_id where b.slug='apple' and f.slug='macbook-air'
 ), m as (
   select pm.id, pm.slug from public.product_models pm join fam on pm.family_id=fam.family_id
 ), v(model_slug, variant_slug, variant_name, display_order) as (
   values
-  -- M1 (2020) – 13.3" (list as 13)
-  ('macbook-air-m1','13-7gpu','MacBook Air 13" (M1) • 7‑core GPU', 100),
-  ('macbook-air-m1','13-8gpu','MacBook Air 13" (M1) • 8‑core GPU', 90),
+  -- M1 (2020) – 13.3" only
+  ('macbook-air-m1','13','MacBook Air 13" (M1)', 100),
+  
   -- M2 (2022/2023) – 13.6" and 15.3"
-  ('macbook-air-m2','13-8gpu','MacBook Air 13.6" (M2) • 8‑core GPU', 100),
-  ('macbook-air-m2','13-10gpu','MacBook Air 13.6" (M2) • 10‑core GPU', 95),
-  ('macbook-air-m2','15-10gpu','MacBook Air 15.3" (M2) • 10‑core GPU', 90),
+  ('macbook-air-m2','13-6','MacBook Air 13.6" (M2)', 100),
+  ('macbook-air-m2','15-3','MacBook Air 15.3" (M2)', 90),
+  
   -- M3 (2024) – 13.6" and 15.3"
-  ('macbook-air-m3','13-8gpu','MacBook Air 13.6" (M3) • 8‑core GPU', 100),
-  ('macbook-air-m3','13-10gpu','MacBook Air 13.6" (M3) • 10‑core GPU', 95),
-  ('macbook-air-m3','15-10gpu','MacBook Air 15.3" (M3) • 10‑core GPU', 90),
-  -- M4 (2025) – 13.6" and 15.3" (placeholder based on request)
-  ('macbook-air-m4','13-8gpu','MacBook Air 13.6" (M4) • 8‑core GPU', 100),
-  ('macbook-air-m4','13-10gpu','MacBook Air 13.6" (M4) • 10‑core GPU', 95),
-  ('macbook-air-m4','15-10gpu','MacBook Air 15.3" (M4) • 10‑core GPU', 90)
+  ('macbook-air-m3','13-6','MacBook Air 13.6" (M3)', 100),
+  ('macbook-air-m3','15-3','MacBook Air 15.3" (M3)', 90),
+  
+  -- M4 (2025) – 13.6" and 15.3"
+  ('macbook-air-m4','13-6','MacBook Air 13.6" (M4)', 100),
+  ('macbook-air-m4','15-3','MacBook Air 15.3" (M4)', 90)
 )
 insert into public.product_variants(model_id, name, slug, display_order)
 select m.id, v.variant_name, v.variant_slug, v.display_order
@@ -66,69 +65,46 @@ with vars as (
   select * from (
     values
     -- M1 (2020): 13" – colors: Gold, Silver, Space Gray
-    ('macbook-air-m1','13-7gpu',
+    ('macbook-air-m1','13',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Gold|#d4af37','Silver|#c0c0c0','Space Gray|#545454']::text[],
-      '{"year":2020,"chip":"M1","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":7,"display_inches":13.3}'::jsonb
-    ),
-    ('macbook-air-m1','13-8gpu',
-      array['256GB','512GB','1TB','2TB']::text[],
-      array['Gold|#d4af37','Silver|#c0c0c0','Space Gray|#545454']::text[],
-      '{"year":2020,"chip":"M1","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":8,"display_inches":13.3}'::jsonb
+      '{"year":2020,"chip":"M1","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":[7,8],"display_inches":13.3,"ram_options":["8GB","16GB"]}'::jsonb
     ),
 
     -- M2 (2022/2023): colors: Silver, Starlight, Space Gray, Midnight
-    ('macbook-air-m2','13-8gpu',
+    ('macbook-air-m2','13-6',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2022,"chip":"M2","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":8,"display_inches":13.6}'::jsonb
+      '{"year":2022,"chip":"M2","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":[8,10],"display_inches":13.6,"ram_options":["8GB","16GB","24GB"]}'::jsonb
     ),
-    ('macbook-air-m2','13-10gpu',
+    ('macbook-air-m2','15-3',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2022,"chip":"M2","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":10,"display_inches":13.6}'::jsonb
-    ),
-    ('macbook-air-m2','15-10gpu',
-      array['256GB','512GB','1TB','2TB']::text[],
-      array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2023,"chip":"M2","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":10,"display_inches":15.3}'::jsonb
+      '{"year":2023,"chip":"M2","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":[10],"display_inches":15.3,"ram_options":["8GB","16GB","24GB"]}'::jsonb
     ),
 
     -- M3 (2024): colors: Silver, Starlight, Space Gray, Midnight
-    ('macbook-air-m3','13-8gpu',
+    ('macbook-air-m3','13-6',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2024,"chip":"M3","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":8,"display_inches":13.6}'::jsonb
+      '{"year":2024,"chip":"M3","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":[8,10],"display_inches":13.6,"ram_options":["8GB","16GB","24GB"]}'::jsonb
     ),
-    ('macbook-air-m3','13-10gpu',
+    ('macbook-air-m3','15-3',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2024,"chip":"M3","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":10,"display_inches":13.6}'::jsonb
-    ),
-    ('macbook-air-m3','15-10gpu',
-      array['256GB','512GB','1TB','2TB']::text[],
-      array['Silver|#c0c0c0','Starlight|#f4f1ea','Space Gray|#545454','Midnight|#191924']::text[],
-      '{"year":2024,"chip":"M3","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":10,"display_inches":15.3}'::jsonb
+      '{"year":2024,"chip":"M3","cpu_cores_total":8,"cpu_perf_cores":4,"cpu_eff_cores":4,"gpu_cores":[10],"display_inches":15.3,"ram_options":["8GB","16GB","24GB"]}'::jsonb
     ),
 
-    -- M4 (2025): specific storage constraints
-    -- 13.6" 8‑GPU: 16GB + 256GB only
-    ('macbook-air-m4','13-8gpu',
-      array['256GB']::text[],
-      array['Sky Blue|#9ecbff','Silver|#c0c0c0','Starlight|#f4f1ea','Midnight|#191924']::text[],
-      '{"year":2025,"chip":"M4","cpu_cores_total":10,"cpu_perf_cores":4,"cpu_eff_cores":6,"gpu_cores":8,"display_inches":13.6,"ram":"16GB only"}'::jsonb
-    ),
-    -- 13.6" 10‑GPU: 16/24GB RAM with 256GB→2TB
-    ('macbook-air-m4','13-10gpu',
+    -- M4 (2025): specific storage constraints and new colors
+    ('macbook-air-m4','13-6',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Sky Blue|#9ecbff','Silver|#c0c0c0','Starlight|#f4f1ea','Midnight|#191924']::text[],
-      '{"year":2025,"chip":"M4","cpu_cores_total":10,"cpu_perf_cores":4,"cpu_eff_cores":6,"gpu_cores":10,"display_inches":13.6,"ram":"16GB/24GB"}'::jsonb
+      '{"year":2025,"chip":"M4","cpu_cores_total":10,"cpu_perf_cores":4,"cpu_eff_cores":6,"gpu_cores":[8,10],"display_inches":13.6,"ram_options":["16GB","24GB","32GB"]}'::jsonb
     ),
-    -- 15.3" 10‑GPU: 16/24GB RAM with 256GB→2TB
-    ('macbook-air-m4','15-10gpu',
+    ('macbook-air-m4','15-3',
       array['256GB','512GB','1TB','2TB']::text[],
       array['Sky Blue|#9ecbff','Silver|#c0c0c0','Starlight|#f4f1ea','Midnight|#191924']::text[],
-      '{"year":2025,"chip":"M4","cpu_cores_total":10,"cpu_perf_cores":4,"cpu_eff_cores":6,"gpu_cores":10,"display_inches":15.3,"ram":"16GB/24GB"}'::jsonb
+      '{"year":2025,"chip":"M4","cpu_cores_total":10,"cpu_perf_cores":4,"cpu_eff_cores":6,"gpu_cores":[10],"display_inches":15.3,"ram_options":["16GB","24GB","32GB"]}'::jsonb
     )
   ) as t(model_slug, variant_slug, storages, colors, options)
 )
@@ -136,4 +112,24 @@ insert into public.product_option_presets(model_id, variant_id, colors, storages
 select null, v.id, p.colors, p.storages, p.options
 from preset p
 join vars v on v.model_slug = p.model_slug and v.variant_slug = p.variant_slug
-on conflict (variant_id) do update set colors = excluded.colors, storages = excluded.storages, options = excluded.options; 
+on conflict (variant_id) do update set colors = excluded.colors, storages = excluded.storages, options = excluded.options;
+
+-- Cleanup: remove any legacy variants under MacBook Air that are not size-based
+with fam as (
+  select f.id as family_id
+  from public.product_families f
+  join public.brands b on b.id = f.brand_id
+  where b.slug = 'apple' and f.slug = 'macbook-air'
+), mdl as (
+  select pm.id as model_id
+  from public.product_models pm
+  join fam on fam.family_id = pm.family_id
+), to_delete as (
+  select pv.id
+  from public.product_variants pv
+  join mdl on mdl.model_id = pv.model_id
+  where pv.slug not in ('13','13-6','15-3')
+)
+delete from public.product_variants pv
+using to_delete d
+where pv.id = d.id; 

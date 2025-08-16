@@ -33,6 +33,7 @@ type Condition = 'new' | 'second_hand' | null
 
 const defaultColors = ['#000000', '#ffffff', '#1c1c1e', '#f5f5f7', '#7d7e80', '#bfd0dd', '#e3ccb4']
 const defaultStorages = ['64GB','128GB','256GB','512GB','1TB']
+const defaultRamOptions = ['8GB', '16GB', '24GB', '32GB']
 
 // Helper to parse color tokens from presets: "Name|#HEX" or just "#HEX"/name
 function parseColorToken(token: string): { name: string; hex: string } {
@@ -63,6 +64,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [variants, setVariants] = useState<Variant[]>([])
   const [presetStorages, setPresetStorages] = useState<string[] | null>(null)
   const [presetColors, setPresetColors] = useState<string[] | null>(null)
+  const [presetRamOptions, setPresetRamOptions] = useState<string[] | null>(null)
+  // GPU cores and chip tiers are not selectable in UI
+  const [presetGpuOptions, setPresetGpuOptions] = useState<number[] | null>(null)
+  const [presetChipTiers, setPresetChipTiers] = useState<string[] | null>(null)
 
   // New state for proper line/model structure
   const [productLines, setProductLines] = useState<{ value: string; label: string }[]>([])
@@ -81,6 +86,10 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [colorName, setColorName] = useState<string>('')
   const [selectedStorages, setSelectedStorages] = useState<string[]>([])
   const [selectedColors, setSelectedColors] = useState<string[]>([])
+  const [selectedRams, setSelectedRams] = useState<string[]>([])
+  // No GPU/Chip selection in UI
+  const [selectedGpuCore, setSelectedGpuCore] = useState<number | null>(null)
+  const [selectedChipTier, setSelectedChipTier] = useState<string>('')
   const [lastSelectedStorage, setLastSelectedStorage] = useState<string>('')
   const [lastSelectedColorHex, setLastSelectedColorHex] = useState<string>('')
 
@@ -98,6 +107,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [secondHandNotes, setSecondHandNotes] = useState<string>('')
 
   const brandName = useMemo(() => brands.find(b=>b.id===brandId)?.name || '', [brands, brandId])
+  const categoryName = useMemo(() => categories.find(c=>c.id===categoryId)?.name || '', [categories, categoryId])
   const modelName = useMemo(() => models.find(m=>m.id===modelId)?.name || '', [models, modelId])
   const variantName = useMemo(() => variants.find(v=>v.id===variantId)?.name || '', [variants, variantId])
 
@@ -119,32 +129,55 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     return map
   }, [availableColors])
 
-  // Simple, user-facing title suggestion: Model, Storage, Color
-  const simpleTitleSuggestion = useMemo(() => {
-    const baseParts = [modelName, variantName].filter(Boolean)
-    const baseName = (baseParts.length > 0 ? baseParts.join(' ') : [selectedLine, modelName, variantName].filter(Boolean).join(' ')).trim()
-    if (!baseName) return ''
-
-    const storageChoiceRaw = (lastSelectedStorage || selectedStorages[selectedStorages.length - 1] || storage || '').trim()
-    const storageChoice = storageChoiceRaw.replace(/\s?(GB|TB)$/i, ' $1')
-    const colorHex = (lastSelectedColorHex || selectedColors[selectedColors.length - 1] || color || '').trim()
-    const colorLabel = colorHex ? (colorLabelByHex[colorHex] || guessColorName(colorHex) || colorHex) : ''
-
-    if (storageChoice && colorLabel) return `${baseName}, ${storageChoice} ${colorLabel}`
-    if (storageChoice) return `${baseName}, ${storageChoice}`
-    if (colorLabel) return `${baseName}, ${colorLabel}`
-    return baseName
-  }, [modelName, variantName, selectedLine, lastSelectedStorage, selectedStorages, storage, lastSelectedColorHex, selectedColors, color, colorLabelByHex])
+  // Suggested title based on selections
+  const suggestedTitle = useMemo(() => {
+    if (titleManuallyEdited) return title
+    
+    const brand = brands.find(b=>b.id===brandId)?.name || ''
+    const variant = variants.find(v=>v.id===variantId)?.name || ''
+    const model = models.find(m=>m.id===modelId)?.name || ''
+    
+    const parts = [brand, variant];
+    
+    // Add RAM to title only if a single RAM option is selected
+    if (selectedRams.length === 1) {
+      parts.push(selectedRams[0]);
+    }
+    
+    // Chip/GPU not part of title selection anymore
+    
+    // Add storage if selected
+    if (lastSelectedStorage) {
+      parts.push(lastSelectedStorage);
+    }
+    
+    // Add color if selected
+    if (lastSelectedColorHex) {
+      const colorObj = availableColors.find(c => c.hex === lastSelectedColorHex)
+      if (colorObj?.name) {
+        parts.push(colorObj.name);
+      }
+    }
+    
+    return parts.filter(Boolean).join(' ');
+  }, [
+    brandId, brands, variantId, variants, modelId, models, 
+    lastSelectedStorage, lastSelectedColorHex, availableColors, 
+    selectedRams, selectedChipTier, selectedGpuCore, titleManuallyEdited, title
+  ])
 
   const previewCard = useMemo(() => ({
     id: 'preview',
-    category: selectedLine || 'Product',
-    name: title || 'New Product',
-    image: images[0]?.url || '/hero/blue gradient electronic sale promotion banner.webp',
-    colors: color ? [color] : [],
-    priceFrom: `$${Number(basePrice || '0').toFixed(2)}`,
-    monthlyFrom: `$${(Number(basePrice || '0')/24).toFixed(2)}/mo. for 24 mo.`,
-  }), [selectedLine, title, images, color, basePrice])
+    name: title || suggestedTitle,
+    image: images.length > 0 ? images[0].url : 'https://placehold.co/400x400/111/444?text=No+Image',
+    priceFrom: `${currency === 'USD' ? '$' : ''}${parseFloat(basePrice).toFixed(2)}`,
+    monthlyFrom: `${currency === 'USD' ? '$' : ''}${(parseFloat(basePrice)/24).toFixed(2)}/mo.`,
+    brand: brandName,
+    category: categoryName,
+    colors: selectedColors,
+    storages: selectedStorages,
+    tags: [],
+  }), [title, suggestedTitle, images, currency, basePrice, brandName, categoryName, selectedColors, selectedStorages])
 
   const [previewImageIndex, setPreviewImageIndex] = useState<number>(0)
   useEffect(() => {
@@ -346,6 +379,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   useEffect(() => {
     setPresetStorages(null)
     setPresetColors(null)
+    setPresetRamOptions(null)
+    setPresetGpuOptions(null)
+    setPresetChipTiers(null)
     if (!isSupabaseConfigured) return
     ;(async ()=>{
       try {
@@ -354,10 +390,20 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           if (preset) {
             setPresetStorages(preset.storages ?? null)
             setPresetColors(preset.colors ?? null)
+            // Extract options from the options JSON field
+            if (preset.options) {
+              setPresetRamOptions(preset.options.ram_options ?? null)
+              // keep as metadata but do not require UI selection
+              setPresetGpuOptions(preset.options.gpu_cores ?? null)
+              setPresetChipTiers(preset.options.chip_tiers ?? null)
+            }
             return
           } else {
             setPresetStorages(null)
             setPresetColors(null)
+            setPresetRamOptions(null)
+            setPresetGpuOptions(null)
+            setPresetChipTiers(null)
           }
         }
         if (modelId) {
@@ -365,9 +411,18 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
           if (preset) {
             setPresetStorages(preset.storages ?? null)
             setPresetColors(preset.colors ?? null)
+            // Extract options from the options JSON field
+            if (preset.options) {
+              setPresetRamOptions(preset.options.ram_options ?? null)
+              setPresetGpuOptions(preset.options.gpu_cores ?? null)
+              setPresetChipTiers(preset.options.chip_tiers ?? null)
+            }
           } else {
             setPresetStorages(null)
             setPresetColors(null)
+            setPresetRamOptions(null)
+            setPresetGpuOptions(null)
+            setPresetChipTiers(null)
           }
         }
       } catch (e:any) { /* non-fatal */ }
@@ -384,17 +439,17 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   }, [selectedStorages])
 
   // Clear multi-selects when dependencies change
-  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [brandId])
-  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [selectedLine])
-  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [modelId])
-  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [variantId])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setSelectedRams([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [brandId])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setSelectedRams([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [selectedLine])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setSelectedRams([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [modelId])
+  useEffect(() => { setSelectedStorages([]); setSelectedColors([]); setSelectedRams([]); setLastSelectedStorage(''); setLastSelectedColorHex('') }, [variantId])
 
   // Auto-apply simple title unless user manually edits
   useEffect(() => {
     if (!titleManuallyEdited) {
-      setTitle(simpleTitleSuggestion)
+      setTitle(suggestedTitle)
     }
-  }, [simpleTitleSuggestion, titleManuallyEdited])
+  }, [suggestedTitle, titleManuallyEdited])
 
   const handleUploadImages = async (files: FileList | null) => {
     if (!files || !supabase) return
@@ -474,14 +529,22 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
 
   const canNext = () => {
     if (step === 1) {
-      return Boolean(
+      // Base requirements
+      let isValid = Boolean(
         condition && brandId && selectedLine && categoryId &&
         (selectedStorages.length > 0) && (selectedColors.length > 0) &&
         basePrice && quantity &&
         images.length > 0
-      )
+      );
+      
+      // Additional requirement: if RAM options exist, require at least one RAM selection
+      if (isValid && presetRamOptions && presetRamOptions.length > 0 && selectedRams.length === 0) {
+        isValid = false;
+      }
+      
+      return isValid;
     }
-    return true
+    return true;
   }
 
   const onSave = async () => {
@@ -489,6 +552,11 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setError(null)
     setSuccess(null)
     try {
+      // Prepare additional attributes based on selected options
+      const additionalAttributes: Record<string, any> = {};
+      
+      // Do not store gpu_cores/chip_tier in SKU attributes from UI selections
+      
       const { product_id, sku_ids } = await createProductWithSkus({
         brand_id: brandId,
         category_id: categoryId,
@@ -499,17 +567,44 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         description: null,
         published: true,
         images: images.map((im, i) => ({ url: im.url, is_primary: i === 0, color: im.color ?? null })),
-        skus: selectedStorages.flatMap(s => selectedColors.map(c => ({
-          condition: (condition as 'new'|'second_hand'),
-          attributes: { storage: s, color: c, ...(colorLabelByHex[c] ? { color_name: colorLabelByHex[c] } : {}) },
-          price: {
-            currency,
-            base_price: Number(basePrice),
-            discount_percent: discountPercent ? Number(discountPercent) : null,
-            discount_amount: discountAmount ? Number(discountAmount) : null,
-          },
-          inventory: { quantity: Number(quantity) },
-        }))),
+        skus: selectedRams.length > 0
+          ? selectedRams.flatMap(r => 
+              selectedStorages.flatMap(s => 
+                selectedColors.map(c => ({
+                  condition: (condition as 'new'|'second_hand'),
+                  attributes: {
+                    storage: s,
+                    color: c,
+                    ram: r,
+                    ...(colorLabelByHex[c] ? { color_name: colorLabelByHex[c] } : {}),
+                    ...additionalAttributes,
+                  },
+                  price: {
+                    currency,
+                    base_price: Number(basePrice),
+                    discount_percent: discountPercent ? Number(discountPercent) : null,
+                    discount_amount: discountAmount ? Number(discountAmount) : null,
+                  },
+                  inventory: { quantity: Number(quantity) },
+                }))
+              )
+            )
+          : selectedStorages.flatMap(s => selectedColors.map(c => ({
+              condition: (condition as 'new'|'second_hand'),
+              attributes: { 
+                storage: s, 
+                color: c, 
+                ...(colorLabelByHex[c] ? { color_name: colorLabelByHex[c] } : {}),
+                ...additionalAttributes
+              },
+              price: {
+                currency,
+                base_price: Number(basePrice),
+                discount_percent: discountPercent ? Number(discountPercent) : null,
+                discount_amount: discountAmount ? Number(discountAmount) : null,
+              },
+              inventory: { quantity: Number(quantity) },
+            }))),
       })
 
       // If second-hand, optionally create an initial unique unit
@@ -554,6 +649,13 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setStorage('')
     setColor('')
     setColorName('')
+    setSelectedStorages([])
+    setSelectedColors([])
+    setSelectedRams([])
+    setSelectedGpuCore(null)
+    setSelectedChipTier('')
+    setLastSelectedStorage('')
+    setLastSelectedColorHex('')
     setBasePrice('999')
     setCurrency('USD')
     setDiscountPercent('')
@@ -566,10 +668,9 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setSecondHandNotes('')
     setPresetStorages(null)
     setPresetColors(null)
-    setSelectedStorages([])
-    setSelectedColors([])
-    setLastSelectedStorage('')
-    setLastSelectedColorHex('')
+    setPresetRamOptions(null)
+    setPresetGpuOptions(null)
+    setPresetChipTiers(null)
   }
 
   return (
@@ -691,6 +792,69 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                 })}
               </div>
             </div>
+            
+            {/* RAM Options (multi-select) */}
+            {presetRamOptions && presetRamOptions.length > 0 && (
+              <div>
+                <label className="text-xs text-white/60">RAM</label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {presetRamOptions.map((ram: string) => {
+                    const active = selectedRams.includes(ram)
+                    return (
+                      <button
+                        type="button"
+                        key={ram}
+                        disabled={!modelId}
+                        onClick={() => {
+                          if (!modelId) return
+                          setSelectedRams(prev => {
+                            const wasActive = prev.includes(ram)
+                            if (condition === 'second_hand') {
+                              return wasActive ? [] : [ram]
+                            }
+                            return wasActive ? prev.filter(x => x !== ram) : [...prev, ram]
+                          })
+                        }}
+                        className={`px-3 py-1.5 rounded-md border text-xs ${active ? 'border-white bg-white text-black' : 'border-white/15 bg-white/5 text-white/80 hover:bg-white/10'}`}
+                      >
+                        {ram}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CPU/GPU Info (read-only) for MacBook Air M4 */}
+            {(() => {
+              const v = (variantName || '').toLowerCase()
+              const m = (modelName || '').toLowerCase()
+              const isAir = v.includes('macbook air') || m.includes('macbook air')
+              const isM4 = v.includes('(m4') || m.includes('(m4') || v.includes(' m4') || m.includes(' m4')
+              if (!isAir || !isM4) return null
+              const is15 = v.includes('15')
+              const selectedHas16And256 = selectedRams.some(r => r.toUpperCase()==='16GB') && selectedStorages.some(s => s.toUpperCase()==='256GB')
+              return (
+                <div className="md:col-span-2">
+                  <label className="text-xs text-white/60">CPU / GPU</label>
+                  <div className="mt-1 text-xs text-white/80">
+                    <div>All M4 Air have 10‑core CPU.</div>
+                    {is15 ? (
+                      <div>15‑inch: all combinations have 10‑core GPU.</div>
+                    ) : (
+                      <div>
+                        13.6‑inch: 16GB + 256GB has 8‑core GPU; all other combinations have 10‑core GPU{selectedRams.length>0 || selectedStorages.length>0 ? (selectedHas16And256 ? ' (your selection includes 8‑core GPU).' : ' (your selection currently yields 10‑core GPU).') : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+            
+            {/* Chip Tier selection removed from UI */}
+            
+            {/* GPU Core selection removed from UI */}
+            
             <div className="md:col-span-2">
               <label className="text-xs text-white/60">Colors</label>
               <div className="flex gap-2 flex-wrap mt-1">
@@ -847,7 +1011,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               {/* Product Title Section */}
               <div className="mb-6">
                 <AppleProductTitle size="sm" className="text-white">
-                  {title || simpleTitleSuggestion || 'New Product'}
+                  {title || suggestedTitle || 'New Product'}
                 </AppleProductTitle>
                 <Text size="sm" color="tertiary" className="mt-1">
                   {selectedLine || categories.find(c=>c.id===categoryId)?.name || 'Product'}
@@ -913,7 +1077,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                         {images.length > 0 ? (
                           <img 
                             src={images[previewImageIndex]?.url || images[0]?.url} 
-                            alt={title || simpleTitleSuggestion}
+                            alt={title || suggestedTitle}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -944,7 +1108,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                         {images.length > 1 ? (
                           <img 
                             src={images[(previewImageIndex + 1) % images.length]?.url} 
-                            alt={`${title || simpleTitleSuggestion} alt view`} 
+                            alt={`${title || suggestedTitle} alt view`} 
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -1127,6 +1291,27 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                       <span className="text-white/60">Color Options:</span>
                       <span className="text-white text-right">{selectedColors.length ? selectedColors.map(c => colorLabelByHex[c] || c).join(', ') : '—'}</span>
                     </div>
+                    {selectedRams.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-white/60">RAM:</span>
+                        <span className="text-white">{selectedRams.join(', ')}</span>
+                      </div>
+                    )}
+                    {(() => {
+                      const v = (variantName || '').toLowerCase()
+                      const m = (modelName || '').toLowerCase()
+                      const isAir = v.includes('macbook air') || m.includes('macbook air')
+                      const isM4 = v.includes('(m4') || m.includes('(m4') || v.includes(' m4') || m.includes(' m4')
+                      if (!isAir || !isM4) return null
+                      const is15 = v.includes('15')
+                      return (
+                        <div className="flex justify-between">
+                          <span className="text-white/60">CPU/GPU:</span>
+                          <span className="text-white text-right">{is15 ? '10‑core CPU • 10‑core GPU' : '10‑core CPU • 8‑core GPU for 16GB+256GB; otherwise 10‑core GPU'}</span>
+                        </div>
+                      )
+                    })()}
+                    {/* Chip/GPU summary removed */}
                     <div className="flex justify-between">
                       <span className="text-white/60">Images:</span>
                       <span className="text-white">{images.length} uploaded</span>

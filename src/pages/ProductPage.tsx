@@ -25,11 +25,16 @@ interface DetailProduct {
   images: string[];
   colors: string[];
   storage: string[];
+  ramOptions?: string[];
   currency: string;
   basePrice: number; // effective price
   colorToImages?: Record<string, string[]>; // images tagged to a color
   colorNames?: Record<string, string>; // hex -> human name
   specs?: Record<string, any>; // technical specs/characteristics
+  brand?: string;
+  family?: string | null;
+  model?: string | null;
+  variant?: string | null;
 }
 
 const ProductPage: React.FC = () => {
@@ -45,6 +50,7 @@ const ProductPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedStorage, setSelectedStorage] = useState(0);
+  const [selectedRam, setSelectedRam] = useState(0);
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
   const [discount, setDiscount] = useState<number>(10); // Adding discount state with default 10%
@@ -143,6 +149,7 @@ const ProductPage: React.FC = () => {
         // Aggregate attributes
         const colorSet = new Set<string>();
         const storageSet = new Set<string>();
+        const ramSet = new Set<string>();
         const colorNames: Record<string, string> = {};
         let minPrice = Number.POSITIVE_INFINITY;
         let currency: string = 'USD';
@@ -150,6 +157,7 @@ const ProductPage: React.FC = () => {
           const attrs: any = (r as any).attributes || {};
           if (typeof attrs.color === 'string' && attrs.color) colorSet.add(attrs.color);
           if (typeof attrs.storage === 'string' && attrs.storage) storageSet.add(attrs.storage);
+          if (typeof attrs.ram === 'string' && attrs.ram) ramSet.add(attrs.ram);
           if (typeof attrs.color === 'string' && typeof attrs.color_name === 'string' && attrs.color && attrs.color_name) {
             colorNames[attrs.color] = attrs.color_name;
           }
@@ -166,10 +174,15 @@ const ProductPage: React.FC = () => {
           images: sortedImages.length > 0 ? sortedImages : (r0.primary_image ? [r0.primary_image] : []),
           colors: Array.from(colorSet),
           storage: Array.from(storageSet),
+          ramOptions: Array.from(ramSet),
           currency,
           basePrice: Number.isFinite(minPrice) ? minPrice : Number(r0.effective_price ?? 0),
           colorToImages,
           colorNames,
+          brand: r0.brand,
+          family: r0.family,
+          model: r0.model,
+          variant: r0.variant,
         };
 
         // Prefer model-level content when available (automatic across products of same model)
@@ -255,6 +268,12 @@ const ProductPage: React.FC = () => {
     const idx = Math.max(0, Math.min(selectedStorage, product.storage.length - 1));
     return product.storage[idx];
   }, [product, selectedStorage]);
+  
+  const currentRam = useMemo(() => {
+    if (!product || !product.ramOptions || product.ramOptions.length === 0) return '';
+    const idx = Math.max(0, Math.min(selectedRam, product.ramOptions.length - 1));
+    return product.ramOptions[idx];
+  }, [product, selectedRam]);
 
   const imagesForCurrentSelection = useMemo(() => {
     if (!product) return [] as string[];
@@ -278,9 +297,9 @@ const ProductPage: React.FC = () => {
 
   const selectedTitle = useMemo(() => {
     if (!product) return '';
-    const parts = [product.name, currentStorage || '', currentColorLabel || ''].filter(Boolean);
+    const parts = [product.name, currentRam || '', currentStorage || '', currentColorLabel || ''].filter(Boolean);
     return parts.join(' ').replace(/\s+/g, ' ').trim();
-  }, [product, currentStorage, currentColorLabel]);
+  }, [product, currentRam, currentStorage, currentColorLabel]);
 
   const basePrice = product?.basePrice ?? 0;
   const discountAmount = selectedPaymentType === 'full' ? (basePrice * (discount / 100)) : 0;
@@ -318,8 +337,8 @@ const ProductPage: React.FC = () => {
   const handleAddToBag = () => {
     if (!product) return;
     addItem({
-      id: `${product.id}:${currentStorage}:${currentColor}`,
-      name: `${product.name}${currentStorage ? ' ' + currentStorage : ''}${currentColorLabel ? ' ' + currentColorLabel : ''}`,
+      id: `${product.id}:${currentRam}:${currentStorage}:${currentColor}`,
+      name: `${product.name}${currentRam ? ' ' + currentRam : ''}${currentStorage ? ' ' + currentStorage : ''}${currentColorLabel ? ' ' + currentColorLabel : ''}`,
       image: imagesForCurrentSelection[0] || product.images[0] || '',
       unitPrice: basePrice,
       currency: product.currency || 'USD',
@@ -384,6 +403,33 @@ const ProductPage: React.FC = () => {
     if (!imagesCount) return;
     setFullImageIndex((prev) => (prev - 1 + imagesCount) % imagesCount);
   };
+
+  const isM4Air = useMemo(() => {
+    const modelName = (product?.model || '').toLowerCase();
+    const familyName = (product?.family || '').toLowerCase();
+    return familyName.includes('macbook air') && modelName.includes('m4');
+  }, [product]);
+
+  const m4AirGpuCpuText = useMemo(() => {
+    if (!product || !isM4Air) return '';
+    const variantText = (product.variant || '').toLowerCase();
+    const is15 = variantText.includes('15');
+    const is136 = !is15; // assume 13.6" when not 15 for M4 Air seeds
+    const cpuCores = 10;
+    let gpuCores = 10;
+    if (is15) {
+      gpuCores = 10;
+    } else if (is136) {
+      const ram = (currentRam || '').toUpperCase();
+      const storage = (currentStorage || '').toUpperCase();
+      if (ram === '16GB' && storage === '256GB') {
+        gpuCores = 8;
+      } else {
+        gpuCores = 10;
+      }
+    }
+    return `Processor: ${cpuCores}-core CPU • Graphics: ${gpuCores}-core GPU`;
+  }, [product, isM4Air, currentRam, currentStorage]);
 
   return (
     <div className="min-h-screen pb-20 bg-white dark:bg-gray-950 transition-colors duration-300">
@@ -612,6 +658,31 @@ const ProductPage: React.FC = () => {
 
                   {product.storage && product.storage.length > 0 && (
                     <div className="mb-8">
+                      {product.ramOptions && product.ramOptions.length > 0 && (
+                        <>
+                          <div className="mb-4">
+                            <div className="flex flex-wrap gap-2">
+                              {product.ramOptions.map((option, index) => (
+                                <button
+                                  key={option + index}
+                                  onClick={() => setSelectedRam(index)}
+                                  className={`px-4 py-2 rounded-lg border transition-all ${
+                                    selectedRam === index 
+                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                      : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                                  }`}
+                                >
+                                  <div className="text-sm font-medium">{option}</div>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mt-3 flex items-center">
+                              <Text size="sm" weight="medium" color="secondary" className="mr-2">Selected memory:</Text>
+                              <Text size="sm" color="primary">{currentRam}</Text>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       <div className="flex flex-wrap gap-2">
                         {product.storage.map((option, index) => (
                           <button
@@ -631,6 +702,11 @@ const ProductPage: React.FC = () => {
                         <Text size="sm" weight="medium" color="secondary" className="mr-2">Selected storage:</Text>
                         <Text size="sm" color="primary">{currentStorage}</Text>
                       </div>
+                      {isM4Air && (
+                        <div className="mt-3">
+                          <Text size="sm" color="secondary">{m4AirGpuCpuText}</Text>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -837,13 +913,29 @@ const ProductPage: React.FC = () => {
                   <div>
                     <H3 className="mb-4">Characteristics</H3>
                     {product?.specs && Object.keys(product.specs || {}).length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {Object.entries(product.specs || {}).map(([key, value]) => (
-                          <div key={key} className="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-800 p-3">
-                            <Text size="sm" color="secondary" className="pr-2">{formatSpecLabel(key)}</Text>
-                            <Text size="sm" color="primary" align="right" className="flex-1">{formatSpecValue(value)}</Text>
-                          </div>
-                        ))}
+                      <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full">
+                            <thead className="bg-gray-50 dark:bg-gray-900">
+                              <tr>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Specification</th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                              {Object.entries(product.specs || {}).map(([key, value], idx) => (
+                                <tr key={key} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-950'}>
+                                  <td className="px-4 py-3 align-top w-1/3">
+                                    <Text size="sm" color="secondary">{formatSpecLabel(key)}</Text>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Text size="sm" color="primary">{formatSpecValue(value)}</Text>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     ) : (
                       <Text size="sm" color="tertiary">No characteristics available yet.</Text>
@@ -895,7 +987,7 @@ const ProductPage: React.FC = () => {
               <div>
                 <Text size="sm" weight="medium" color="primary">{selectedTitle || product.name}</Text>
                 <Caption>
-                  {currentColorLabel}{currentStorage ? ` • ${currentStorage}` : ''}
+                  {currentColorLabel}{currentRam ? ` • ${currentRam}` : ''}{currentStorage ? ` • ${currentStorage}` : ''}
                 </Caption>
               </div>
               <div className="flex items-center space-x-2">

@@ -236,6 +236,17 @@ const AdminPage: React.FC = () => {
                 </div>
               </div>
 
+              {someSelected && (
+                <div className="hidden md:flex items-center justify-between gap-3 px-3 sm:px-4 py-2 border-b border-white/10">
+                  <div className="text-xs text-white/70">{selectedIds.size} selected</div>
+                  <div className="flex items-center gap-2">
+                    <button disabled={bulkWorking} onClick={() => performBulkPublish(true)} className="text-xs px-2.5 py-1.5 rounded-md bg-emerald-500 text-black disabled:opacity-50">Publish</button>
+                    <button disabled={bulkWorking} onClick={() => performBulkPublish(false)} className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 border border-white/10 disabled:opacity-50">Hide</button>
+                    <button disabled={bulkWorking} onClick={performBulkDelete} className="text-xs px-2.5 py-1.5 rounded-md bg-red-500 text-black disabled:opacity-50">Delete</button>
+                  </div>
+                </div>
+              )}
+
               <div className="divide-y divide-white/10">
                 {loadingProducts && <div className="px-3 sm:px-4 py-3 text-xs text-white/60">Loading…</div>}
                 {!loadingProducts && filtered.length === 0 && (
