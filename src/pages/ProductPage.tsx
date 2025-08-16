@@ -29,6 +29,7 @@ interface DetailProduct {
   basePrice: number; // effective price
   colorToImages?: Record<string, string[]>; // images tagged to a color
   colorNames?: Record<string, string>; // hex -> human name
+  specs?: Record<string, any>; // technical specs/characteristics
 }
 
 const ProductPage: React.FC = () => {
@@ -83,6 +84,7 @@ const ProductPage: React.FC = () => {
               basePrice: 0,
               colorToImages: {},
               colorNames: {},
+              specs: {},
             });
           }
           setLoading(false);
@@ -111,6 +113,7 @@ const ProductPage: React.FC = () => {
               basePrice: 0,
               colorToImages: {},
               colorNames: {},
+              specs: {},
             });
           }
           setLoading(false);
@@ -168,6 +171,64 @@ const ProductPage: React.FC = () => {
           colorToImages,
           colorNames,
         };
+
+        // Prefer model-level content when available (automatic across products of same model)
+        try {
+          let appliedFromModelContent = false;
+          // 1) If product has a variant (e.g., Plus/Pro), fetch variant-specific content ONLY
+          if (r0.variant && String(r0.variant).trim().length > 0) {
+            const { data: variantRows } = await supabase
+              .from('product_model_content')
+              .select('description, specs')
+              .eq('brand', r0.brand)
+              .eq('family', r0.family)
+              .eq('model', r0.model)
+              .eq('variant', r0.variant);
+            if (Array.isArray(variantRows) && variantRows.length > 0) {
+              const mc = variantRows[0] as any;
+              if (mc?.description) (detail as any).description = mc.description;
+              if (mc?.specs && typeof mc.specs === 'object') (detail as any).specs = mc.specs as Record<string, any>;
+              appliedFromModelContent = true;
+            }
+          }
+          // 2) If product has NO variant (base), allow model-level content with variant=NULL
+          if (!appliedFromModelContent && (!r0.variant || String(r0.variant).trim().length === 0)) {
+            const { data: modelRows } = await supabase
+              .from('product_model_content')
+              .select('description, specs')
+              .eq('brand', r0.brand)
+              .eq('family', r0.family)
+              .eq('model', r0.model)
+              .is('variant', null);
+            if (Array.isArray(modelRows) && modelRows.length > 0) {
+              const mc = modelRows[0] as any;
+              if (mc?.description) (detail as any).description = mc.description;
+              if (mc?.specs && typeof mc.specs === 'object') (detail as any).specs = mc.specs as Record<string, any>;
+              appliedFromModelContent = true;
+            }
+          }
+        } catch (e) {
+          // ignore when table not present or no rows; fall back to per-product values
+        }
+
+        // Fetch product-level specs for Characteristics tab (fallback if model-level specs absent)
+        try {
+          if (!(detail as any).specs) {
+            const { data: productRows } = await supabase
+              .from('products')
+              .select('specs')
+              .eq('id', productId);
+            if (Array.isArray(productRows) && productRows.length > 0) {
+              const s = (productRows[0] as any).specs;
+              if (s && typeof s === 'object') {
+                (detail as any).specs = s as Record<string, any>;
+              }
+            }
+          }
+        } catch (e) {
+          // ignore specs fetch errors to avoid blocking the product page
+        }
+
         if (isMounted) setProduct(detail);
       } catch (e: any) {
         if (isMounted) setError(e?.message || 'Failed to load product');
@@ -232,6 +293,27 @@ const ProductPage: React.FC = () => {
   const currentPriceDisplay = selectedPaymentType === 'full' 
     ? `${product?.currency === 'USD' ? '$' : product?.currency || ''}${totalPrice}` 
     : `${product?.currency === 'USD' ? '$' : product?.currency || ''}${monthlyPayment}/mo for ${selectedInstallmentPlan} months`;
+
+  const formatSpecLabel = (label: string): string => {
+    return label
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim();
+  };
+
+  const formatSpecValue = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') {
+      try {
+        return Object.entries(value).map(([k, v]) => `${formatSpecLabel(k)}: ${String(v)}`).join(', ');
+      } catch {
+        return JSON.stringify(value);
+      }
+    }
+    return String(value);
+  };
 
   const handleAddToBag = () => {
     if (!product) return;
@@ -643,7 +725,7 @@ const ProductPage: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="medium" 
-                          className="flex-[3] py-2 flex items-center justify-center"
+                          className="flex-[3] py-2 flex items-center justify-center h-[42px]"
                           aria-label="One-click buy"
                         >
                           <span className="text-sm">One Click Buy</span>
@@ -651,7 +733,7 @@ const ProductPage: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="medium" 
-                          className="flex-1 py-2 flex items-center justify-center"
+                          className="flex-1 py-2 flex items-center justify-center h-[42px]"
                           aria-label="Add to favorites"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -662,7 +744,7 @@ const ProductPage: React.FC = () => {
                       <Button 
                         variant="primary" 
                         size="medium" 
-                        className="w-full py-2 text-sm" 
+                        className="w-full py-2 text-sm h-[42px]" 
                         onClick={handleAddToBag}
                       >
                         Add to Bag
@@ -727,7 +809,7 @@ const ProductPage: React.FC = () => {
       )}
 
       {/* Detailed Description Section */}
-      {product?.description && (
+      {product && (
         <Section background="light" size="lg">
           <ContentBlock spacing="md">
             <div className="py-8">
@@ -735,12 +817,63 @@ const ProductPage: React.FC = () => {
                 <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Description</Text>
                 </button>
+                <button onClick={() => setActiveTab('characteristics')} className={`px-6 py-3 transition-colors ${activeTab === 'characteristics' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                  <Text size="sm" weight="medium" color="inherit">Characteristics</Text>
+                </button>
+                <button onClick={() => setActiveTab('nasiya')} className={`px-6 py-3 transition-colors ${activeTab === 'nasiya' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                  <Text size="sm" weight="medium" color="inherit">Nasiya</Text>
+                </button>
               </div>
               {activeTab === 'description' && (
                 <div className="space-y-6 max-w-4xl">
                   <div>
                     <H3 className="mb-4">About This Product</H3>
-                    <AppleProductDescription className="mb-6">{product?.description}</AppleProductDescription>
+                    <AppleProductDescription className="mb-6">{product?.description || 'No description available yet.'}</AppleProductDescription>
+                  </div>
+                </div>
+              )}
+              {activeTab === 'characteristics' && (
+                <div className="space-y-6 max-w-4xl">
+                  <div>
+                    <H3 className="mb-4">Characteristics</H3>
+                    {product?.specs && Object.keys(product.specs || {}).length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {Object.entries(product.specs || {}).map(([key, value]) => (
+                          <div key={key} className="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+                            <Text size="sm" color="secondary" className="pr-2">{formatSpecLabel(key)}</Text>
+                            <Text size="sm" color="primary" align="right" className="flex-1">{formatSpecValue(value)}</Text>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <Text size="sm" color="tertiary">No characteristics available yet.</Text>
+                    )}
+                  </div>
+                </div>
+              )}
+              {activeTab === 'nasiya' && (
+                <div className="space-y-6 max-w-4xl">
+                  <div>
+                    <H3 className="mb-4">Nasiya</H3>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <Text size="sm" color="tertiary">Monthly payment ({selectedInstallmentPlan} months):</Text>
+                        <Text size="sm" color="primary">{product.currency === 'USD' ? '$' : product.currency}{monthlyPayment}</Text>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <Text size="sm" color="tertiary">Base price x {quantity}:</Text>
+                        <Text size="sm" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}</Text>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <Text size="sm" color="tertiary">Markup (30%):</Text>
+                        <Text size="sm" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - (basePrice * quantity)}</Text>
+                      </div>
+                      <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">
+                        <Text size="sm" color="secondary" weight="medium">Total cost:</Text>
+                        <Text size="sm" className="text-indigo-600 dark:text-indigo-500 font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
+                      </div>
+                    </div>
+                    <Text size="xs" color="tertiary" className="mt-2">Detailed installment terms and conditions will appear here.</Text>
                   </div>
                 </div>
               )}
