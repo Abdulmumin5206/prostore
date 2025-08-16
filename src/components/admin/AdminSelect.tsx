@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export type AdminSelectOption = { value: string; label: string; disabled?: boolean }
 
@@ -15,6 +16,9 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
   const [open, setOpen] = useState(false)
   const [hoveredOption, setHoveredOption] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
 
   const selectedLabel = useMemo(() => options.find(o => o.value === value)?.label ?? '', [options, value])
 
@@ -22,14 +26,41 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
     function handleClickOutside(e: MouseEvent) {
       if (!containerRef.current) return
       if (!(e.target instanceof Node)) return
-      if (!containerRef.current.contains(e.target)) setOpen(false)
+      // Close only if clicking outside both the trigger and the portal menu
+      const clickedInsideTrigger = containerRef.current.contains(e.target)
+      const clickedInsideMenu = menuRef.current ? menuRef.current.contains(e.target) : false
+      if (!clickedInsideTrigger && !clickedInsideMenu) setOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Position the menu via fixed coordinates to avoid nesting inside scrollable parents
+  useEffect(() => {
+    if (!open) return
+    const updatePosition = () => {
+      const btn = buttonRef.current
+      if (!btn) return
+      const rect = btn.getBoundingClientRect()
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      })
+    }
+    updatePosition()
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [open])
+
   const baseButton = 'w-full flex items-center justify-between bg-white/5 text-white border border-white/10 rounded-lg px-3 py-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10'
-  const baseMenu = 'absolute z-20 mt-1 w-full rounded-xl border border-white/10 bg-black/95 backdrop-blur-sm shadow-lg overflow-hidden max-h-60 overflow-y-auto'
+  const baseMenu = 'rounded-xl border border-white/10 bg-black/95 backdrop-blur-sm shadow-lg py-2'
   const baseItem = 'px-3 py-2 text-sm hover:bg-white/15 cursor-pointer flex items-center justify-between transition-colors duration-200 group'
 
   return (
@@ -37,6 +68,7 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
       <button
         type="button"
         className={baseButton}
+        ref={buttonRef}
         disabled={disabled}
         onClick={() => setOpen(prev => !prev)}
         aria-haspopup="listbox"
@@ -50,34 +82,37 @@ const AdminSelect: React.FC<AdminSelectProps> = ({ value, onChange, options, pla
         </svg>
       </button>
 
-      {open && (
-        <ul role="listbox" className={baseMenu}>
-          {options.length === 0 && (
-            <li className="px-3 py-2 text-sm text-white/60">No options</li>
-          )}
-          {options.map((opt) => (
-            <li
-              key={opt.value}
-              role="option"
-              aria-selected={value === opt.value}
-              className={`${baseItem} ${opt.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${value === opt.value ? 'bg-white/20' : ''}`}
-              onClick={() => { if (!opt.disabled) { onChange(opt.value); setOpen(false) } }}
-              onMouseEnter={() => setHoveredOption(opt.value)}
-              onMouseLeave={() => setHoveredOption(null)}
-            >
-              <span className="flex-1 min-w-0">
-                <span className={`block transition-all duration-200 ${hoveredOption === opt.value ? 'text-white' : 'text-white/90'}`}>
-                  {opt.label}
+      {open && createPortal(
+        (
+          <ul role="listbox" ref={menuRef} className={baseMenu} style={menuStyle}>
+            {options.length === 0 && (
+              <li className="px-3 py-2 text-sm text-white/60">No options</li>
+            )}
+            {options.map((opt) => (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={value === opt.value}
+                className={`${baseItem} ${opt.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${value === opt.value ? 'bg-white/20' : ''}`}
+                onClick={() => { if (!opt.disabled) { onChange(opt.value); setOpen(false) } }}
+                onMouseEnter={() => setHoveredOption(opt.value)}
+                onMouseLeave={() => setHoveredOption(null)}
+              >
+                <span className="flex-1 min-w-0">
+                  <span className={`block transition-all duration-200 ${hoveredOption === opt.value ? 'text-white' : 'text-white/90'}`}>
+                    {opt.label}
+                  </span>
                 </span>
-              </span>
-              {value === opt.value && (
-                <svg className="h-4 w-4 text-white/80 ml-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.378 7.377a1 1 0 01-1.415 0L3.296 9.768a1 1 0 111.415-1.415l3.2 3.2 6.67-6.67a1 1 0 011.415 0z" clipRule="evenodd"/>
-                </svg>
-              )}
-            </li>
-          ))}
-        </ul>
+                {value === opt.value && (
+                  <svg className="h-4 w-4 text-white/80 ml-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.378 7.377a1 1 0 01-1.415 0L3.296 9.768a1 1 0 111.415-1.415l3.2 3.2 6.67-6.67a1 1 0 011.415 0z" clipRule="evenodd"/>
+                  </svg>
+                )}
+              </li>
+            ))}
+          </ul>
+        ),
+        document.body
       )}
     </div>
   )

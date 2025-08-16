@@ -93,7 +93,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [lastSelectedStorage, setLastSelectedStorage] = useState<string>('')
   const [lastSelectedColorHex, setLastSelectedColorHex] = useState<string>('')
 
-  const [basePrice, setBasePrice] = useState<string>('999')
+  const [basePrice, setBasePrice] = useState<string>('')
   const [currency, setCurrency] = useState<string>('USD')
   const [discountPercent, setDiscountPercent] = useState<string>('')
   const [discountAmount, setDiscountAmount] = useState<string>('')
@@ -146,13 +146,13 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     
     // Chip/GPU not part of title selection anymore
     
-    // Add storage if selected
-    if (lastSelectedStorage) {
+    // Add storage if selected (for new products, omit when multiple storages are selected)
+    if (lastSelectedStorage && !(condition === 'new' && selectedStorages.length > 1)) {
       parts.push(lastSelectedStorage);
     }
     
-    // Add color if selected
-    if (lastSelectedColorHex) {
+    // Add color if selected (for new products, omit when multiple colors are selected)
+    if (lastSelectedColorHex && !(condition === 'new' && selectedColors.length > 1)) {
       const colorObj = availableColors.find(c => c.hex === lastSelectedColorHex)
       if (colorObj?.name) {
         parts.push(colorObj.name);
@@ -163,15 +163,16 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   }, [
     brandId, brands, variantId, variants, modelId, models, 
     lastSelectedStorage, lastSelectedColorHex, availableColors, 
-    selectedRams, selectedChipTier, selectedGpuCore, titleManuallyEdited, title
+    selectedRams, selectedChipTier, selectedGpuCore, titleManuallyEdited, title,
+    condition, selectedStorages, selectedColors
   ])
 
   const previewCard = useMemo(() => ({
     id: 'preview',
     name: title || suggestedTitle,
     image: images.length > 0 ? images[0].url : 'https://placehold.co/400x400/111/444?text=No+Image',
-    priceFrom: `${currency === 'USD' ? '$' : ''}${parseFloat(basePrice).toFixed(2)}`,
-    monthlyFrom: `${currency === 'USD' ? '$' : ''}${(parseFloat(basePrice)/24).toFixed(2)}/mo.`,
+    priceFrom: `${currency === 'USD' ? '$' : ''}${(Number(basePrice || '0')).toFixed(2)}`,
+    monthlyFrom: `${currency === 'USD' ? '$' : ''}${(Number(basePrice || '0')/24).toFixed(2)}/mo.`,
     brand: brandName,
     category: categoryName,
     colors: selectedColors,
@@ -656,7 +657,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setSelectedChipTier('')
     setLastSelectedStorage('')
     setLastSelectedColorHex('')
-    setBasePrice('999')
+    setBasePrice('')
     setCurrency('USD')
     setDiscountPercent('')
     setDiscountAmount('')
@@ -929,7 +930,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <input ref={fileInputRef} type="file" multiple onChange={e=>handleUploadImages(e.target.files)} className="hidden" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                 {images.map((im, idx) => (
-                  <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                  <div key={idx} className="relative rounded-xl border border-white/10 bg-white/5">
                     <div className="relative aspect-[4/5] bg-black/20 flex items-center justify-center">
                       <img src={im.url} className="w-full h-full object-contain" />
                       <button className={`absolute top-2 left-2 text-[10px] px-2 py-1 rounded ${idx===0?'bg-white text-black':'bg-white/10 border border-white/20'}`} onClick={()=>{
@@ -940,19 +941,15 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
                       }}>Primary</button>
                     </div>
                     <div className="p-2">
-                      <select
-                        className="w-full text-[11px] bg-white/5 border border-white/15 rounded-md px-2 py-1"
+                      <AdminSelect
                         value={im.color ?? ''}
-                        onChange={e => {
-                          const val = e.target.value || null
+                        onChange={(v) => {
+                          const val = v || null
                           setImages(prev => prev.map((p,i) => i===idx ? { ...p, color: val } : p))
                         }}
-                      >
-                        <option value="">All colors</option>
-                        {selectedColors.map((c: string) => (
-                          <option key={c} value={c}>{colorLabelByHex[c] || c}</option>
-                        ))}
-                      </select>
+                        placeholder="All colors"
+                        options={[{ value: '', label: 'All colors' }, ...selectedColors.map((c: string) => ({ value: c, label: colorLabelByHex[c] || c }))]}
+                      />
                       <div className="mt-1 text-[10px] text-white/70 truncate" title={im.url}>
                         {(() => {
                           try {
