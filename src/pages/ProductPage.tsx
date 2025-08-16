@@ -352,6 +352,43 @@ const ProductPage: React.FC = () => {
     return `${product.id}:${currentRam}:${currentStorage}:${currentColor}`;
   }, [product, currentRam, currentStorage, currentColor]);
 
+  // Derive a high-level UI category (e.g., iPhone, Mac) for breadcrumb linking to Store with filters
+  const uiCategory = useMemo(() => {
+    if (!product) return '';
+    const brand = (product.brand || '').toLowerCase();
+    const haystack = [product.family, product.model, product.variant, product.category, product.name]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    if (brand === 'apple') {
+      if (haystack.includes('iphone')) return 'iPhone';
+      if (haystack.includes('ipad')) return 'iPad';
+      if (
+        haystack.includes('macbook') ||
+        haystack.includes('imac') ||
+        haystack.includes('mac mini') ||
+        haystack.includes('mac studio') ||
+        haystack.includes('mac pro') ||
+        haystack.includes('mac')
+      ) return 'Mac';
+      if (haystack.includes('watch')) return 'Watch';
+      if (haystack.includes('airpods')) return 'AirPods';
+      if (haystack.includes('apple tv') || haystack.includes('homepod')) return 'TV & Home';
+    }
+
+    const dbCat = (product.category || '').toLowerCase();
+    if (dbCat === 'phones') return 'iPhone';
+    if (dbCat === 'tablets') return 'iPad';
+    if (dbCat === 'wearables') return 'Watch';
+    if (dbCat === 'audio') return 'AirPods';
+    if (dbCat === 'accessories') return 'Accessories';
+    if (dbCat === 'laptops' || dbCat === 'desktops') return 'Mac';
+    if (dbCat === 'tv' || dbCat === 'smart home') return 'TV & Home';
+
+    return product.category || '';
+  }, [product]);
+
   const inCartQuantity = useMemo(() => {
     const found = items.find(i => i.id === currentItemId);
     return found ? found.quantity : 0;
@@ -489,38 +526,61 @@ const ProductPage: React.FC = () => {
   }, [product, isM4Air, currentRam, currentStorage]);
 
   return (
-    <div className="min-h-screen pb-20 bg-white dark:bg-gray-950 transition-colors duration-300">
+    <div className="min-h-screen pb-20 bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
+      {/* Header spacer to ensure content is never hidden under the header */}
+      <div className="h-2 md:h-2"></div>
       {/* Breadcrumb navigation */}
-      <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
-        <nav className="flex items-center">
-          <Link to="/" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <Text size="xs" color="tertiary">Home</Text>
+                  <div className="max-w-7xl mx-auto px-4 pt-1 pb-1">
+        <nav className="flex items-center text-gray-700 dark:text-gray-300" aria-label="Breadcrumb">
+          <Link to="/" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+            <Text size="sm" color="secondary">Home</Text>
           </Link>
-          <span className="mx-1.5"><Text size="xs" color="tertiary">›</Text></span>
-          <Link to="/products" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-            <Text size="xs" color="tertiary">Store</Text>
-          </Link>
-          <span className="mx-1.5"><Text size="xs" color="tertiary">›</Text></span>
-          <Text size="xs" color="secondary">{product?.name || 'Product'}</Text>
+          <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+          {uiCategory ? (
+            <>
+              <Link
+                to={`/products?category=${encodeURIComponent(uiCategory)}`}
+                className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+              >
+                <Text size="sm" color="secondary">{uiCategory}</Text>
+              </Link>
+              <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+            </>
+          ) : (
+            <>
+              <Link to="/products" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+                <Text size="sm" color="secondary">Store</Text>
+              </Link>
+              <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+            </>
+          )}
+          {product?.name && (
+            <Link
+              to={`/products?category=${encodeURIComponent(uiCategory || 'All')}&q=${encodeURIComponent(product.name)}`}
+              className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+            >
+              <Text size="sm" color="secondary">{product.name}</Text>
+            </Link>
+          )}
         </nav>
       </div>
 
       <Section background="light" size="lg" containerWidth="xl" className="pb-6">
         <ContentBlock spacing="none">
           {loading ? (
-            <div className="py-16 text-center">
+            <div className="py-8 text-center">
               <Text>Loading product…</Text>
             </div>
           ) : error ? (
-            <div className="py-16 text-center">
+            <div className="py-8 text-center">
               <Text color="error">{error}</Text>
             </div>
           ) : !product ? (
-            <div className="py-16 text-center">
+            <div className="py-8 text-center">
               <Text>Product not found.</Text>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 py-4">
               <div className="lg:col-span-8 xl:col-span-8">
                 <AppleProductTitle size="sm">{product.name}</AppleProductTitle>
                 {product.category && (
@@ -586,7 +646,7 @@ const ProductPage: React.FC = () => {
                     )}
 
                     {/* Two large image containers */}
-                    <div className="flex-1 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="flex-1 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Left large container (current image) */}
                       <div 
                         className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer"
@@ -685,11 +745,11 @@ const ProductPage: React.FC = () => {
 
                 {/* Right side - Product Details */}
                 <div className="flex flex-col lg:col-span-4 xl:col-span-4">
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-6 pt-6 pb-4">
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-5 pt-4 pb-3">
                   
                   
-                  {product.colors && product.colors.length > 0 && (
-                    <div className="mb-8">
+                                      {product.colors && product.colors.length > 0 && (
+                      <div className="mb-4">
                       <div className="flex flex-wrap gap-2">
                         {product.colors.map((color, index) => {
                           const label = product.colorNames?.[color] || guessColorName(color) || color;
@@ -717,7 +777,7 @@ const ProductPage: React.FC = () => {
                   )}
 
                   {product.storage && product.storage.length > 0 && (
-                    <div className="mb-8">
+                    <div className="mb-4">
                       {product.ramOptions && product.ramOptions.length > 0 && (
                         <>
                           <div className="mb-4">
@@ -772,7 +832,7 @@ const ProductPage: React.FC = () => {
 
                     {/* Payment Options */}
   <div>
-    <div className="flex space-x-3 mb-6">
+    <div className="flex space-x-3 mb-4">
       <button
         onClick={() => setSelectedPaymentType('full')}
         className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
@@ -987,9 +1047,9 @@ const ProductPage: React.FC = () => {
       {/* Detailed Description Section */}
       {product && (
         <Section background="light" size="lg" containerWidth="xl" className="pt-0">
-          <ContentBlock spacing="md">
-            <div className="py-8">
-              <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
+          <ContentBlock spacing="sm">
+            <div className="py-4">
+              <div className="flex border-b border-gray-200 dark:border-gray-800 mb-4">
                 <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Description</Text>
                 </button>
@@ -1004,7 +1064,7 @@ const ProductPage: React.FC = () => {
                 <div className="space-y-6 max-w-4xl">
                   <div>
                     <H3 className="mb-4">About This Product</H3>
-                    <AppleProductDescription className="mb-6">{product?.description || 'No description available yet.'}</AppleProductDescription>
+                    <AppleProductDescription className="mb-4">{product?.description || 'No description available yet.'}</AppleProductDescription>
                   </div>
                 </div>
               )}

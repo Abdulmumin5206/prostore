@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, H1 } from '../components/Typography';
+import { Text } from '../components/Typography';
 import ProductCard from '../components/ProductCard';
 import FilterTag from '../components/FilterTag';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -745,10 +745,10 @@ const ProductsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md bg-[#f5f5f7]/90 dark:bg-black/90 border-b border-gray-200 dark:border-gray-800 pt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <H1 className="text-2xl font-semibold tracking-tight">Store</H1>
-          <div className="relative w-full max-w-xs ml-4">
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-[#f5f5f7]/90 dark:bg-black/90 pt-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex justify-between items-center">
+          {/* Removed Store headline and moved search to main section */}
+          <div className="relative w-full max-w-xs ml-0 md:ml-4 hidden">
             <input
               type="text"
               value={searchInput}
@@ -1440,22 +1440,42 @@ const ProductsPage: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 py-8 px-4">
-          {/* Quick Filters and Sort */}
-          <div className="mb-4 flex flex-wrap justify-between items-center">
-            {/* Quick Filter Tags */}
-            <div className="flex flex-wrap gap-2 mb-4 sm:mb-0">
-              {quickFilters.map((filter) => (
-                <FilterTag
-                  key={filter}
-                  label={filter}
-                  isActive={selectedQuickFilter === filter}
-                  onClick={() => handleQuickFilterClick(filter)}
+          {/* Quick Filters, Search, and Sort */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            {/* Left group: Quick Filters + Search */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Quick Filter Tags */}
+              <div className="flex flex-wrap gap-2">
+                {quickFilters.map((filter) => (
+                  <FilterTag
+                    key={filter}
+                    label={filter}
+                    isActive={selectedQuickFilter === filter}
+                    onClick={() => handleQuickFilterClick(filter)}
+                  />
+                ))}
+              </div>
+
+              {/* Search Input */}
+              <div className="relative w-full sm:w-64 md:w-80">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search products"
+                  aria-label="Search products"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              ))}
+                <div className="absolute left-3 top-2.5 text-gray-400" aria-hidden>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Sort Dropdown */}
-            <div className="relative">
+            <div className="relative ml-auto">
               <button
                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                 className="flex items-center h-9 px-4 rounded-lg text-sm font-medium transition-colors duration-200 bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -1472,7 +1492,6 @@ const ProductsPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
               {isSortDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 z-50">
                   <div className="py-1" role="menu" aria-orientation="vertical">
@@ -1724,7 +1743,7 @@ const ProductsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="px-3 mb-1 min-h-[120px]">
+                    <div className="px-3 mb-1 min-h-[96px]">
                       {/* Pricing stack */}
                       <div className="mb-1">
                         <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProduct.priceFrom}</Text>
@@ -1801,7 +1820,7 @@ const ProductsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="px-3 mb-1 min-h-[120px]">
+                    <div className="px-3 mb-1 min-h-[96px]">
                       {/* Pricing stack */}
                       <div className="mb-1">
                         <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProductSecondHand.priceFrom}</Text>
@@ -1885,7 +1904,7 @@ const ProductsPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <div className="px-3 mb-1 min-h-[120px]">
+                      <div className="px-3 mb-1 min-h-[96px]">
                         {/* Pricing stack */}
                         <div className="mb-1">
                           <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{product.priceFrom}</Text>
@@ -1901,27 +1920,7 @@ const ProductsPage: React.FC = () => {
                         <div className="flex items-center gap-0.5 mb-0 text-amber-500">
                           {renderStars(4.4)}
                         </div>
-                        {/* Color label and swatches */}
-                        {product.colors && product.colors.length > 0 && (
-                          <div className="mt-1">
-                            <Text size="xs" color="tertiary">
-                              Color: <span className="font-medium text-black dark:text-white">{guessColorName(product.colors[0]) || product.colors[0]}</span>
-                            </Text>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              {product.colors.slice(0, 4).map((c, idx) => (
-                                <span
-                                  key={c + idx}
-                                  className="w-3.5 h-3.5 rounded-full border border-gray-300 dark:border-gray-700"
-                                  style={{ backgroundColor: c }}
-                                  title={guessColorName(c) || c}
-                                />
-                              ))}
-                              {product.colors.length > 4 && (
-                                <span className="text-[10px] text-gray-500 dark:text-gray-400">+{product.colors.length - 4}</span>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {/* Color label and swatches removed */}
                       </div>
                     </div>
                     <div className="px-3 pb-3 relative z-10">

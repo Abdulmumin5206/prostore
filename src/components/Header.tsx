@@ -13,7 +13,7 @@ const Header = () => {
   const { user, signOut, isAdminOverride } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const isProductPage = location.pathname.startsWith('/store/');
+  const isProductPage = location.pathname.startsWith('/store/') || location.pathname.startsWith('/products');
   const stickyEnabled = !isProductPage;
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -111,7 +111,7 @@ const Header = () => {
       <header 
         ref={headerRef}
         className={`bg-black dark:bg-black text-white w-full z-50 ${
-          stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'absolute top-10'
+          stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'relative'
         }`}
         onMouseLeave={handleHeaderMouseLeave}
         style={{ borderBottom: isDropdownVisible ? 'none' : undefined }}
