@@ -46,11 +46,16 @@ const ProductPage: React.FC = () => {
   const [selectedStorage, setSelectedStorage] = useState(0);
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
+  const [discount, setDiscount] = useState<number>(10); // Adding discount state with default 10%
 
   // Touch swipe state for image carousel
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const minSwipeDistance = 50;
+  
+  // State for fullscreen image modal
+  const [showFullImage, setShowFullImage] = useState(false);
+  const [fullImageIndex, setFullImageIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -217,10 +222,12 @@ const ProductPage: React.FC = () => {
   }, [product, currentStorage, currentColorLabel]);
 
   const basePrice = product?.basePrice ?? 0;
+  const discountAmount = selectedPaymentType === 'full' ? (basePrice * (discount / 100)) : 0;
+  const discountedPrice = basePrice - discountAmount;
   const nasiyaMarkup = 1.3;
-  const nasiyaTotalPrice = Math.round(basePrice * nasiyaMarkup) * quantity;
-  const monthlyPayment = Math.round((basePrice * nasiyaMarkup) / selectedInstallmentPlan) * quantity;
-  const totalPrice = basePrice * quantity;
+  const nasiyaTotalPrice = Math.round((selectedPaymentType === 'full' ? discountedPrice : basePrice) * nasiyaMarkup) * quantity;
+  const monthlyPayment = Math.round(((selectedPaymentType === 'full' ? discountedPrice : basePrice) * nasiyaMarkup) / selectedInstallmentPlan) * quantity;
+  const totalPrice = discountedPrice * quantity;
 
   const currentPriceDisplay = selectedPaymentType === 'full' 
     ? `${product?.currency === 'USD' ? '$' : product?.currency || ''}${totalPrice}` 
@@ -274,6 +281,28 @@ const ProductPage: React.FC = () => {
     if (isRightSwipe) prevImage();
   };
 
+  // Function to open fullscreen image
+  const openFullImage = (index: number) => {
+    setFullImageIndex(index);
+    setShowFullImage(true);
+  };
+
+  // Function to close fullscreen image
+  const closeFullImage = () => {
+    setShowFullImage(false);
+  };
+
+  // Function to navigate fullscreen images
+  const nextFullImage = () => {
+    if (!imagesCount) return;
+    setFullImageIndex((prev) => (prev + 1) % imagesCount);
+  };
+
+  const prevFullImage = () => {
+    if (!imagesCount) return;
+    setFullImageIndex((prev) => (prev - 1 + imagesCount) % imagesCount);
+  };
+
   return (
     <div className="min-h-screen pb-20 bg-white dark:bg-gray-950 transition-colors duration-300">
       {/* Breadcrumb navigation */}
@@ -306,7 +335,7 @@ const ProductPage: React.FC = () => {
               <Text>Product not found.</Text>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-8">
               <div className="lg:col-span-9">
                 <AppleProductTitle size="sm">{product.name}</AppleProductTitle>
                 {product.category && (
@@ -314,33 +343,36 @@ const ProductPage: React.FC = () => {
                 )}
               </div>
                 {/* Left side - Product Images */}
-                <div className="flex flex-col lg:col-span-9">
+                <div className="flex flex-col lg:col-span-8">
                   <div className="flex gap-4">
                     {/* Vertical thumbnails (desktop/tablet) */}
                     {imagesForCurrentSelection.length > 0 && (
-                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px]">
-                        {/* Up arrow */}
-                        {imagesCount > visibleThumbs && (
-                          <button
-                            type="button"
-                            onClick={() => setThumbOffset((v) => Math.max(0, v - 1))}
-                            disabled={!canThumbPrev}
-                            className={`p-1.5 rounded-full bg-white/80 dark:bg-gray-800/70 shadow ${!canThumbPrev ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white'}`}
-                            aria-label="Previous thumbnails"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 6l4 5H6l4-5z" clipRule="evenodd"/></svg>
-                          </button>
-                        )}
+                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[520px] relative">
                         <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '520px' }}>
+                          {/* Up arrow - positioned inside at top */}
+                          {imagesCount > visibleThumbs && (
+                            <button
+                              type="button"
+                              onClick={() => setThumbOffset((v) => Math.max(0, v - 1))}
+                              disabled={!canThumbPrev}
+                              className={`absolute top-0 left-0 right-0 h-12 flex justify-center items-center z-10 bg-gradient-to-b from-white/90 to-transparent dark:from-gray-800/90 dark:to-transparent ${!canThumbPrev ? 'opacity-40 cursor-not-allowed' : 'hover:from-white hover:dark:from-gray-800'}`}
+                              aria-label="Previous thumbnails"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-7 h-7 text-gray-700 dark:text-gray-300">
+                                <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          )}
+                          
                           {(imagesForCurrentSelection.slice(thumbsStart, thumbsStart + visibleThumbs)).map((image, index) => {
                             const actualIndex = thumbsStart + index;
                             return (
                               <button
                                 key={actualIndex}
                                 onClick={() => setSelectedImage(actualIndex)}
-                                className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                                className={`rounded-md h-20 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
                                   selectedImage === actualIndex 
-                                    ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
+                                    ? 'border border-black dark:border-white' 
                                     : 'opacity-60 hover:opacity-100'
                                 }`}
                                 aria-label={`Thumbnail ${actualIndex + 1}`}
@@ -349,19 +381,22 @@ const ProductPage: React.FC = () => {
                               </button>
                             );
                           })}
+                          
+                          {/* Down arrow - positioned inside at bottom */}
+                          {imagesCount > visibleThumbs && (
+                            <button
+                              type="button"
+                              onClick={() => setThumbOffset((v) => Math.min(maxThumbOffset, v + 1))}
+                              disabled={!canThumbNext}
+                              className={`absolute bottom-0 left-0 right-0 h-12 flex justify-center items-center z-10 bg-gradient-to-t from-white/90 to-transparent dark:from-gray-800/90 dark:to-transparent ${!canThumbNext ? 'opacity-40 cursor-not-allowed' : 'hover:from-white hover:dark:from-gray-800'}`}
+                              aria-label="Next thumbnails"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-7 h-7 text-gray-700 dark:text-gray-300">
+                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
-                        {/* Down arrow */}
-                        {imagesCount > visibleThumbs && (
-                          <button
-                            type="button"
-                            onClick={() => setThumbOffset((v) => Math.min(maxThumbOffset, v + 1))}
-                            disabled={!canThumbNext}
-                            className={`p-1.5 rounded-full bg-white/80 dark:bg-gray-800/70 shadow ${!canThumbNext ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white'}`}
-                            aria-label="Next thumbnails"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 14l-4-5h8l-4 5z" clipRule="evenodd"/></svg>
-                          </button>
-                        )}
                       </div>
                     )}
 
@@ -369,10 +404,11 @@ const ProductPage: React.FC = () => {
                     <div className="flex-1 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                       {/* Left large container (current image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden"
+                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden cursor-pointer"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
+                        onClick={() => imagesForCurrentSelection.length > 0 && openFullImage(selectedImage)}
                       >
                         {imagesForCurrentSelection.length > 0 ? (
                           <img 
@@ -389,7 +425,10 @@ const ProductPage: React.FC = () => {
                         {imagesForCurrentSelection.length > 1 && (
                           <button
                             type="button"
-                            onClick={prevImage}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              prevImage();
+                            }}
                             className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
                             aria-label="Previous image"
                           >
@@ -402,10 +441,11 @@ const ProductPage: React.FC = () => {
 
                       {/* Right large container (next image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden"
+                        className="relative flex items-center justify-center h-[520px] rounded-xl overflow-hidden cursor-pointer"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
+                        onClick={() => imagesForCurrentSelection.length > 1 && openFullImage((selectedImage + 1) % imagesForCurrentSelection.length)}
                       >
                         {imagesForCurrentSelection.length > 1 ? (
                           <img 
@@ -422,7 +462,10 @@ const ProductPage: React.FC = () => {
                         {imagesForCurrentSelection.length > 1 && (
                           <button
                             type="button"
-                            onClick={nextImage}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              nextImage();
+                            }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
                             aria-label="Next image"
                           >
@@ -442,9 +485,9 @@ const ProductPage: React.FC = () => {
                         <button 
                           key={index}
                           onClick={() => setSelectedImage(index)}
-                          className={`rounded-md h-16 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
+                          className={`rounded-md h-20 w-16 flex-shrink-0 overflow-hidden transition-all duration-300 ${
                             selectedImage === index 
-                              ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
+                              ? 'border border-black dark:border-white' 
                               : 'opacity-60 hover:opacity-100'
                           }`}
                         >
@@ -456,36 +499,37 @@ const ProductPage: React.FC = () => {
                 </div>
 
                 {/* Right side - Product Details */}
-                <div className="flex flex-col lg:col-span-3">
+                <div className="flex flex-col lg:col-span-4">
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
                   
                   
                   {product.colors && product.colors.length > 0 && (
                     <div className="mb-8">
-                      <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Color</Label>
                       <div className="flex flex-wrap gap-3">
                         {product.colors.map((color, index) => (
                           <button
                             key={index}
                             onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
-                            className={`w-10 h-10 rounded-full transition-all duration-300 flex items-center justify-center ${
+                            className={`w-8 h-8 rounded-full transition-all duration-300 flex items-center justify-center ${
                               selectedColor === index 
                                 ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
                                 : ''
                             }`}
                             title={product.colorNames?.[color] || guessColorName(color) || color}
                           >
-                            <span className="w-8 h-8 rounded-full" style={{backgroundColor: color}}></span>
+                            <span className="w-6 h-6 rounded-full" style={{backgroundColor: color}}></span>
                           </button>
                         ))}
                       </div>
-                      <Text size="sm" color="tertiary" className="mt-2">{currentColorLabel}</Text>
+                      <div className="mt-3 flex items-center">
+                        <Text size="sm" weight="medium" color="secondary" className="mr-2">Selected color:</Text>
+                        <Text size="sm" color="primary">{currentColorLabel}</Text>
+                      </div>
                     </div>
                   )}
 
                   {product.storage && product.storage.length > 0 && (
                     <div className="mb-8">
-                      <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Storage</Label>
                       <div className="flex flex-wrap gap-2">
                         {product.storage.map((option, index) => (
                           <button
@@ -501,13 +545,16 @@ const ProductPage: React.FC = () => {
                           </button>
                         ))}
                       </div>
+                      <div className="mt-3 flex items-center">
+                        <Text size="sm" weight="medium" color="secondary" className="mr-2">Selected storage:</Text>
+                        <Text size="sm" color="primary">{currentStorage}</Text>
+                      </div>
                     </div>
                   )}
 
                   {/* Payment Options */}
-                  <div className="mb-10">
-                    <Label size="xs" transform="uppercase" color="tertiary" className="mb-4">Payment Options</Label>
-                    <div className="flex space-x-3 mb-8">
+                  <div className="mb-8">
+                    <div className="flex space-x-3 mb-6">
                       <button
                         onClick={() => setSelectedPaymentType('full')}
                         className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
@@ -532,48 +579,95 @@ const ProductPage: React.FC = () => {
 
                     {selectedPaymentType === 'full' ? (
                       <div className="mb-8">
-                        <ApplePrice className="text-3xl">{product.currency === 'USD' ? '$' : product.currency}{totalPrice}</ApplePrice>
-                        <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
+                        <div className="flex flex-col">
+                          {discount > 0 && (
+                            <div className="mb-1 flex items-center">
+                              <Text size="sm" className="line-through text-gray-400">
+                                {product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}
+                              </Text>
+                              <span className="ml-2 px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                -{discount}%
+                              </span>
+                            </div>
+                          )}
+                          <ApplePrice className="text-3xl text-indigo-600 dark:text-indigo-500 font-semibold">
+                            {product.currency === 'USD' ? '$' : product.currency}{totalPrice}
+                          </ApplePrice>
+                          <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
+                        </div>
                       </div>
                     ) : (
                       <div className="mb-8">
                         <div className="mb-4">
-                          <Text size="xs" color="tertiary" className="mb-2">Select payment period:</Text>
+                          <Text size="sm" weight="medium" color="secondary" className="mb-2">Select payment period:</Text>
                           <div className="flex space-x-2">
                             {[6, 12, 24].map((months) => (
                               <button
                                 key={months}
                                 onClick={() => setSelectedInstallmentPlan(months as 6 | 12 | 24)}
-                                className={`px-3 py-1.5 text-xs rounded-md transition-all ${
+                                className={`px-4 py-2 text-sm rounded-md transition-all ${
                                   selectedInstallmentPlan === months
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-indigo-600 text-white'
                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                 }`}
                               >
-                                <Text size="xs" color="inherit">{months} months</Text>
+                                <Text size="sm" color="inherit">{months} months</Text>
                               </button>
                             ))}
                           </div>
                         </div>
 
-                        <ApplePrice className="text-3xl">{product.currency === 'USD' ? '$' : product.currency}{monthlyPayment}</ApplePrice>
+                        <ApplePrice className="text-3xl text-indigo-600 dark:text-indigo-500 font-semibold">
+                          {product.currency === 'USD' ? '$' : product.currency}{monthlyPayment}
+                        </ApplePrice>
                         <Text size="sm" color="tertiary" className="mt-1">per month for {selectedInstallmentPlan} months</Text>
-                        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                          <div className="flex justify-between text-xs mb-1">
-                            <Text size="xs" color="tertiary">Base price:</Text>
-                            <Text size="xs" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{totalPrice}</Text>
+                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                          <div className="flex justify-between text-sm mb-2">
+                            <Text size="sm" color="tertiary">Base price:</Text>
+                            <Text size="sm" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}</Text>
                           </div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <Text size="xs" color="tertiary">Nasiya markup (30%):</Text>
-                            <Text size="xs" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - totalPrice}</Text>
+                          <div className="flex justify-between text-sm mb-2">
+                            <Text size="sm" color="tertiary">Nasiya markup (30%):</Text>
+                            <Text size="sm" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - (basePrice * quantity)}</Text>
                           </div>
-                          <div className="flex justify-between text-xs font-medium pt-1 border-t border-gray-200 dark:border-gray-800">
-                            <Text size="xs" color="secondary" weight="medium">Total cost:</Text>
-                            <Text size="xs" color="primary" weight="medium">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
+                          <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">
+                            <Text size="sm" color="secondary" weight="medium">Total cost:</Text>
+                            <Text size="sm" className="text-indigo-600 dark:text-indigo-500 font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
                           </div>
                         </div>
                       </div>
                     )}
+                    
+                    <div className="mt-6">
+                      <div className="flex gap-2 mb-2">
+                        <Button 
+                          variant="outline" 
+                          size="medium" 
+                          className="flex-[3] py-2 flex items-center justify-center"
+                          aria-label="One-click buy"
+                        >
+                          <span className="text-sm">One Click Buy</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="medium" 
+                          className="flex-1 py-2 flex items-center justify-center"
+                          aria-label="Add to favorites"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                            <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 018-2.828A4.5 4.5 0 0118 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 01-3.744 2.582l-.019.01-.005.003h-.002a.739.739 0 01-.69.001l-.002-.001z" />
+                          </svg>
+                        </Button>
+                      </div>
+                      <Button 
+                        variant="primary" 
+                        size="medium" 
+                        className="w-full py-2 text-sm" 
+                        onClick={handleAddToBag}
+                      >
+                        Add to Bag
+                      </Button>
+                    </div>
 
                   </div>
                   </div>
@@ -582,6 +676,55 @@ const ProductPage: React.FC = () => {
           )}
         </ContentBlock>
       </Section>
+
+      {/* Fullscreen Image Modal */}
+      {showFullImage && imagesForCurrentSelection.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <button 
+              onClick={closeFullImage}
+              className="absolute top-4 right-4 text-white p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/70 z-10"
+              aria-label="Close fullscreen view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={prevFullImage}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-gray-800/50 hover:bg-gray-700/70 text-white"
+              aria-label="Previous image"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
+                <path fillRule="evenodd" d="M12.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            <img 
+              src={imagesForCurrentSelection[fullImageIndex]} 
+              alt={`${product?.name || 'Product'} full view`} 
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+            />
+            
+            <button
+              onClick={nextFullImage}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-gray-800/50 hover:bg-gray-700/70 text-white"
+              aria-label="Next image"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
+                <path fillRule="evenodd" d="M7.293 4.293a1 1 0 011.414 0l5 5a1 1 0 010 1.414l-5 5a1 1 0 11-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+              <div className="bg-gray-800/70 px-4 py-2 rounded-full">
+                <Text size="sm" color="primary" className="text-white">{fullImageIndex + 1} / {imagesForCurrentSelection.length}</Text>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detailed Description Section */}
       {product?.description && (
@@ -634,9 +777,11 @@ const ProductPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right hidden sm:block">
-                <Text size="sm" weight="medium" color="primary">{currentPriceDisplay}</Text>
-                {selectedPaymentType === 'nasiya' && (
-                  <Caption>Total: {product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Caption>
+                <Text size="sm" weight="medium" className="text-indigo-600 dark:text-indigo-500 font-semibold">{currentPriceDisplay}</Text>
+                {selectedPaymentType === 'full' && discount > 0 && (
+                  <Text size="xs" className="text-gray-500 dark:text-gray-400">
+                    was {product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}
+                  </Text>
                 )}
               </div>
               <div className="flex space-x-2">
