@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   H1, H2, H3, H4,
   Text, Caption, Label,
@@ -39,7 +39,8 @@ interface DetailProduct {
 
 const ProductPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
-  const { addItem } = useCart();
+  const { items, addItem, updateQuantity } = useCart();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +55,29 @@ const ProductPage: React.FC = () => {
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
   const [discount, setDiscount] = useState<number>(10); // Adding discount state with default 10%
+
+  // Favorites (persisted locally)
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const isFavorite = useMemo(() => {
+    if (!product) return false;
+    return favorites.includes(product.id);
+  }, [favorites, product]);
+  const toggleFavorite = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!product) return;
+    setFavorites(prev => {
+      const next = prev.includes(product.id) ? prev.filter(x => x !== product.id) : [...prev, product.id];
+      try { localStorage.setItem('favorites', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   // Touch swipe state for image carousel
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -164,6 +188,9 @@ const ProductPage: React.FC = () => {
             colorToImages[c].push(row.url as string);
           }
         }
+        const universalImagesSorted = sortedImagesRaw
+          .filter((row: any) => !(row as any).color)
+          .map((x: any) => x.url as string);
 
         // Aggregate attributes
         const colorSet = new Set<string>();
@@ -190,7 +217,7 @@ const ProductPage: React.FC = () => {
           name: r0.title,
           category: r0.category,
           description: r0.description,
-          images: sortedImages.length > 0 ? sortedImages : (r0.primary_image ? [r0.primary_image] : []),
+          images: universalImagesSorted.length > 0 ? universalImagesSorted : (r0.primary_image ? [r0.primary_image] : []),
           colors: Array.from(colorSet),
           storage: Array.from(storageSet),
           ramOptions: Array.from(ramSet),
@@ -320,6 +347,16 @@ const ProductPage: React.FC = () => {
     return parts.join(' ').replace(/\s+/g, ' ').trim();
   }, [product, currentRam, currentStorage, currentColorLabel]);
 
+  const currentItemId = useMemo(() => {
+    if (!product) return '';
+    return `${product.id}:${currentRam}:${currentStorage}:${currentColor}`;
+  }, [product, currentRam, currentStorage, currentColor]);
+
+  const inCartQuantity = useMemo(() => {
+    const found = items.find(i => i.id === currentItemId);
+    return found ? found.quantity : 0;
+  }, [items, currentItemId]);
+
   const basePrice = product?.basePrice ?? 0;
   const discountAmount = selectedPaymentType === 'full' ? (basePrice * (discount / 100)) : 0;
   const discountedPrice = basePrice - discountAmount;
@@ -355,8 +392,9 @@ const ProductPage: React.FC = () => {
 
   const handleAddToBag = () => {
     if (!product) return;
+    const itemId = `${product.id}:${currentRam}:${currentStorage}:${currentColor}`;
     addItem({
-      id: `${product.id}:${currentRam}:${currentStorage}:${currentColor}`,
+      id: itemId,
       name: `${product.name}${currentRam ? ' ' + currentRam : ''}${currentStorage ? ' ' + currentStorage : ''}${currentColorLabel ? ' ' + currentColorLabel : ''}`,
       image: imagesForCurrentSelection[0] || product.images[0] || '',
       unitPrice: basePrice,
@@ -467,8 +505,8 @@ const ProductPage: React.FC = () => {
         </nav>
       </div>
 
-      <Section background="light" size="lg" containerWidth="xl">
-        <ContentBlock spacing="md">
+      <Section background="light" size="lg" containerWidth="xl" className="pb-6">
+        <ContentBlock spacing="none">
           {loading ? (
             <div className="py-16 text-center">
               <Text>Loading product…</Text>
@@ -647,26 +685,29 @@ const ProductPage: React.FC = () => {
 
                 {/* Right side - Product Details */}
                 <div className="flex flex-col lg:col-span-4 xl:col-span-4">
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-6 pt-6 pb-4">
                   
                   
                   {product.colors && product.colors.length > 0 && (
                     <div className="mb-8">
-                      <div className="flex flex-wrap gap-3">
-                        {product.colors.map((color, index) => (
-                          <button
-                            key={index}
-                            onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
-                            className={`w-8 h-8 rounded-full transition-all duration-300 flex items-center justify-center ${
-                              selectedColor === index 
-                                ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-950' 
-                                : ''
-                            }`}
-                            title={product.colorNames?.[color] || guessColorName(color) || color}
-                          >
-                            <span className="w-6 h-6 rounded-full" style={{backgroundColor: color}}></span>
-                          </button>
-                        ))}
+                      <div className="flex flex-wrap gap-2">
+                        {product.colors.map((color, index) => {
+                          const label = product.colorNames?.[color] || guessColorName(color) || color;
+                          return (
+                            <button
+                              key={color + index}
+                              onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
+                              className={`px-4 py-2 rounded-lg border transition-all ${
+                                selectedColor === index 
+                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                  : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                              }`}
+                              aria-label={`Select color ${label}`}
+                            >
+                              <div className="text-sm font-medium">{label}</div>
+                            </button>
+                          );
+                        })}
                       </div>
                       <div className="mt-3 flex items-center">
                         <Text size="sm" weight="medium" color="secondary" className="mr-2">Selected color:</Text>
@@ -729,33 +770,33 @@ const ProductPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Payment Options */}
-                  <div className="mb-8">
-                    <div className="flex space-x-3 mb-6">
-                      <button
-                        onClick={() => setSelectedPaymentType('full')}
-                        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
-                          selectedPaymentType === 'full' 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
-                            : 'border-gray-200 dark:border-gray-800'
-                        }`}
-                      >
-                        <Text size="sm" weight={selectedPaymentType === 'full' ? 'medium' : 'normal'} color={selectedPaymentType === 'full' ? 'accent' : 'inherit'} align="center">Full Payment</Text>
-                      </button>
-                      <button
-                        onClick={() => setSelectedPaymentType('nasiya')}
-                        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
-                          selectedPaymentType === 'nasiya' 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
-                            : 'border-gray-200 dark:border-gray-800'
-                        }`}
-                      >
-                        <Text size="sm" weight={selectedPaymentType === 'nasiya' ? 'medium' : 'normal'} color={selectedPaymentType === 'nasiya' ? 'accent' : 'inherit'} align="center">Nasiya</Text>
-                      </button>
-                    </div>
+                    {/* Payment Options */}
+  <div>
+    <div className="flex space-x-3 mb-6">
+      <button
+        onClick={() => setSelectedPaymentType('full')}
+        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
+          selectedPaymentType === 'full' 
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+            : 'border-gray-200 dark:border-gray-800'
+        }`}
+      >
+        <Text size="sm" weight={selectedPaymentType === 'full' ? 'medium' : 'normal'} color={selectedPaymentType === 'full' ? 'accent' : 'inherit'} align="center">Full Payment</Text>
+      </button>
+      <button
+        onClick={() => setSelectedPaymentType('nasiya')}
+        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
+          selectedPaymentType === 'nasiya' 
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+            : 'border-gray-200 dark:border-gray-800'
+        }`}
+      >
+        <Text size="sm" weight={selectedPaymentType === 'nasiya' ? 'medium' : 'normal'} color={selectedPaymentType === 'nasiya' ? 'accent' : 'inherit'} align="center">Nasiya</Text>
+      </button>
+    </div>
 
                     {selectedPaymentType === 'full' ? (
-                      <div className="mb-8">
+                      <div className="mb-4">
                         <div className="flex flex-col">
                           {discount > 0 && (
                             <div className="mb-1 flex items-center">
@@ -774,7 +815,7 @@ const ProductPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="mb-8">
+                      <div className="mb-4">
                         <div className="mb-4">
                           <Text size="sm" weight="medium" color="secondary" className="mb-2">Select payment period:</Text>
                           <div className="flex space-x-2">
@@ -815,7 +856,7 @@ const ProductPage: React.FC = () => {
                       </div>
                     )}
                     
-                    <div className="mt-6">
+                    <div className="mt-4">
                       <div className="flex gap-2 mb-2">
                         <Button 
                           variant="outline" 
@@ -825,25 +866,65 @@ const ProductPage: React.FC = () => {
                         >
                           <span className="text-sm">One Click Buy</span>
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="medium" 
-                          className="flex-1 py-2 flex items-center justify-center h-[42px]"
-                          aria-label="Add to favorites"
+                        <button
+                          type="button"
+                          onClick={toggleFavorite}
+                          aria-pressed={isFavorite}
+                          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                          className={`flex-1 py-2 flex items-center justify-center h-[42px] rounded-lg border transition-all ${isFavorite ? 'border-red-500 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900'}`}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            className="w-5 h-5"
+                            fill={isFavorite ? 'currentColor' : 'none'}
+                            stroke={isFavorite ? 'none' : 'currentColor'}
+                            strokeWidth={1.8}
+                          >
                             <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 018-2.828A4.5 4.5 0 0118 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 01-3.744 2.582l-.019.01-.005.003h-.002a.739.739 0 01-.69.001l-.002-.001z" />
                           </svg>
-                        </Button>
+                        </button>
                       </div>
-                      <Button 
-                        variant="primary" 
-                        size="medium" 
-                        className="w-full py-2 text-sm h-[42px]" 
-                        onClick={handleAddToBag}
-                      >
-                        Add to Bag
-                      </Button>
+                      {inCartQuantity > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center border border-gray-200 dark:border-gray-800 rounded-lg h-[42px]">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(currentItemId, Math.max(0, inCartQuantity - 1))}
+                              className="w-10 h-[40px] flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-l-lg"
+                              aria-label="Decrease quantity"
+                            >
+                              −
+                            </button>
+                            <span className="w-10 text-center text-sm font-medium text-gray-900 dark:text-gray-100">{inCartQuantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(currentItemId, inCartQuantity + 1)}
+                              className="w-10 h-[40px] flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-r-lg"
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <Button
+                            variant="primary"
+                            size="medium"
+                            className="flex-1 py-2 text-sm h-[42px]"
+                            onClick={() => navigate('/cart')}
+                          >
+                            Go to Bag
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="primary" 
+                          size="medium" 
+                          className="w-full py-2 text-sm h-[42px]" 
+                          onClick={handleAddToBag}
+                        >
+                          Add to Bag
+                        </Button>
+                      )}
                     </div>
 
                   </div>
@@ -905,7 +986,7 @@ const ProductPage: React.FC = () => {
 
       {/* Detailed Description Section */}
       {product && (
-        <Section background="light" size="lg" containerWidth="xl">
+        <Section background="light" size="lg" containerWidth="xl" className="pt-0">
           <ContentBlock spacing="md">
             <div className="py-8">
               <div className="flex border-b border-gray-200 dark:border-gray-800 mb-8">
@@ -1029,8 +1110,29 @@ const ProductPage: React.FC = () => {
                 )}
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline" size="small" className="text-xs py-2 px-3 hidden sm:block">Save</Button>
-                <Button variant="primary" size="small" className="text-xs py-2 px-3" onClick={handleAddToBag}>Add to Bag</Button>
+                <button
+                  type="button"
+                  onClick={toggleFavorite}
+                  aria-pressed={isFavorite}
+                  className={`text-xs py-2 px-3 hidden sm:flex items-center gap-1 rounded-md border transition-all ${isFavorite ? 'border-red-500 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900'}`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    className="w-4 h-4"
+                    fill={isFavorite ? 'currentColor' : 'none'}
+                    stroke={isFavorite ? 'none' : 'currentColor'}
+                    strokeWidth={1.8}
+                  >
+                    <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-1.9C4.045 12.733 2 10.352 2 7.5a4.5 4.5 0 018-2.828A4.5 4.5 0 0118 7.5c0 2.852-2.044 5.233-3.885 6.82a22.049 22.049 0 01-3.744 2.582l-.019.01-.005.003h-.002a.739.739 0 01-.69.001l-.002-.001z" />
+                  </svg>
+                  <span>{isFavorite ? 'Saved' : 'Save'}</span>
+                </button>
+                {inCartQuantity > 0 ? (
+                  <Button variant="primary" size="small" className="text-xs py-2 px-3" onClick={() => navigate('/cart')}>Go to Bag</Button>
+                ) : (
+                  <Button variant="primary" size="small" className="text-xs py-2 px-3" onClick={handleAddToBag}>Add to Bag</Button>
+                )}
               </div>
             </div>
           </div>

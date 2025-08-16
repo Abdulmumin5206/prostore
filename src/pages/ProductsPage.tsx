@@ -1685,11 +1685,11 @@ const ProductsPage: React.FC = () => {
                 >
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProduct)}>
-                    <div
-                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
-                      onMouseMove={handleTestCardImageHover}
-                      onMouseLeave={handleTestCardImageLeave}
-                    >
+                                      <div
+                    className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
+                    onMouseMove={handleTestCardImageHover}
+                    onMouseLeave={handleTestCardImageLeave}
+                  >
                       {/* Favorite */}
                       <button
                         onClick={(e) => toggleFavorite('test-card', e)}
@@ -1763,7 +1763,7 @@ const ProductsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProductSecondHand)}>
                     <div
-                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
+                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
                       onMouseMove={handleTestCard2ImageHover}
                       onMouseLeave={handleTestCard2ImageLeave}
                     >
@@ -1841,7 +1841,7 @@ const ProductsPage: React.FC = () => {
                       className="cursor-pointer flex-grow relative z-10"
                     >
                       <div 
-                        className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-transform duration-300 group-hover:scale-[1.02] relative"
+                        className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
                         onMouseMove={(e) => handleProductImageHover(product.id, e)}
                         onMouseLeave={() => handleProductImageLeave(product.id)}
                       >
