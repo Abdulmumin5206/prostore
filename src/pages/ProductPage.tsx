@@ -527,45 +527,8 @@ const ProductPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
-      {/* Header spacer to ensure content is never hidden under the header */}
-      <div className="h-2 md:h-2"></div>
-      {/* Breadcrumb navigation */}
-                  <div className="max-w-7xl mx-auto px-4 pt-1 pb-1">
-        <nav className="flex items-center text-gray-700 dark:text-gray-300" aria-label="Breadcrumb">
-          <Link to="/" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
-            <Text size="sm" color="secondary">Home</Text>
-          </Link>
-          <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
-          {uiCategory ? (
-            <>
-              <Link
-                to={`/products?category=${encodeURIComponent(uiCategory)}`}
-                className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
-              >
-                <Text size="sm" color="secondary">{uiCategory}</Text>
-              </Link>
-              <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
-            </>
-          ) : (
-            <>
-              <Link to="/products" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
-                <Text size="sm" color="secondary">Store</Text>
-              </Link>
-              <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
-            </>
-          )}
-          {product?.name && (
-            <Link
-              to={`/products?category=${encodeURIComponent(uiCategory || 'All')}&q=${encodeURIComponent(product.name)}`}
-              className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
-            >
-              <Text size="sm" color="secondary">{product.name}</Text>
-            </Link>
-          )}
-        </nav>
-      </div>
+      <Section background="light" size="lg" containerWidth="laptop" className="pt-8 pb-2">
 
-      <Section background="light" size="lg" containerWidth="xl" className="pb-6">
         <ContentBlock spacing="none">
           {loading ? (
             <div className="py-8 text-center">
@@ -580,20 +543,79 @@ const ProductPage: React.FC = () => {
               <Text>Product not found.</Text>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-4 lg:gap-x-6 gap-y-2 lg:gap-y-3 pt-0 pb-2">
               <div className="lg:col-span-8 xl:col-span-8">
-                <AppleProductTitle size="sm">{product.name}</AppleProductTitle>
-                {product.category && (
-                  <Text size="sm" color="tertiary" className="mt-1">{product.category}</Text>
-                )}
+                <div className="space-y-2">
+                  <nav className="flex items-center text-gray-700 dark:text-gray-300" aria-label="Breadcrumb">
+                    <Link to="/" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+                      <Text size="sm" color="secondary">Home</Text>
+                    </Link>
+                    <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+                    {uiCategory ? (
+                      <>
+                        <Link
+                          to={`/products?category=${encodeURIComponent(uiCategory)}`}
+                          className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
+                        >
+                          <Text size="sm" color="secondary">{uiCategory}</Text>
+                        </Link>
+                        <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/products" className="hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+                          <Text size="sm" color="secondary">Store</Text>
+                        </Link>
+                        <span className="mx-1.5"><Text size="sm" color="tertiary">›</Text></span>
+                      </>
+                    )}
+                    {product?.name && (
+                      <Link
+                        to={`/products?category=${encodeURIComponent(uiCategory || 'All')}&q=${encodeURIComponent(product.name)}`}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                      >
+                        <Text size="sm" color="secondary">{product.name}</Text>
+                      </Link>
+                    )}
+                  </nav>
+                  <AppleProductTitle size="sm" className="mt-0">{product.name}</AppleProductTitle>
+                  {product.category && (
+                    <Text size="sm" color="tertiary">{product.category}</Text>
+                  )}
+                </div>
               </div>
-                {/* Left side - Product Images */}
-                <div className="flex flex-col lg:col-span-8">
-                  <div className="flex gap-4">
+              
+              {/* Right side - Delivery info container (stays at top) */}
+              <div className="lg:col-span-4 xl:col-span-4 flex lg:items-start">
+                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 mb-2 w-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <Text size="sm" color="primary">In Stock</Text>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <Text size="sm" color="primary">Free 24-hour delivery</Text>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <Text size="sm" color="primary">1-year warranty included</Text>
+                  </div>
+                </div>
+              </div>
+
+              {/* Left side - Product Images */}
+              <div className="flex flex-col lg:col-span-8 lg:pt-1">
+                                     <div className="flex gap-3">
                     {/* Vertical thumbnails (desktop/tablet) */}
                     {imagesForCurrentSelection.length > 0 && (
-                      <div className="hidden sm:flex sm:flex-col items-center gap-3 max-h-[460px] md:max-h-[480px] lg:max-h-[500px] xl:max-h-[520px] relative">
-                        <div className="flex flex-col gap-3 overflow-hidden" style={{ maxHeight: '100%' }}>
+                                             <div className="hidden sm:flex sm:flex-col items-center gap-2.5 max-h-[440px] md:max-h-[460px] lg:max-h-[480px] xl:max-h-[500px] relative">
+                                                 <div className="flex flex-col gap-2.5 overflow-hidden" style={{ maxHeight: '100%' }}>
                           {/* Up arrow - positioned inside at top */}
                           {imagesCount > visibleThumbs && (
                             <button
@@ -633,7 +655,7 @@ const ProductPage: React.FC = () => {
                               type="button"
                               onClick={() => setThumbOffset((v) => Math.min(maxThumbOffset, v + 1))}
                               disabled={!canThumbNext}
-                              className={`absolute bottom-0 left-0 right-0 h-12 flex justify-center items-center z-10 bg-gradient-to-t from-white/90 to-transparent dark:from-gray-800/90 dark:to-transparent ${!canThumbNext ? 'opacity-40 cursor-not-allowed' : 'hover:from-white hover:dark:from-gray-800'}`}
+                              className={`absolute bottom-0 left-0 right-0 h-10 flex justify-center items-center z-10 bg-gradient-to-t from-white/90 to-transparent dark:from-gray-800/90 dark:to-transparent ${!canThumbNext ? 'opacity-40 cursor-not-allowed' : 'hover:from-white hover:dark:from-gray-800'}` }
                               aria-label="Next thumbnails"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-7 h-7 text-gray-700 dark:text-gray-300">
@@ -655,12 +677,12 @@ const ProductPage: React.FC = () => {
                         onTouchEnd={onTouchEnd}
                         onClick={() => imagesForCurrentSelection.length > 0 && openFullImage(selectedImage)}
                       >
-                        {imagesForCurrentSelection.length > 0 ? (
-                          <img 
-                            src={imagesForCurrentSelection[selectedImage]} 
-                            alt={product.name} 
-                            className="w-full h-full object-cover"
-                          />
+                                                 {imagesForCurrentSelection.length > 0 ? (
+                            <img 
+                              src={imagesForCurrentSelection[selectedImage]} 
+                              alt={product.name} 
+                              className="w-full h-full object-cover"
+                            />
                         ) : (
                           <div className="flex items-center justify-center h-full w-full">
                             <Text color="tertiary">Image not available</Text>
@@ -674,7 +696,7 @@ const ProductPage: React.FC = () => {
                               e.stopPropagation();
                               prevImage();
                             }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
+                                                         className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow-sm"
                             aria-label="Previous image"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -711,7 +733,7 @@ const ProductPage: React.FC = () => {
                               e.stopPropagation();
                               nextImage();
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow"
+                                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-gray-800/70 hover:bg-white shadow-sm"
                             aria-label="Next image"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -725,7 +747,7 @@ const ProductPage: React.FC = () => {
 
                   {/* Horizontal thumbnails for mobile */}
                   {imagesForCurrentSelection.length > 1 && (
-                    <div className="flex justify-center space-x-2 sm:hidden">
+                                         <div className="flex justify-center space-x-2 sm:hidden mt-2">
                       {imagesForCurrentSelection.map((image, index) => (
                         <button 
                           key={index}
@@ -743,9 +765,9 @@ const ProductPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Right side - Product Details */}
+                {/* Right side - Main Payment Container (aligned with images) */}
                 <div className="flex flex-col lg:col-span-4 xl:col-span-4">
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-5 pt-4 pb-3">
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 pt-3 pb-2">
                   
                   
                                       {product.colors && product.colors.length > 0 && (
@@ -1046,10 +1068,10 @@ const ProductPage: React.FC = () => {
 
       {/* Detailed Description Section */}
       {product && (
-        <Section background="light" size="lg" containerWidth="xl" className="pt-0">
+        <Section background="light" size="lg" containerWidth="laptop" className="pt-0 pb-8">
           <ContentBlock spacing="sm">
-            <div className="py-4">
-              <div className="flex border-b border-gray-200 dark:border-gray-800 mb-4">
+                          <div className="py-3">
+              <div className="flex border-b border-gray-200 dark:border-gray-800 mb-3">
                 <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Description</Text>
                 </button>
@@ -1061,7 +1083,7 @@ const ProductPage: React.FC = () => {
                 </button>
               </div>
               {activeTab === 'description' && (
-                <div className="space-y-6 max-w-4xl">
+                <div className="space-y-6">
                   <div>
                     <H3 className="mb-4">About This Product</H3>
                     <AppleProductDescription className="mb-4">{product?.description || 'No description available yet.'}</AppleProductDescription>
@@ -1069,7 +1091,7 @@ const ProductPage: React.FC = () => {
                 </div>
               )}
               {activeTab === 'characteristics' && (
-                <div className="space-y-6 max-w-4xl">
+                <div className="space-y-6">
                   <div>
                     <H3 className="mb-4">Characteristics</H3>
                     {product?.specs && Object.keys(product.specs || {}).length > 0 ? (
@@ -1104,7 +1126,7 @@ const ProductPage: React.FC = () => {
                 </div>
               )}
               {activeTab === 'nasiya' && (
-                <div className="space-y-6 max-w-4xl">
+                <div className="space-y-6">
                   <div>
                     <H3 className="mb-4">Nasiya</H3>
                     <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 space-y-2">
@@ -1137,10 +1159,10 @@ const ProductPage: React.FC = () => {
       {/* Floating product summary bar at top (appears after half-page scroll) */}
       {product && showTopSummary && (
                  <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-md z-50">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {imagesForCurrentSelection.length > 0 && (
-                <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                                   <div className="w-11 h-11 rounded-md overflow-hidden flex-shrink-0">
                   <img src={imagesForCurrentSelection[0]} alt={product.name} className="w-full h-full object-cover" />
                 </div>
               )}
