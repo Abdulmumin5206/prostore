@@ -20,21 +20,35 @@ async function fetchLiveProducts(): Promise<Product[]> {
       if (productIds.length > 0) {
         const { data: imagesRows, error } = await supabase
           .from('product_images')
-          .select('product_id, url, is_primary, sort_order')
+          .select('product_id, url, is_primary, sort_order, color')
           .in('product_id', productIds)
         if (!error && imagesRows) {
-          const grouped: Record<string, { url: string; is_primary: boolean; sort_order: number }[]> = {}
+          const grouped: Record<string, { url: string; is_primary: boolean; sort_order: number; color?: string | null }[]> = {}
           for (const row of imagesRows as any[]) {
             const pid = row.product_id as string
             if (!grouped[pid]) grouped[pid] = []
-            grouped[pid].push({ url: row.url, is_primary: row.is_primary, sort_order: row.sort_order })
+            grouped[pid].push({ url: row.url, is_primary: row.is_primary, sort_order: row.sort_order, color: (row as any).color ?? null })
           }
           productIdToImages = Object.fromEntries(
             Object.entries(grouped).map(([pid, arr]) => [
               pid,
-              arr
-                .sort((a,b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
-                .map(x => x.url)
+              (() => {
+                const sorted = arr
+                  .sort((a,b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
+                // Build one representative image per color (if any colors exist)
+                const seenColors = new Set<string>()
+                const colorUrls: string[] = []
+                for (const it of sorted) {
+                  const color = (it.color ?? '').toString()
+                  if (color && !seenColors.has(color)) {
+                    seenColors.add(color)
+                    colorUrls.push(it.url)
+                  }
+                }
+                // If no color-specific images, fall back to all images
+                const urls = colorUrls.length > 0 ? colorUrls : sorted.map(x => x.url)
+                return urls
+              })()
             ])
           )
         }
@@ -755,7 +769,7 @@ const ProductsPage: React.FC = () => {
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search products"
               aria-label="Search products"
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border-none text-gray-900 dark:text-white focus:outline-none focus:ring-0"
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
             />
             <div className="absolute left-3 top-2.5 text-gray-400" aria-hidden>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -787,7 +801,7 @@ const ProductsPage: React.FC = () => {
                       onClick={() => handleCategoryClick(category.name)}
                       className={`block w-full text-left px-0 py-1.5 text-sm transition-colors ${
                         selectedCategory === category.name 
-                          ? 'text-black dark:text-white font-semibold' 
+                          ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                           : 'text-gray-700 dark:text-gray-300 hover:underline'
                       }`}
                     >
@@ -816,7 +830,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => handleSubcategoryClick(subcategory)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedSubcategory === subcategory 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -827,7 +841,7 @@ const ProductsPage: React.FC = () => {
                         {category.subcategories.length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion(`subcategories-${category.name}`)}
-                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                           >
                             {expandedFilters[`subcategories-${category.name}`] ? 'See less' : `See ${category.subcategories.length - 4} more`}
                           </button>
@@ -840,7 +854,7 @@ const ProductsPage: React.FC = () => {
                 {categories.length > 4 && (
                   <button
                     onClick={() => toggleFilterExpansion('categories')}
-                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline mt-1"
                   >
                     {expandedFilters['categories'] ? 'See less' : `See ${categories.length - 4} more`}
                   </button>
@@ -858,7 +872,7 @@ const ProductsPage: React.FC = () => {
                     placeholder="Min"
                     value={selectedPriceRange.min || ''}
                     onChange={(e) => handlePriceRangeChange('min', Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 focus:border-gray-500 dark:focus:border-gray-400 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                   />
                   <span className="text-gray-500 self-center text-xs">-</span>
                   <input
@@ -866,7 +880,7 @@ const ProductsPage: React.FC = () => {
                     placeholder="Max"
                     value={selectedPriceRange.max || ''}
                     onChange={(e) => handlePriceRangeChange('max', Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 focus:border-gray-500 dark:focus:border-gray-400 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                   />
                 </div>
                 <div className="text-xs text-gray-500">
@@ -885,7 +899,7 @@ const ProductsPage: React.FC = () => {
                     onClick={() => setSelectedBrand(brand)}
                     className={`block w-full text-left px-0 py-1.5 text-sm transition-colors ${
                       selectedBrand === brand 
-                        ? 'text-black dark:text-white font-semibold' 
+                        ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                         : 'text-gray-700 dark:text-gray-300 hover:underline'
                     }`}
                   >
@@ -896,7 +910,7 @@ const ProductsPage: React.FC = () => {
                 {['Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
                   <button
                     onClick={() => toggleFilterExpansion('brands')}
-                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                   >
                     {expandedFilters['brands'] ? 'See less' : 'See more'}
                   </button>
@@ -908,7 +922,7 @@ const ProductsPage: React.FC = () => {
             {!showAllFilterSections && (
               <button
                 onClick={() => setShowAllFilterSections(true)}
-                className="w-full text-left px-0 py-1.5 text-sm font-medium text-blue-600 hover:underline transition-colors flex items-center"
+                className="w-full text-left px-0 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -930,7 +944,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedCondition(condition)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedCondition === condition 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -950,7 +964,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedAvailability(availability)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedAvailability === availability 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -961,7 +975,7 @@ const ProductsPage: React.FC = () => {
                     {['In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
                       <button
                         onClick={() => toggleFilterExpansion('availability')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                       >
                         {expandedFilters['availability'] ? 'See less' : 'See more'}
                       </button>
@@ -979,7 +993,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedStorage(storage)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedStorage === storage 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -990,7 +1004,7 @@ const ProductsPage: React.FC = () => {
                     {['128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('storage')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                       >
                         {expandedFilters['storage'] ? 'See less' : 'See more'}
                       </button>
@@ -1008,7 +1022,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedColor(color)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedColor === color 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -1019,7 +1033,7 @@ const ProductsPage: React.FC = () => {
                     {['Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('colors')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                       >
                         {expandedFilters['colors'] ? 'See less' : 'See more'}
                       </button>
@@ -1037,7 +1051,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedWarranty(warranty)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedWarranty === warranty 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -1057,7 +1071,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedTag(tag)}
                         className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                           selectedTag === tag 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -1068,7 +1082,7 @@ const ProductsPage: React.FC = () => {
                     {tags.length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('tags')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                       >
                         {expandedFilters['tags'] ? 'See less' : `See ${tags.length - 4} more`}
                       </button>
@@ -1079,7 +1093,7 @@ const ProductsPage: React.FC = () => {
                 {/* See fewer filters button */}
                 <button
                   onClick={() => setShowAllFilterSections(false)}
-                  className="w-full text-left px-0 py-1.5 text-sm font-medium text-blue-600 hover:underline transition-colors"
+                  className="w-full text-left px-0 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1091,7 +1105,7 @@ const ProductsPage: React.FC = () => {
 
             <button
               onClick={resetFilters}
-              className="w-full text-left px-0 py-1.5 text-xs font-medium text-blue-600 hover:underline transition-colors"
+              className="w-full text-left px-0 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors"
             >
               Reset All Filters
             </button>
@@ -1125,7 +1139,7 @@ const ProductsPage: React.FC = () => {
                           onClick={() => handleCategoryClick(category.name)}
                           className={`block w-full text-left px-0 py-1.5 text-sm transition-colors ${
                             selectedCategory === category.name 
-                              ? 'text-black dark:text-white font-semibold' 
+                              ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                               : 'text-gray-700 dark:text-gray-300 hover:underline'
                           }`}
                         >
@@ -1154,7 +1168,7 @@ const ProductsPage: React.FC = () => {
                                 onClick={() => handleSubcategoryClick(subcategory)}
                                 className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                                   selectedSubcategory === subcategory 
-                                    ? 'text-black dark:text-white font-semibold' 
+                                    ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                     : 'text-gray-700 dark:text-gray-300 hover:underline'
                                 }`}
                               >
@@ -1165,7 +1179,7 @@ const ProductsPage: React.FC = () => {
                             {category.subcategories.length > 4 && (
                               <button
                                 onClick={() => toggleFilterExpansion(`subcategories-${category.name}`)}
-                                className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                               >
                                 {expandedFilters[`subcategories-${category.name}`] ? 'See less' : `See ${category.subcategories.length - 4} more`}
                               </button>
@@ -1178,7 +1192,7 @@ const ProductsPage: React.FC = () => {
                     {categories.length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('categories')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline mt-1"
                       >
                         {expandedFilters['categories'] ? 'See less' : `See ${categories.length - 4} more`}
                       </button>
@@ -1196,7 +1210,7 @@ const ProductsPage: React.FC = () => {
                         placeholder="Min"
                         value={selectedPriceRange.min || ''}
                         onChange={(e) => handlePriceRangeChange('min', Number(e.target.value))}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 focus:border-gray-500 dark:focus:border-gray-400 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                       />
                       <span className="text-gray-500 self-center text-xs">-</span>
                       <input
@@ -1204,7 +1218,7 @@ const ProductsPage: React.FC = () => {
                         placeholder="Max"
                         value={selectedPriceRange.max || ''}
                         onChange={(e) => handlePriceRangeChange('max', Number(e.target.value))}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-blue-600/60 focus:border-blue-600 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 dark:border-gray-600 focus:border-gray-500 dark:focus:border-gray-400 focus:outline-none focus:ring-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400"
                       />
                     </div>
                     <div className="text-xs text-gray-500">
@@ -1223,7 +1237,7 @@ const ProductsPage: React.FC = () => {
                         onClick={() => setSelectedBrand(brand)}
                         className={`block w-full text-left px-0 py-1.5 text-sm transition-colors ${
                           selectedBrand === brand 
-                            ? 'text-black dark:text-white font-semibold' 
+                            ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                             : 'text-gray-700 dark:text-gray-300 hover:underline'
                         }`}
                       >
@@ -1234,7 +1248,7 @@ const ProductsPage: React.FC = () => {
                     {['Apple', 'Beats', 'Belkin', 'Logitech'].length > 4 && (
                       <button
                         onClick={() => toggleFilterExpansion('brands')}
-                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                       >
                         {expandedFilters['brands'] ? 'See less' : 'See more'}
                       </button>
@@ -1246,7 +1260,7 @@ const ProductsPage: React.FC = () => {
                 {!showAllFilterSections && (
                   <button
                     onClick={() => setShowAllFilterSections(true)}
-                    className="w-full text-left px-0 py-1.5 text-sm font-medium text-blue-600 hover:underline transition-colors flex items-center"
+                    className="w-full text-left px-0 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors flex items-center"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1268,7 +1282,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedCondition(condition)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedCondition === condition 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1288,7 +1302,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedAvailability(availability)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedAvailability === availability 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1299,7 +1313,7 @@ const ProductsPage: React.FC = () => {
                         {['In Stock', 'Pre-order', 'Out of Stock'].length > 3 && (
                           <button
                             onClick={() => toggleFilterExpansion('availability')}
-                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                           >
                             {expandedFilters['availability'] ? 'See less' : 'See more'}
                           </button>
@@ -1317,7 +1331,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedStorage(storage)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedStorage === storage 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1328,7 +1342,7 @@ const ProductsPage: React.FC = () => {
                         {['128GB', '256GB', '512GB', '1TB', '2TB'].length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('storage')}
-                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                           >
                             {expandedFilters['storage'] ? 'See less' : 'See more'}
                           </button>
@@ -1346,7 +1360,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedColor(color)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedColor === color 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1357,7 +1371,7 @@ const ProductsPage: React.FC = () => {
                         {['Black', 'White', 'Gold', 'Blue', 'Silver'].length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('colors')}
-                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                           >
                             {expandedFilters['colors'] ? 'See less' : 'See more'}
                           </button>
@@ -1375,7 +1389,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedWarranty(warranty)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedWarranty === warranty 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1395,7 +1409,7 @@ const ProductsPage: React.FC = () => {
                             onClick={() => setSelectedTag(tag)}
                             className={`block w-full text-left px-0 py-1.5 text-xs transition-colors ${
                               selectedTag === tag 
-                                ? 'text-black dark:text-white font-semibold' 
+                                ? 'text-gray-700 dark:text-gray-200 font-semibold' 
                                 : 'text-gray-700 dark:text-gray-300 hover:underline'
                             }`}
                           >
@@ -1406,7 +1420,7 @@ const ProductsPage: React.FC = () => {
                         {tags.length > 4 && (
                           <button
                             onClick={() => toggleFilterExpansion('tags')}
-                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            className="block w-full text-left px-3 py-1.5 rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:underline"
                           >
                             {expandedFilters['tags'] ? 'See less' : `See ${tags.length - 4} more`}
                           </button>
@@ -1417,7 +1431,7 @@ const ProductsPage: React.FC = () => {
                     {/* See fewer filters button */}
                     <button
                       onClick={() => setShowAllFilterSections(false)}
-                      className="w-full text-left px-0 py-1.5 text-sm font-medium text-blue-600 hover:underline transition-colors"
+                      className="w-full text-left px-0 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1429,7 +1443,7 @@ const ProductsPage: React.FC = () => {
 
                 <button
                   onClick={resetFilters}
-                  className="w-full text-left px-0 py-1.5 text-xs font-medium text-blue-600 hover:underline transition-colors"
+                  className="w-full text-left px-0 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:underline transition-colors"
                 >
                   Reset All Filters
                 </button>
@@ -1464,7 +1478,7 @@ const ProductsPage: React.FC = () => {
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search products"
                   aria-label="Search products"
-                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                 />
                 <div className="absolute left-3 top-2.5 text-gray-400" aria-hidden>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1478,7 +1492,7 @@ const ProductsPage: React.FC = () => {
             <div className="relative ml-auto">
               <button
                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                className="flex items-center h-9 px-4 rounded-lg text-sm font-medium transition-colors duration-200 bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                className="flex items-center h-9 px-4 rounded-lg text-sm font-medium transition-colors duration-200 bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
               >
                 <span className="mr-1">Sort By: </span>
                 <span className="font-medium">
@@ -1546,11 +1560,11 @@ const ProductsPage: React.FC = () => {
                 </span>
               )}
               {selectedSubcategory && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
                   {selectedSubcategory}
                   <button 
                     onClick={() => { setSelectedSubcategory(''); const p=new URLSearchParams(searchParams); p.delete('subcategory'); setSearchParams(p,{replace:true}); }} 
-                    className="ml-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1559,11 +1573,11 @@ const ProductsPage: React.FC = () => {
                 </span>
               )}
               {(selectedPriceRange.min > 0 || selectedPriceRange.max < 3000) && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
                   ${selectedPriceRange.min} - ${selectedPriceRange.max}
                   <button 
                     onClick={() => setSelectedPriceRange({ min: 0, max: 3000 })} 
-                    className="ml-1 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-200"
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -1736,7 +1750,7 @@ const ProductsPage: React.FC = () => {
                             key={idx}
                             className={`w-1.5 h-1.5 rounded-full ${
                               (hoveredProductImages['test-card'] ?? 0) === idx
-                                ? 'bg-blue-500'
+                                ? 'bg-[#0071e3]'
                                 : 'bg-gray-300 dark:bg-gray-600'
                             }`}
                           ></span>
@@ -1746,7 +1760,7 @@ const ProductsPage: React.FC = () => {
                     <div className="px-3 mb-1 min-h-[96px]">
                       {/* Pricing stack */}
                       <div className="mb-1">
-                        <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProduct.priceFrom}</Text>
+                        <Text className="font-bold text-[#0071e3] dark:text-[#0071e3] text-lg">{testProduct.priceFrom}</Text>
                         {/* Show a sample original price for the demo card */}
                         <Text size="xs" color="tertiary" className="line-through">{computeOriginalPrice(testProduct.priceFrom)}</Text>
                         <Text size="xs" color="secondary">{shortMonthlyLabel(testProduct.priceFrom)}</Text>
@@ -1763,7 +1777,7 @@ const ProductsPage: React.FC = () => {
                     <div className="px-3 pb-3 relative z-10">
                       <button
                         onClick={(e) => handleAddToCart('test-card', e)}
-                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                        className="w-full py-2 px-4 bg-[#0071e3] hover:opacity-90 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -1813,7 +1827,7 @@ const ProductsPage: React.FC = () => {
                             key={idx}
                             className={`w-1.5 h-1.5 rounded-full ${
                               (hoveredProductImages['test-card-2'] ?? 0) === idx
-                                ? 'bg-blue-500'
+                                ? 'bg-[#0071e3]'
                                 : 'bg-gray-300 dark:bg-gray-600'
                             }`}
                           ></span>
@@ -1823,7 +1837,7 @@ const ProductsPage: React.FC = () => {
                     <div className="px-3 mb-1 min-h-[96px]">
                       {/* Pricing stack */}
                       <div className="mb-1">
-                        <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{testProductSecondHand.priceFrom}</Text>
+                        <Text className="font-bold text-[#0071e3] dark:text-[#0071e3] text-lg">{testProductSecondHand.priceFrom}</Text>
                         <Text size="xs" color="tertiary" className="line-through">{computeOriginalPrice(testProductSecondHand.priceFrom)}</Text>
                         <Text size="xs" color="secondary">{shortMonthlyLabel(testProductSecondHand.priceFrom)}</Text>
                       </div>
@@ -1839,7 +1853,7 @@ const ProductsPage: React.FC = () => {
                     <div className="px-3 pb-3 relative z-10">
                       <button
                         onClick={(e) => handleAddToCart('test-card-2', e)}
-                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                        className="w-full py-2 px-4 bg-[#0071e3] hover:opacity-90 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -1896,7 +1910,7 @@ const ProductsPage: React.FC = () => {
                                 key={idx} 
                                 className={`w-1.5 h-1.5 rounded-full ${
                                   hoveredProductImages[product.id] === idx 
-                                    ? 'bg-blue-500' 
+                                    ? 'bg-[#0071e3]' 
                                     : 'bg-gray-300 dark:bg-gray-600'
                                 }`}
                               ></span>
@@ -1907,7 +1921,7 @@ const ProductsPage: React.FC = () => {
                       <div className="px-3 mb-1 min-h-[96px]">
                         {/* Pricing stack */}
                         <div className="mb-1">
-                          <Text className="font-bold text-blue-600 dark:text-blue-400 text-lg">{product.priceFrom}</Text>
+                          <Text className="font-bold text-[#0071e3] dark:text-[#0071e3] text-lg">{product.priceFrom}</Text>
                           {/* Original price only if available in future */}
                           {null /* placeholder to optionally render original price when available */}
                           <Text size="xs" color="secondary">{shortMonthlyLabel(product.priceFrom)}</Text>
@@ -1926,7 +1940,7 @@ const ProductsPage: React.FC = () => {
                     <div className="px-3 pb-3 relative z-10">
                       <button
                         onClick={(e) => handleAddToCart(product.id, e)}
-                        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                        className="w-full py-2 px-4 bg-[#0071e3] hover:opacity-90 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -1943,7 +1957,7 @@ const ProductsPage: React.FC = () => {
                 <div className="flex justify-center mt-8">
                   <button
                     onClick={handleShowMore}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    className="px-6 py-2 bg-[#0071e3] text-white rounded-lg hover:opacity-90 transition-colors duration-200"
                   >
                     Show More
                   </button>
@@ -1955,7 +1969,7 @@ const ProductsPage: React.FC = () => {
               <Text size="lg" className="mb-4">No products found matching your criteria.</Text>
               <button
                 onClick={resetFilters}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="px-6 py-2 bg-[#0071e3] text-white rounded-lg hover:opacity-90 transition-colors duration-200"
               >
                 Reset Filters
               </button>

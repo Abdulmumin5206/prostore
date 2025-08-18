@@ -225,7 +225,7 @@ const HotDealsCategoriesSection: React.FC = () => {
                 >
                   {category.id === 'see-all' ? (
                     <div className="flex flex-col items-center justify-center h-full space-y-6 cursor-pointer transition-all duration-500 ease-out transform hover:scale-[1.02]">
-                      <div className="w-24 h-24 2xl:w-28 2xl:h-28 3xl:w-32 3xl:h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                      <div className="w-24 h-24 2xl:w-28 2xl:h-28 3xl:w-32 3xl:h-32 bg-[#0071e3] rounded-full flex items-center justify-center shadow-lg">
                         <ArrowRight className="w-12 h-12 2xl:w-14 2xl:h-14 3xl:w-16 3xl:h-16 text-white" />
                       </div>
                       <div className="text-center">
@@ -290,7 +290,7 @@ const HotDealsCategoriesSection: React.FC = () => {
                               </Text>
                             )}
                           </div>
-                          <button className="bg-blue-600 text-white rounded-full px-6 py-2 2xl:px-8 2xl:py-3 text-sm 2xl:text-base font-medium transition-all duration-300 hover:bg-blue-700 hover:shadow-md">
+                          <button className="bg-[#0071e3] text-white rounded-full px-6 py-2 2xl:px-8 2xl:py-3 text-sm 2xl:text-base font-medium transition-all duration-300 hover:opacity-90 hover:shadow-md">
                             Buy
                           </button>
                         </div>

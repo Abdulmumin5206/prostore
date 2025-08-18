@@ -54,7 +54,7 @@ const getColorClass = (color?: TextColor): string => {
     primary: 'text-gray-900 dark:text-white',
     secondary: 'text-gray-600 dark:text-gray-300',
     tertiary: 'text-gray-500 dark:text-gray-400',
-    accent: 'text-blue-600 dark:text-blue-400',
+    accent: 'text-[#0071e3] dark:text-[#0071e3]',
     error: 'text-red-600 dark:text-red-400',
     success: 'text-green-600 dark:text-green-400',
     warning: 'text-amber-600 dark:text-amber-400',

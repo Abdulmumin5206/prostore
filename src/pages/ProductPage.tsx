@@ -441,7 +441,7 @@ const ProductPage: React.FC = () => {
 
   // Image carousel helpers
   const imagesCount = imagesForCurrentSelection.length || 0;
-  const stepSize = 2; // show two images side-by-side, advance by two
+  const stepSize = 1; // show two images side-by-side, advance by one
  
   // Vertical thumbnails slider state
   const [thumbOffset, setThumbOffset] = useState(0);
@@ -572,7 +572,7 @@ const ProductPage: React.FC = () => {
                     {product?.name && (
                       <Link
                         to={`/products?category=${encodeURIComponent(uiCategory || 'All')}&q=${encodeURIComponent(product.name)}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
+                        className="hover:text-[#0071e3] dark:hover:text-[#0071e3] hover:underline transition-colors"
                       >
                         <Text size="sm" color="secondary">{product.name}</Text>
                       </Link>
@@ -595,13 +595,13 @@ const ProductPage: React.FC = () => {
                     <Text size="sm" color="primary">In Stock</Text>
                   </div>
                   <div className="flex items-center gap-2 mb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0071e3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <Text size="sm" color="primary">Free 24-hour delivery</Text>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#0071e3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <Text size="sm" color="primary">1-year warranty included</Text>
@@ -781,7 +781,7 @@ const ProductPage: React.FC = () => {
                               onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
                               className={`px-4 py-2 rounded-lg border transition-all ${
                                 selectedColor === index 
-                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                  ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
                                   : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
                               }`}
                               aria-label={`Select color ${label}`}
@@ -810,7 +810,7 @@ const ProductPage: React.FC = () => {
                                   onClick={() => setSelectedRam(index)}
                                   className={`px-4 py-2 rounded-lg border transition-all ${
                                     selectedRam === index 
-                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                      ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
                                       : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
                                   }`}
                                 >
@@ -832,7 +832,7 @@ const ProductPage: React.FC = () => {
                             onClick={() => setSelectedStorage(index)}
                             className={`px-4 py-2 rounded-lg border transition-all ${
                               selectedStorage === index 
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400 text-blue-600 dark:text-blue-400' 
+                                ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
                                 : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
                             }`}
                           >
@@ -859,7 +859,7 @@ const ProductPage: React.FC = () => {
         onClick={() => setSelectedPaymentType('full')}
         className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
           selectedPaymentType === 'full' 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+            ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10' 
             : 'border-gray-200 dark:border-gray-800'
         }`}
       >
@@ -869,7 +869,7 @@ const ProductPage: React.FC = () => {
         onClick={() => setSelectedPaymentType('nasiya')}
         className={`flex-1 py-3 px-4 rounded-lg border transition-all ${
           selectedPaymentType === 'nasiya' 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-400' 
+            ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10' 
             : 'border-gray-200 dark:border-gray-800'
         }`}
       >
@@ -890,7 +890,7 @@ const ProductPage: React.FC = () => {
                               </span>
                             </div>
                           )}
-                          <ApplePrice className="text-3xl text-indigo-600 dark:text-indigo-500 font-semibold">
+                          <ApplePrice className="text-3xl text-[#0071e3] dark:text-[#0071e3] font-semibold">
                             {product.currency === 'USD' ? '$' : product.currency}{totalPrice}
                           </ApplePrice>
                           <Text size="sm" color="tertiary" className="mt-1">One-time payment</Text>
@@ -907,7 +907,7 @@ const ProductPage: React.FC = () => {
                                 onClick={() => setSelectedInstallmentPlan(months as 6 | 12 | 24)}
                                 className={`px-4 py-2 text-sm rounded-md transition-all ${
                                   selectedInstallmentPlan === months
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-[#0071e3] text-white'
                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                 }`}
                               >
@@ -917,7 +917,7 @@ const ProductPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <ApplePrice className="text-3xl text-indigo-600 dark:text-indigo-500 font-semibold">
+                        <ApplePrice className="text-3xl text-[#0071e3] dark:text-[#0071e3] font-semibold">
                           {product.currency === 'USD' ? '$' : product.currency}{monthlyPayment}
                         </ApplePrice>
                         <Text size="sm" color="tertiary" className="mt-1">per month for {selectedInstallmentPlan} months</Text>
@@ -932,7 +932,7 @@ const ProductPage: React.FC = () => {
                           </div>
                           <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">
                             <Text size="sm" color="secondary" weight="medium">Total cost:</Text>
-                            <Text size="sm" className="text-indigo-600 dark:text-indigo-500 font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
+                            <Text size="sm" className="text-[#0071e3] dark:text-[#0071e3] font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
                           </div>
                         </div>
                       </div>
@@ -1072,13 +1072,13 @@ const ProductPage: React.FC = () => {
           <ContentBlock spacing="sm">
                           <div className="py-3">
               <div className="flex border-b border-gray-200 dark:border-gray-800 mb-3">
-                <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                <button onClick={() => setActiveTab('description')} className={`px-6 py-3 transition-colors ${activeTab === 'description' ? 'text-[#0071e3] dark:text-[#0071e3] border-b-2 border-[#0071e3] dark:border-[#0071e3]' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Description</Text>
                 </button>
-                <button onClick={() => setActiveTab('characteristics')} className={`px-6 py-3 transition-colors ${activeTab === 'characteristics' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                <button onClick={() => setActiveTab('characteristics')} className={`px-6 py-3 transition-colors ${activeTab === 'characteristics' ? 'text-[#0071e3] dark:text-[#0071e3] border-b-2 border-[#0071e3] dark:border-[#0071e3]' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Characteristics</Text>
                 </button>
-                <button onClick={() => setActiveTab('nasiya')} className={`px-6 py-3 transition-colors ${activeTab === 'nasiya' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                <button onClick={() => setActiveTab('nasiya')} className={`px-6 py-3 transition-colors ${activeTab === 'nasiya' ? 'text-[#0071e3] dark:text-[#0071e3] border-b-2 border-[#0071e3] dark:border-[#0071e3]' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>
                   <Text size="sm" weight="medium" color="inherit">Nasiya</Text>
                 </button>
               </div>
@@ -1144,7 +1144,7 @@ const ProductPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">
                         <Text size="sm" color="secondary" weight="medium">Total cost:</Text>
-                        <Text size="sm" className="text-indigo-600 dark:text-indigo-500 font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
+                        <Text size="sm" className="text-[#0071e3] dark:text-[#0071e3] font-semibold">{product.currency === 'USD' ? '$' : product.currency}{nasiyaTotalPrice}</Text>
                       </div>
                     </div>
                     <Text size="xs" color="tertiary" className="mt-2">Detailed installment terms and conditions will appear here.</Text>
@@ -1184,7 +1184,7 @@ const ProductPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right hidden sm:block">
-                <Text size="sm" weight="medium" className="text-indigo-600 dark:text-indigo-500 font-semibold">{currentPriceDisplay}</Text>
+                <Text size="sm" weight="medium" className="text-[#0071e3] dark:text-[#0071e3] font-semibold">{currentPriceDisplay}</Text>
                 {selectedPaymentType === 'full' && discount > 0 && (
                   <Text size="xs" className="text-gray-500 dark:text-gray-400">
                     was {product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}

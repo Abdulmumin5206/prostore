@@ -65,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <Button 
         variant="primary" 
         size="small" 
-        className="mx-auto bg-blue-600 hover:bg-blue-700"
+        className="mx-auto bg-[#0071e3] hover:opacity-90"
       >
         Buy
       </Button>
