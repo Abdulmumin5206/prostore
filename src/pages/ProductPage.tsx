@@ -760,7 +760,7 @@ const ProductPage: React.FC = () => {
                     <div className="flex-1 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Left large container (current image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer"
+                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-gray-900"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -772,8 +772,8 @@ const ProductPage: React.FC = () => {
                               alt={product.name} 
                               width={800}
                               height={800}
-                              fit="cover"
-                              className="w-full h-full object-cover"
+                              fit="contain"
+                              className="w-full h-full object-contain scale-105 md:scale-110"
                             />
                         ) : (
                           <div className="flex items-center justify-center h-full w-full">
@@ -800,7 +800,7 @@ const ProductPage: React.FC = () => {
 
                       {/* Right large container (next image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer"
+                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-gray-900"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -812,8 +812,8 @@ const ProductPage: React.FC = () => {
                             alt={`${product.name} alt view`} 
                             width={800}
                             height={800}
-                            fit="cover"
-                            className="w-full h-full object-cover"
+                            fit="contain"
+                            className="w-full h-full object-contain scale-105 md:scale-110"
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full w-full">
