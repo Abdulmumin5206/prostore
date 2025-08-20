@@ -20,6 +20,8 @@ type ProductCsv = {
 	public_id: string
 	colors_list?: string // "Name;Name;Name"
 	primary_color?: string
+	storages_list?: string // "128GB;256GB;512GB;1TB"
+	primary_storage?: string
 }
 
 type ImageCsv = {
@@ -304,6 +306,12 @@ async function main() {
 		return 799
 	}
 
+	function defaultStoragesForVariant(variant: string | undefined): string[] {
+		const v = (variant || '').trim().toLowerCase()
+		if (v === 'pro max' || v === 'pro') return ['128GB', '256GB', '512GB', '1TB']
+		return ['128GB', '256GB', '512GB']
+	}
+
 	const imageLocalRoot = path.resolve('public', 'import_images')
 	const bucket = 'product-images'
 
@@ -356,39 +364,54 @@ async function main() {
 
 		// Build SKUs per color (union)
 		const basePrice = defaultPriceForVariant(variant || undefined)
-		for (const colorName of allColorNames) {
-			const colorSlug = slugify(colorName)
-			const skuCode = `${publicId}-new-${colorSlug}`
-
-			// Upsert SKU
-			const skuPayload = {
-				product_id: productId,
-				condition: 'new',
-				attributes: { color: colorName },
-				is_active: true,
-				sku_code: skuCode,
+		const storagesFromCsv = (p.storages_list || '')
+			.split(';')
+			.map(s => s.trim())
+			.filter(Boolean)
+		const storages = storagesFromCsv.length > 0 ? storagesFromCsv : defaultStoragesForVariant(variant || undefined)
+		const desiredPrimaryStorage = (p.primary_storage || '').trim()
+		if (desiredPrimaryStorage) {
+			const idx = storages.findIndex(s => s.toLowerCase() === desiredPrimaryStorage.toLowerCase())
+			if (idx > -1) {
+				storages.splice(0, 0, ...storages.splice(idx, 1))
 			}
-			const { data: skuIns, error: skuErr } = await supabase
-				.from('product_skus')
-				.upsert(skuPayload, { onConflict: 'sku_code' })
-				.select('id')
-				.single()
-			if (skuErr) throw skuErr
-			const skuId = skuIns.id as string
+		}
+		for (const colorName of allColorNames) {
+			for (const storageName of storages) {
+				const colorSlug = slugify(colorName)
+				const storageSlug = slugify(storageName)
+				const skuCode = `${publicId}-new-${colorSlug}-${storageSlug}`
 
-			// Upsert price
-			const pricePayload = { sku_id: skuId, currency: 'USD', base_price: basePrice }
-			const { error: priceErr } = await supabase
-				.from('sku_prices')
-				.upsert(pricePayload)
-			if (priceErr) throw priceErr
+				// Upsert SKU
+				const skuPayload = {
+					product_id: productId,
+					condition: 'new',
+					attributes: { color: colorName, storage: storageName },
+					is_active: true,
+					sku_code: skuCode,
+				}
+				const { data: skuIns, error: skuErr } = await supabase
+					.from('product_skus')
+					.upsert(skuPayload, { onConflict: 'sku_code' })
+					.select('id')
+					.single()
+				if (skuErr) throw skuErr
+				const skuId = skuIns.id as string
 
-			// Upsert inventory
-			const inventoryPayload = { sku_id: skuId, quantity: 5 }
-			const { error: invErr } = await supabase
-				.from('sku_inventory')
-				.upsert(inventoryPayload)
-			if (invErr) throw invErr
+				// Upsert price (same base price for all storages by default)
+				const pricePayload = { sku_id: skuId, currency: 'USD', base_price: basePrice }
+				const { error: priceErr } = await supabase
+					.from('sku_prices')
+					.upsert(pricePayload)
+				if (priceErr) throw priceErr
+
+				// Upsert inventory
+				const inventoryPayload = { sku_id: skuId, quantity: 5 }
+				const { error: invErr } = await supabase
+					.from('sku_inventory')
+					.upsert(inventoryPayload)
+				if (invErr) throw invErr
+			}
 		}
 
 		// Images: merge CSV-declared and discovered local images; ensure exactly one primary
@@ -506,7 +529,7 @@ async function main() {
 			if (insErr) throw insErr
 		}
 
-		console.log(`Imported product ${publicId} (${p.title}) with ${allColorNames.length} colors and ${rowsToInsert.length} images`)
+		console.log(`Imported product ${publicId} (${p.title}) with ${allColorNames.length} colors, ${storages.length} storages and ${rowsToInsert.length} images`)
 	}
 
 	console.log('Import completed.')

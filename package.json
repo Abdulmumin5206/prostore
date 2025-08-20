@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "import:catalog": "tsx scripts/import-catalog.ts"
+    "import:catalog": "tsx scripts/import-catalog.ts",
+    "import:iphone16": "tsx scripts/import-iphone16.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
