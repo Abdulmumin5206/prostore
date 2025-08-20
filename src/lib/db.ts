@@ -334,6 +334,7 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
     productPublicId,
     condition: input.sku.condition,
     attributes: input.sku.attributes,
+    uniquifier: product.id,
   })
   const { data: sku, error: skuErr } = await supabase
     .from('product_skus')
@@ -383,6 +384,7 @@ export async function createProductWithSku(input: NewProductInput): Promise<{ pr
     if (imgErr) throw imgErr
   }
 
+
   return { product_id: product.id, sku_id: sku.id }
 }
 
@@ -423,11 +425,25 @@ export async function createProductWithSkus(input: NewProductWithSkusInput): Pro
   }
 
   const skuIds: string[] = []
+  const seen = new Set<string>()
   for (const skuInput of input.skus) {
+    const attrs: any = skuInput.attributes || {}
+    const key = JSON.stringify({
+      condition: skuInput.condition,
+      storage: attrs.storage ?? '',
+      ram: attrs.ram ?? '',
+      color: attrs.color ?? '',
+      chip_tier: (attrs as any).chip_tier ?? '',
+      connectivity: attrs.connectivity ?? '',
+    })
+    if (seen.has(key)) continue
+    seen.add(key)
+
     const skuCode = generateSkuCode({
       productPublicId,
       condition: skuInput.condition,
       attributes: skuInput.attributes,
+      uniquifier: product.id,
     })
     const { data: sku, error: skuErr } = await supabase
       .from('product_skus')
@@ -484,7 +500,7 @@ export function generateProductPublicId(input: { brand_id: string; category_id: 
   return parts.slice(0, 60)
 }
 
-export function generateSkuCode(input: { productPublicId: string; condition: 'new' | 'second_hand'; attributes: Record<string, any> }): string {
+export function generateSkuCode(input: { productPublicId: string; condition: 'new' | 'second_hand'; attributes: Record<string, any>; uniquifier?: string }): string {
   const attrs: string[] = []
   if (input.attributes.storage) attrs.push(String(input.attributes.storage))
   if (input.attributes.ram) attrs.push(String(input.attributes.ram))
@@ -497,7 +513,17 @@ export function generateSkuCode(input: { productPublicId: string; condition: 'ne
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, '-')
   const base = `${input.productPublicId}-${input.condition === 'second_hand' ? 'USED' : 'NEW'}`
-  const code = suffix ? `${base}-${suffix}` : base
+  let code = suffix ? `${base}-${suffix}` : base
+
+  // Append short uniquifier derived from product ID to avoid global collisions
+  if (input.uniquifier) {
+    const clean = String(input.uniquifier).replace(/[^A-Za-z0-9]+/g, '').toUpperCase()
+    if (clean) {
+      const short = clean.slice(-6)
+      code = `${code}-X${short}`
+    }
+  }
+
   return code.slice(0, 80)
 }
 

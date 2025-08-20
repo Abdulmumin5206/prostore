@@ -16,6 +16,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { PublicProduct } from '../lib/db';
 import { useCart } from '../contexts/CartContext';
 import { guessColorName } from '../lib/colorNames';
+import OptimizedImage from '../components/OptimizedImage';
 
 interface DetailProduct {
   id: string;
@@ -610,9 +611,18 @@ const ProductPage: React.FC = () => {
             <div className="py-8 text-center">
               <Text color="error">{error}</Text>
             </div>
-          ) : !product ? (
-            <div className="py-8 text-center">
-              <Text>Product not found.</Text>
+          ) : !product || product?.name === 'Product Not Found' ? (
+            <div className="py-12 sm:py-16 text-center">
+              <H3 color="primary" weight="semibold">Product not available</H3>
+              <Text className="mt-2" color="tertiary">The product you're looking for may have been removed, renamed, or never existed.</Text>
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <Link to="/">
+                  <Button variant="primary" size="medium">Return to Home</Button>
+                </Link>
+                <Link to="/products">
+                  <Button variant="secondary" size="medium">Browse Store</Button>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-4 lg:gap-x-6 gap-y-2 lg:gap-y-3 pt-0 pb-2">
@@ -716,7 +726,14 @@ const ProductPage: React.FC = () => {
                                 }`}
                                 aria-label={`Thumbnail ${actualIndex + 1}`}
                               >
-                                <img src={image} alt={`${product?.name || 'Product'} thumbnail ${actualIndex + 1}`} className="h-full w-full object-cover" />
+                                <OptimizedImage
+                                  src={image}
+                                  alt={`${product?.name || 'Product'} thumbnail ${actualIndex + 1}`}
+                                  width={64}
+                                  height={64}
+                                  fit="cover"
+                                  className="h-full w-full object-cover"
+                                />
                               </button>
                             );
                           })}
@@ -750,9 +767,12 @@ const ProductPage: React.FC = () => {
                         onClick={() => imagesForCurrentSelection.length > 0 && openFullImage(selectedImage)}
                       >
                                                  {imagesForCurrentSelection.length > 0 ? (
-                            <img 
+                            <OptimizedImage 
                               src={imagesForCurrentSelection[selectedImage]} 
                               alt={product.name} 
+                              width={800}
+                              height={800}
+                              fit="cover"
                               className="w-full h-full object-cover"
                             />
                         ) : (
@@ -787,9 +807,12 @@ const ProductPage: React.FC = () => {
                         onClick={() => imagesForCurrentSelection.length > 1 && openFullImage((selectedImage + 1) % imagesForCurrentSelection.length)}
                       >
                         {imagesForCurrentSelection.length > 1 ? (
-                          <img 
+                          <OptimizedImage 
                             src={imagesForCurrentSelection[(selectedImage + 1) % imagesForCurrentSelection.length]} 
                             alt={`${product.name} alt view`} 
+                            width={800}
+                            height={800}
+                            fit="cover"
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -830,7 +853,14 @@ const ProductPage: React.FC = () => {
                               : 'opacity-60 hover:opacity-100'
                           }`}
                         >
-                          <img src={image} alt={`${product.name} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                          <OptimizedImage
+                            src={image}
+                            alt={`${product.name} thumbnail ${index + 1}`}
+                            width={64}
+                            height={64}
+                            fit="cover"
+                            className="h-full w-full object-cover"
+                          />
                         </button>
                       ))}
                     </div>
@@ -1113,9 +1143,12 @@ const ProductPage: React.FC = () => {
               </svg>
             </button>
             
-            <img 
+            <OptimizedImage 
               src={imagesForCurrentSelection[fullImageIndex]} 
               alt={`${product?.name || 'Product'} full view`} 
+              width={1600}
+              height={1200}
+              fit="contain"
               className="max-h-[90vh] max-w-[90vw] object-contain"
             />
             
@@ -1139,7 +1172,7 @@ const ProductPage: React.FC = () => {
       )}
 
       {/* Detailed Description Section */}
-      {product && (
+      {product && product.name !== 'Product Not Found' && (
         <Section background="light" size="lg" containerWidth="laptop" className="pt-0 pb-8">
           <ContentBlock spacing="sm">
                           <div className="py-3">
@@ -1229,13 +1262,20 @@ const ProductPage: React.FC = () => {
       )}
 
       {/* Floating product summary bar at top (appears after half-page scroll) */}
-      {product && showTopSummary && (
+      {product && product.name !== 'Product Not Found' && showTopSummary && (
                  <div className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-md z-50">
                         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {imagesForCurrentSelection.length > 0 && (
                                    <div className="w-11 h-11 rounded-md overflow-hidden flex-shrink-0">
-                  <img src={imagesForCurrentSelection[0]} alt={product.name} className="w-full h-full object-cover" />
+                  <OptimizedImage
+                    src={imagesForCurrentSelection[0]}
+                    alt={product.name}
+                    width={44}
+                    height={44}
+                    fit="cover"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
               <div>

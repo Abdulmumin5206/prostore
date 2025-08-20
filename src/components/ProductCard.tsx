@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppleProductTitle, Text, Label } from './Typography';
 import Button from './Button';
+import OptimizedImage from './OptimizedImage';
 
 interface ProductCardProps {
   id: string;
@@ -33,11 +34,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
       
       {/* Product Image */}
       <div className="mb-6 flex-grow flex items-center justify-center">
-        <img
+        <OptimizedImage
           src={image}
           alt={name}
+          width={480}
+          height={288}
+          fit="contain"
+          quality={70}
           className="w-full h-48 object-contain"
-          loading="lazy"
+          sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
         />
       </div>
       

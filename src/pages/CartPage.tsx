@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import Button from '../components/Button';
 import Section from '../components/Section';
+import OptimizedImage from '../components/OptimizedImage';
 
 const currencyFormat = (value: number, currency: string) => {
 	try {
@@ -33,7 +34,15 @@ const CartPage: React.FC = () => {
 					<div className="lg:col-span-2 space-y-4">
 						{items.map(item => (
 							<div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 flex gap-4 items-center">
-								<img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-xl" />
+								<OptimizedImage
+									src={item.image}
+									alt={item.name}
+									width={96}
+									height={96}
+									fit="cover"
+									quality={70}
+									className="w-24 h-24 object-cover rounded-xl"
+								/>
 								<div className="flex-1 min-w-0">
 									<Text size="base" className="text-black dark:text-white font-medium truncate">{item.name}</Text>
 									<Text size="sm" color="secondary">{currencyFormat(item.unitPrice, item.currency)} each</Text>
