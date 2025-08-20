@@ -430,7 +430,7 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible, onNavigate }
 	return (
 		<div 
 			ref={dropdownRef}
-			className="absolute left-0 w-full bg-white backdrop-blur-md border-t border-gray-200 overflow-hidden transition-all duration-300 ease-out"
+			className="absolute left-0 w-full bg-white dark:bg-gray-900 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 overflow-hidden transition-all duration-300 ease-out"
 			style={{ top: '48px', marginTop: '-1px', height: isVisible ? `${contentHeight}px` : '0px', opacity: isVisible ? 1 : 0, pointerEvents: isVisible ? 'auto' : 'none' }}
 		>
 			<div ref={contentRef} className="max-w-laptop mx-auto px-section-x pt-3 pb-5 transition-opacity duration-200">
@@ -453,11 +453,11 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible, onNavigate }
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 						{displayContent.sections.map((section, index) => (
 							<div key={index}>
-								<h3 className="text-gray-500 text-[11px] font-medium mb-1.5">{section.title}</h3>
+								<h3 className="text-gray-500 dark:text-gray-400 text-[11px] font-medium mb-1.5">{section.title}</h3>
 								<ul className="space-y-1.5">
 									{section.items.map((item, itemIndex) => (
 										<li key={itemIndex}>
-											<Link to={item.href} onClick={onNavigate} className="text-[11px] font-normal text-gray-800 hover:text-gray-600 transition-colors duration-200">
+											<Link to={item.href} onClick={onNavigate} className="text-[11px] font-normal text-gray-800 dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
 												{item.name}
 											</Link>
 										</li>

@@ -563,7 +563,7 @@ const ProductPage: React.FC = () => {
 
                 <div className="flex flex-col lg:col-span-8 lg:pt-1">
                   <div className="flex gap-3">
-                    <div className="hidden sm:flex sm:flex-col items-center gap-2.5 max-h-[440px] md:max-h-[460px] lg:max-h-[480px] xl:max-h-[500px]">
+                    <div className="hidden sm:flex sm:flex-col items-center gap-2.5 max-h-[340px] md:max-h-[360px] lg:max-h-[380px] xl:max-h-[400px]">
                       <div className="flex flex-col gap-2.5">
                         {Array.from({ length: 6 }).map((_, idx) => (
                           <div key={idx} className="rounded-md h-16 w-14 md:h-20 md:w-16 bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
@@ -572,8 +572,8 @@ const ProductPage: React.FC = () => {
                     </div>
 
                     <div className="flex-1 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="h-[440px] md:h-[480px] lg:h-[520px] rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
-                      <div className="h-[440px] md:h-[480px] lg:h-[520px] rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+                      <div className="h-[340px] md:h-[380px] lg:h-[420px] rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+                      <div className="h-[340px] md:h-[380px] lg:h-[420px] rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
                     </div>
                   </div>
 
@@ -696,7 +696,7 @@ const ProductPage: React.FC = () => {
                                      <div className="flex gap-3">
                     {/* Vertical thumbnails (desktop/tablet) */}
                     {imagesForCurrentSelection.length > 0 && (
-                                             <div className="hidden sm:flex sm:flex-col items-center gap-2.5 max-h-[440px] md:max-h-[460px] lg:max-h-[480px] xl:max-h-[500px] relative">
+                                             <div className="hidden sm:flex sm:flex-col items-center gap-2.5 max-h-[340px] md:max-h-[360px] lg:max-h-[380px] xl:max-h-[400px] relative">
                                                  <div className="flex flex-col gap-2.5 overflow-hidden" style={{ maxHeight: '100%' }}>
                           {/* Up arrow - positioned inside at top */}
                           {imagesCount > visibleThumbs && (
@@ -760,7 +760,7 @@ const ProductPage: React.FC = () => {
                     <div className="flex-1 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Left large container (current image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-gray-900"
+                        className="relative flex items-center justify-center h-[340px] md:h-[380px] lg:h-[420px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-white border border-gray-200 dark:border-gray-800"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -800,7 +800,7 @@ const ProductPage: React.FC = () => {
 
                       {/* Right large container (next image) */}
                       <div 
-                        className="relative flex items-center justify-center h-[440px] md:h-[480px] lg:h-[520px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-gray-900"
+                        className="relative flex items-center justify-center h-[340px] md:h-[380px] lg:h-[420px] rounded-xl overflow-hidden cursor-pointer bg-white dark:bg-white border border-gray-200 dark:border-gray-800"
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -965,7 +965,7 @@ const ProductPage: React.FC = () => {
             : 'border-gray-200 dark:border-gray-800'
         }`}
       >
-        <Text size="sm" weight={selectedPaymentType === 'full' ? 'medium' : 'normal'} color={selectedPaymentType === 'full' ? 'accent' : 'inherit'} align="center">Full Payment</Text>
+        <Text size="sm" weight={selectedPaymentType === 'full' ? 'medium' : 'normal'} color={selectedPaymentType === 'full' ? 'accent' : 'secondary'} align="center">Full Payment</Text>
       </button>
       <button
         onClick={() => setSelectedPaymentType('nasiya')}
@@ -975,7 +975,7 @@ const ProductPage: React.FC = () => {
             : 'border-gray-200 dark:border-gray-800'
         }`}
       >
-        <Text size="sm" weight={selectedPaymentType === 'nasiya' ? 'medium' : 'normal'} color={selectedPaymentType === 'nasiya' ? 'accent' : 'inherit'} align="center">Nasiya</Text>
+        <Text size="sm" weight={selectedPaymentType === 'nasiya' ? 'medium' : 'normal'} color={selectedPaymentType === 'nasiya' ? 'accent' : 'secondary'} align="center">Nasiya</Text>
       </button>
     </div>
 
