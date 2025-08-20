@@ -338,8 +338,8 @@ const ProductPage: React.FC = () => {
     if (!product) return [] as string[];
     const universalImages = product.images || [];
     const colorImages = currentColor && product.colorToImages ? (product.colorToImages[currentColor] || []) : [];
-    // Include universal images plus color-specific, keeping order with color-specific first
-    const combined = [...colorImages, ...universalImages];
+    // If there are color-specific images, show ONLY those; otherwise fall back to universal
+    const combined = colorImages.length > 0 ? colorImages : universalImages;
     // De-duplicate while preserving order
     const seen = new Set<string>();
     const deduped: string[] = [];

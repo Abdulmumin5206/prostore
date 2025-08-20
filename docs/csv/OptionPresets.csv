@@ -1,0 +1,5 @@
+brand,family,model,variant,colors_list,storages_list,options_json
+Apple,iPhone,iPhone 16,,"Midnight|#1C1C1E;White|#F5F5F7;Pink|#FFC0CB;Ultramarine|#335FA3","128GB;256GB;512GB","{\"connectivity\":[\"5G\",\"WiFi 6E\"]}"
+Apple,iPhone,iPhone 16,Plus,"Midnight|#1C1C1E;White|#F5F5F7;Pink|#FFC0CB;Ultramarine|#335FA3","128GB;256GB;512GB","{\"connectivity\":[\"5G\",\"WiFi 6E\"]}"
+Apple,iPhone,iPhone 16,Pro,"Black Titanium|#1C1C1E;Natural Titanium|#878787;White Titanium|#F5F5F7;Blue Titanium|#335FA3","256GB;512GB;1TB","{\"connectivity\":[\"5G\",\"WiFi 6E\"],\"chip\":\"A18 Pro\"}"
+Apple,iPhone,iPhone 16,Pro Max,"Black Titanium|#1C1C1E;Natural Titanium|#878787;White Titanium|#F5F5F7;Blue Titanium|#335FA3","256GB;512GB;1TB","{\"connectivity\":[\"5G\",\"WiFi 6E\"],\"chip\":\"A18 Pro\"}" 

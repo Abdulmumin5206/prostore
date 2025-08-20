@@ -21,6 +21,12 @@
 - Second-hand items table for unique used units (grade, battery health, serial, accessories, notes, status, price override)
 - Public view `public_products_view` for storefront queries
 
+## Import via CSV/Excel (new)
+- CSV templates live in `docs/csv/` (`Products.csv`, `Skus.csv`, `Images.csv`, `OptionPresets.csv`, `ModelContent.csv`).
+- Place local image files under `public/import_images/` and reference filenames in `Images.csv`.
+- Run storage setup once: `docs/seed-storage-setup.sql`.
+- Importer (dry-run scaffolding): `npm run import:catalog` (requires env vars; supports `SUPABASE_SERVICE_ROLE_KEY` for full access).
+
 ## Seeding
 - Master (all Apple at once): `docs/seeds/apple.sql`
 - Per-family seeds (run only what you need):
@@ -84,4 +90,3 @@ After this, the admin wizard will let you:
 
 ### Ordering and naming updates
 - Re-run `docs/seed-apple-iphone-variants.sql` to set `display_order` for models and variants and full variant names (e.g., "iPhone 15 Pro Max").
-- The admin UI will now show newest iPhone models at the top, and variant names will be full names.

@@ -1,0 +1,5 @@
+brand,family,model,variant,description,specs_json,nasiya_json
+Apple,iPhone,iPhone 16,,"iPhone 16 with advanced features","{\"chip\":\"A18\",\"display\":\"6.1\"}","{}"
+Apple,iPhone,iPhone 16,Plus,"Bigger iPhone 16 Plus","{\"chip\":\"A18\",\"display\":\"6.7\"}","{}"
+Apple,iPhone,iPhone 16,Pro,"Pro-level performance","{\"chip\":\"A18 Pro\",\"display\":\"6.3\"}","{}"
+Apple,iPhone,iPhone 16,Pro Max,"Largest and most powerful","{\"chip\":\"A18 Pro\",\"display\":\"6.9\"}","{}" 
