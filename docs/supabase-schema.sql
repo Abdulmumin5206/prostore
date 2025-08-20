@@ -100,6 +100,21 @@ alter table if exists public.products add column if not exists public_id text un
 -- Ensure products has specs jsonb for detailed attributes/specifications
 alter table if exists public.products add column if not exists specs jsonb not null default '{}'::jsonb;
 
+-- Model/Variant content (shared descriptions/specs across products)
+create table if not exists public.product_model_content (
+	id uuid primary key default gen_random_uuid(),
+	brand text not null,
+	family text not null,
+	model text not null,
+	variant text,
+	description text,
+	specs jsonb not null default '{}'::jsonb
+);
+-- Upsert-friendly uniqueness: treat NULL variant as a real key
+create unique index if not exists idx_product_model_content_unique on public.product_model_content(brand, family, model, variant) nulls not distinct;
+-- Ensure nasiya column exists for flexible installment settings
+alter table if exists public.product_model_content add column if not exists nasiya jsonb not null default '{}'::jsonb;
+
 -- SKUs (sellable variants)
 create table if not exists public.product_skus (
   id uuid primary key default gen_random_uuid(),
@@ -212,6 +227,7 @@ alter table public.product_families enable row level security;
 alter table public.product_models enable row level security;
 alter table public.product_variants enable row level security;
 alter table public.product_option_presets enable row level security;
+alter table public.product_model_content enable row level security;
 
 -- Policies (run once)
 DROP POLICY IF EXISTS "public read products" ON public.products;
@@ -244,6 +260,9 @@ create policy "public read variants" on public.product_variants for select using
 
 DROP POLICY IF EXISTS "public read option presets" ON public.product_option_presets;
 create policy "public read option presets" on public.product_option_presets for select using (true);
+
+DROP POLICY IF EXISTS "public read model content" ON public.product_model_content;
+create policy "public read model content" on public.product_model_content for select using (true);
 
 -- Admin write access (authenticated + profile role check)
 DROP POLICY IF EXISTS "admin write products" ON public.products;
@@ -324,7 +343,14 @@ for all to authenticated using (
   exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
 ) with check (
   exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
-); 
+);
+DROP POLICY IF EXISTS "admin write model content" ON public.product_model_content;
+create policy "admin write model content" on public.product_model_content
+for all to authenticated using (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+) with check (
+  exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.role = 'admin')
+);
 
 -- Helper: slugify to generate clean codes
 create or replace function public.slugify(input text)
@@ -399,7 +425,7 @@ $$;
 drop trigger if exists trg_product_skus_set_sku_code on public.product_skus;
 create trigger trg_product_skus_set_sku_code
 before insert or update on public.product_skus
-for each row execute function public.product_skus_set_sku_code(); 
+for each row execute function public.product_skus_set_sku_code();
 
 -- Hardening: constraints, indexes, and taxonomy improvements
 -- These statements are idempotent and safe to rerun
@@ -503,7 +529,7 @@ for each row execute function public.enforce_second_hand_sku_condition();
 create index if not exists idx_product_images_product on public.product_images(product_id);
 create index if not exists idx_sku_prices_currency on public.sku_prices(currency);
 
--- End hardening 
+-- End hardening
 
 -- Ordering helpers for models and variants
 alter table if exists public.product_models add column if not exists display_order int;
@@ -540,13 +566,13 @@ insert into public.profiles(id, role)
 select u.id, 'customer'
 from auth.users u
 left join public.profiles p on p.id = u.id
-where p.id is null; 
+where p.id is null;
 
 -- Profiles RLS: allow each authenticated user to read their own profile row
 DROP POLICY IF EXISTS "own profile read" ON public.profiles;
 create policy "own profile read" on public.profiles
 for select to authenticated
-using (id = auth.uid()); 
+using (id = auth.uid());
 
 -- Short, readable codes (immutable) for products and SKUs
 -- Products: PRD-000001, SKUs: SKU-000001
@@ -592,7 +618,7 @@ before insert on public.product_skus
 for each row execute function public.product_skus_set_short_code();
 
 create index if not exists idx_products_code on public.products(code);
-create index if not exists idx_skus_short_code on public.product_skus(short_code); 
+create index if not exists idx_skus_short_code on public.product_skus(short_code);
 
 -- Backfill codes for existing rows
 update public.products

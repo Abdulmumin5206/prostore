@@ -53,6 +53,8 @@ const ProductPage: React.FC = () => {
   const [selectedStorage, setSelectedStorage] = useState(0);
   const [selectedRam, setSelectedRam] = useState(0);
   const [selectedInstallmentPlan, setSelectedInstallmentPlan] = useState<6 | 12 | 24>(12);
+  const [nasiyaMarkup, setNasiyaMarkup] = useState<number>(1.3); // default 30%
+  const [nasiyaPlans, setNasiyaPlans] = useState<number[]>([6, 12, 24]);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
   const [discount, setDiscount] = useState<number>(10); // Adding discount state with default 10%
 
@@ -238,7 +240,7 @@ const ProductPage: React.FC = () => {
           if (r0.variant && String(r0.variant).trim().length > 0) {
             const { data: variantRows } = await supabase
               .from('product_model_content')
-              .select('description, specs')
+              .select('description, specs, nasiya')
               .eq('brand', r0.brand)
               .eq('family', r0.family)
               .eq('model', r0.model)
@@ -247,6 +249,11 @@ const ProductPage: React.FC = () => {
               const mc = variantRows[0] as any;
               if (mc?.description) (detail as any).description = mc.description;
               if (mc?.specs && typeof mc.specs === 'object') (detail as any).specs = mc.specs as Record<string, any>;
+              if (mc?.nasiya && typeof mc.nasiya === 'object') {
+                const nm = mc.nasiya as any;
+                if (typeof nm.markup === 'number' && isFinite(nm.markup) && nm.markup > 0) setNasiyaMarkup(nm.markup);
+                if (Array.isArray(nm.plans) && nm.plans.every((p: any) => Number.isInteger(p) && p > 0)) setNasiyaPlans(nm.plans as number[]);
+              }
               appliedFromModelContent = true;
             }
           }
@@ -254,7 +261,7 @@ const ProductPage: React.FC = () => {
           if (!appliedFromModelContent && (!r0.variant || String(r0.variant).trim().length === 0)) {
             const { data: modelRows } = await supabase
               .from('product_model_content')
-              .select('description, specs')
+              .select('description, specs, nasiya')
               .eq('brand', r0.brand)
               .eq('family', r0.family)
               .eq('model', r0.model)
@@ -263,6 +270,11 @@ const ProductPage: React.FC = () => {
               const mc = modelRows[0] as any;
               if (mc?.description) (detail as any).description = mc.description;
               if (mc?.specs && typeof mc.specs === 'object') (detail as any).specs = mc.specs as Record<string, any>;
+              if (mc?.nasiya && typeof mc.nasiya === 'object') {
+                const nm = mc.nasiya as any;
+                if (typeof nm.markup === 'number' && isFinite(nm.markup) && nm.markup > 0) setNasiyaMarkup(nm.markup);
+                if (Array.isArray(nm.plans) && nm.plans.every((p: any) => Number.isInteger(p) && p > 0)) setNasiyaPlans(nm.plans as number[]);
+              }
               appliedFromModelContent = true;
             }
           }
@@ -397,7 +409,7 @@ const ProductPage: React.FC = () => {
   const basePrice = product?.basePrice ?? 0;
   const discountAmount = selectedPaymentType === 'full' ? (basePrice * (discount / 100)) : 0;
   const discountedPrice = basePrice - discountAmount;
-  const nasiyaMarkup = 1.3;
+  // use dynamic nasiya markup if available
   const nasiyaTotalPrice = Math.round((selectedPaymentType === 'full' ? discountedPrice : basePrice) * nasiyaMarkup) * quantity;
   const monthlyPayment = Math.round(((selectedPaymentType === 'full' ? discountedPrice : basePrice) * nasiyaMarkup) / selectedInstallmentPlan) * quantity;
   const totalPrice = discountedPrice * quantity;
@@ -961,7 +973,7 @@ const ProductPage: React.FC = () => {
                         <div className="mb-4">
                           <Text size="sm" weight="medium" color="secondary" className="mb-2">Select payment period:</Text>
                           <div className="flex space-x-2">
-                            {[6, 12, 24].map((months) => (
+                            {nasiyaPlans.map((months) => (
                               <button
                                 key={months}
                                 onClick={() => setSelectedInstallmentPlan(months as 6 | 12 | 24)}
@@ -987,7 +999,7 @@ const ProductPage: React.FC = () => {
                             <Text size="sm" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}</Text>
                           </div>
                           <div className="flex justify-between text-sm mb-2">
-                            <Text size="sm" color="tertiary">Nasiya markup (30%):</Text>
+                            <Text size="sm" color="tertiary">Nasiya markup ({Math.round((nasiyaMarkup - 1) * 100)}%):</Text>
                             <Text size="sm" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - (basePrice * quantity)}</Text>
                           </div>
                           <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">
@@ -1199,7 +1211,7 @@ const ProductPage: React.FC = () => {
                         <Text size="sm" color="secondary">{product.currency === 'USD' ? '$' : product.currency}{basePrice * quantity}</Text>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <Text size="sm" color="tertiary">Markup (30%):</Text>
+                        <Text size="sm" color="tertiary">Markup ({Math.round((nasiyaMarkup - 1) * 100)}%):</Text>
                         <Text size="sm" color="secondary">{product.currency === 'USD' ? '+$' : '+' + product.currency}{nasiyaTotalPrice - (basePrice * quantity)}</Text>
                       </div>
                       <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200 dark:border-gray-800">

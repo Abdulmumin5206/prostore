@@ -80,6 +80,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
   const [variantId, setVariantId] = useState<string>('')
   const [title, setTitle] = useState<string>('')
   const [titleManuallyEdited, setTitleManuallyEdited] = useState<boolean>(false)
+  const [about, setAbout] = useState<string>('')
 
   const [storage, setStorage] = useState<string>('')
   const [color, setColor] = useState<string>('')
@@ -565,7 +566,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
         model: modelName || null,
         variant: variantName || null,
         title,
-        description: null,
+        description: about || null,
         published: true,
         images: images.map((im, i) => ({ url: im.url, is_primary: i === 0, color: im.color ?? null })),
         skus: selectedRams.length > 0
@@ -647,6 +648,7 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
     setVariantId('')
     setTitle('')
     setTitleManuallyEdited(false)
+    setAbout('')
     setStorage('')
     setColor('')
     setColorName('')
@@ -895,6 +897,16 @@ const AdminProductWizard: React.FC<Props> = ({ onSaved }) => {
               <div className="flex gap-2 items-center mt-1">
                 <input className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" value={title} onChange={e=>{ setTitle(e.target.value); setTitleManuallyEdited(true) }} placeholder="e.g., iPhone 16 Plus, 512 GB Black" />
               </div>
+            </div>
+            <div className="md:col-span-4">
+              <label className="text-xs text-white/60">About This Product</label>
+              <textarea
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm mt-1"
+                rows={4}
+                value={about}
+                onChange={e=>setAbout(e.target.value)}
+                placeholder="Overview, key highlights, what's included, etc."
+              />
             </div>
             <div>
               <label className="text-xs text-white/60">Currency</label>

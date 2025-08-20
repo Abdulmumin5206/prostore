@@ -225,6 +225,57 @@ export async function upsertOptionPresetForVariant(variantId: string, colors: st
   }
 }
 
+// Add: model/variant content helpers (description/specs)
+export type ModelContent = {
+	id?: string
+	brand: string
+	family: string
+	model: string
+	variant?: string | null
+	description?: string | null
+	specs?: Record<string, any> | null
+	nasiya?: Record<string, any> | null
+}
+
+export async function getModelContent(params: { brand: string; family: string; model: string; variant?: string | null }): Promise<ModelContent | null> {
+	if (!isSupabaseConfigured || !supabase) return null
+	const { brand, family, model, variant } = params
+	let query = supabase
+		.from('product_model_content')
+		.select('brand, family, model, variant, description, specs, nasiya')
+		.eq('brand', brand)
+		.eq('family', family)
+		.eq('model', model)
+	if (variant == null || String(variant).trim().length === 0) {
+		query = query.is('variant', null)
+	} else {
+		query = query.eq('variant', variant)
+	}
+	const { data, error } = await query.maybeSingle()
+	if (error) throw error
+	return (data as any) ?? null
+}
+
+export async function upsertModelContent(params: { brand: string; family: string; model: string; variant?: string | null; description?: string | null; specs?: Record<string, any> | null; nasiya?: Record<string, any> | null }): Promise<ModelContent> {
+	if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+	const payload = {
+		brand: params.brand,
+		family: params.family,
+		model: params.model,
+		variant: params.variant ?? null,
+		description: params.description ?? null,
+		specs: params.specs ?? {},
+		nasiya: params.nasiya ?? {},
+	}
+	const { data, error } = await supabase
+		.from('product_model_content')
+		.upsert(payload as any, { onConflict: 'brand,family,model,variant' })
+		.select('brand, family, model, variant, description, specs, nasiya')
+		.single()
+	if (error) throw error
+	return data as ModelContent
+}
+
 export type NewProductInput = {
   brand_id: string
   category_id: string

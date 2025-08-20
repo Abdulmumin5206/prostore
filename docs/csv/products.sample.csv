@@ -1,0 +1,4 @@
+brand,category,family,model,variant,title,description,published,condition,storage,color,ram,connectivity,currency,base_price,discount_percent,discount_amount,quantity,images
+Apple,Smartphones,iPhone,iPhone 15,Pro Max,iPhone 15 Pro Max 256GB - Natural Titanium,Flagship model,TRUE,new,256GB,Natural Titanium,,5G,USD,1299,,,10,images/iphone15promax-front.jpg|images/iphone15promax-back.jpg
+Apple,Tablets,iPad,iPad Air,13-inch,iPad Air 13-inch (M2) 256GB - Blue,Slim and powerful,TRUE,new,256GB,Blue,,Wi‑Fi,USD,799,10,,25,images/ipadair13-front.jpg|images/ipadair13-back.jpg 
+Apple,Smartphones,iPhone,iPhone 16,Base,iPhone 16 256GB - Natural Titanium,,TRUE,new,256,Blue,,5G,Usd,1,,,,public/Iphone_main/iphone_16pro_promax.jpg

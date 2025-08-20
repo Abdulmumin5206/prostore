@@ -19,14 +19,17 @@ import {
   TrendingUp,
   DollarSign,
   CheckCircle2,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Upload,
 } from 'lucide-react'
+import AdminCsvImporter from '../components/admin/AdminCsvImporter'
 
 const navItems = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'add-product', label: 'Add Product', icon: Plus },
   { key: 'catalog', label: 'Products', icon: Package },
   { key: 'catalog-manager', label: 'Catalog Manager', icon: Package },
+  { key: 'import', label: 'Import', icon: Upload },
   { key: 'orders', label: 'Orders', icon: ShoppingCart },
   { key: 'customers', label: 'Customers', icon: Users },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -191,7 +194,7 @@ const AdminPage: React.FC = () => {
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-sm transition-colors ${
                   active === key
                     ? 'bg-white text-black border-white'
-                    : 'bg-white/0 text-white/80 hover:bg-white/10 border-white/10'
+                    : 'bg.white/0 text-white/80 hover:bg-white/10 border-white/10'
                 }`}
                 aria-current={active === key ? 'page' : undefined}
               >
@@ -207,7 +210,7 @@ const AdminPage: React.FC = () => {
               Dev tip
             </div>
             <p className="mt-1 text-xs text-amber-200/80">
-              This dashboard is wired to Supabase. Use the product wizard below to add products.
+              This dashboard is wired to Supabase. Use the product wizard, importer, or bulk actions.
             </p>
           </div>
         </aside>
@@ -219,7 +222,7 @@ const AdminPage: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <h2 className="text-sm font-semibold">Products</h2>
-                  <div className="hidden md:flex items-center gap-2 ml-2 text-xs">
+                  <div className="hidden md:flex items.center gap-2 ml-2 text-xs">
                     <span className="text-white/50">Type:</span>
                     <button onClick={()=>setConditionFilter('all')} className={`px-2.5 py-1.5 rounded-lg border transition-colors ${conditionFilter==='all' ? 'bg-white text-black border-white' : 'bg-white/0 text-white/80 border-white/10 hover:bg-white/10'}`}>All</button>
                     <button onClick={()=>setConditionFilter('new')} className={`px-2.5 py-1.5 rounded-lg border transition-colors ${conditionFilter==='new' ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/0 text-white/80 border-emerald-500/40 hover:bg-emerald-500/10'}`}>New</button>
@@ -274,7 +277,7 @@ const AdminPage: React.FC = () => {
                       {p.effectivePrice != null ? (
                         <span className="font-semibold">${p.effectivePrice.toFixed(2)}</span>
                       ) : (
-                        <span className="text-white/60">—</span>
+                        <span className="text.white/60">—</span>
                       )}
                     </div>
                     <div className="hidden md:block text-xs w-28">
@@ -406,6 +409,17 @@ const AdminPage: React.FC = () => {
               </div>
             </section>
           )}
+
+          {active === 'import' && (
+            <section className="rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10">
+                <h2 className="text-sm font-semibold">Import Products</h2>
+              </div>
+              <div className="p-3 sm:p-4">
+                <AdminCsvImporter />
+              </div>
+            </section>
+          )}
         </main>
       </div>
 
@@ -417,28 +431,12 @@ const AdminPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <button disabled={bulkWorking} onClick={() => performBulkPublish(true)} className="text-xs px-2.5 py-1.5 rounded-md bg-emerald-500 text-black disabled:opacity-50">Publish</button>
               <button disabled={bulkWorking} onClick={() => performBulkPublish(false)} className="text-xs px-2.5 py-1.5 rounded-md bg-white/10 border border-white/10 disabled:opacity-50">Hide</button>
-              <button disabled={bulkWorking} onClick={performBulkDelete} className="text-xs px-2.5 py-1.5 rounded-md bg-red-500 text-black disabled:opacity-50">Delete</button>
+              <button disabled={bulkWorking} onClick={performBulkDelete} className="text-xs px-2.5 py-1.5 rounded-md bg-red-500 text.black disabled:opacity-50">Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom tab bar (mobile only) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-black/80 backdrop-blur supports-[backdrop-filter]:bg-black/60">
-        <div className="max-w-[120rem] mx-auto grid grid-cols-5">
-          {navItems.slice(0,5).map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => { setActive(key); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              className={`flex flex-col items-center justify-center gap-1 py-2 text-[11px] ${active===key ? 'text-white' : 'text-white/70'}`}
-              aria-current={active === key ? 'page' : undefined}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="truncate max-w-20">{label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
     </div>
   )
 }
