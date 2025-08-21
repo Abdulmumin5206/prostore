@@ -33,7 +33,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <AppleProductTitle className="mb-6">{name}</AppleProductTitle>
       
       {/* Product Image */}
-      <div className="mb-6 flex-grow flex items-center justify-center">
+      <div className="mb-6 flex-grow flex items-center justify-center bg-white">
         <OptimizedImage
           src={image}
           alt={name}
@@ -41,7 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           height={288}
           fit="contain"
           quality={70}
-          className="w-full h-48 object-contain"
+          className="w-full h-48 object-contain object-center transform scale-90 bg-white"
           sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
         />
       </div>

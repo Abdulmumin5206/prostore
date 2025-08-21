@@ -1719,7 +1719,7 @@ const ProductsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProduct)}>
                                       <div
-                    className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
+                    className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative bg-white"
                     onMouseMove={handleTestCardImageHover}
                     onMouseLeave={handleTestCardImageLeave}
                   >
@@ -1740,7 +1740,7 @@ const ProductsPage: React.FC = () => {
                       <img
                         src={testCardImages[hoveredProductImages['test-card'] ?? 0]}
                         alt="Test Product"
-                        className="w-full h-full object-cover transition-opacity duration-300"
+                        className="w-full h-full object-contain object-center transition-opacity duration-300 bg-white"
                         loading="lazy"
                       />
                       {/* Image indicator dots - only visible on hover */}
@@ -1796,7 +1796,7 @@ const ProductsPage: React.FC = () => {
                   <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-md z-0"></div>
                   <div className="cursor-pointer flex-grow relative z-10" onClick={() => handleProductClick(testProductSecondHand)}>
                     <div
-                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
+                      className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative bg-white"
                       onMouseMove={handleTestCard2ImageHover}
                       onMouseLeave={handleTestCard2ImageLeave}
                     >
@@ -1817,7 +1817,7 @@ const ProductsPage: React.FC = () => {
                       <img
                         src={testCard2Images[hoveredProductImages['test-card-2'] ?? 0]}
                         alt="Second Hand Product"
-                        className="w-full h-full object-cover transition-opacity duration-300"
+                        className="w-full h-full object-contain object-center transition-opacity duration-300 bg-white"
                         loading="lazy"
                       />
                       {/* Image indicator dots - only visible on hover */}
@@ -1874,7 +1874,7 @@ const ProductsPage: React.FC = () => {
                       className="cursor-pointer flex-grow relative z-10"
                     >
                       <div 
-                        className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative"
+                        className="overflow-hidden rounded-xl aspect-[4/5] mb-2 transition-none hover:transition-transform hover:duration-150 hover:ease-out hover:scale-[1.02] relative bg-white"
                         onMouseMove={(e) => handleProductImageHover(product.id, e)}
                         onMouseLeave={() => handleProductImageLeave(product.id)}
                       >
@@ -1899,7 +1899,7 @@ const ProductsPage: React.FC = () => {
                           src={hoveredProductImages[product.id] !== undefined && product.images ? 
                             product.images[hoveredProductImages[product.id]] : product.image} 
                           alt={product.name} 
-                          className="w-full h-full object-cover transition-opacity duration-300"
+                          className="w-full h-full object-contain object-center transition-opacity duration-300 bg-white"
                           loading="lazy"
                         />
                         {/* Image indicator dots - only visible on hover */}

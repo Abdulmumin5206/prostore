@@ -1,5 +1,5 @@
 import React from 'react';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle = () => {
@@ -17,9 +17,9 @@ const ThemeToggle = () => {
         }`}
       >
         {isDark ? (
-          <MoonIcon className="w-2.5 h-2.5 text-gray-700" />
+          <Moon className="w-2.5 h-2.5 text-gray-700" />
         ) : (
-          <SunIcon className="w-2.5 h-2.5 text-yellow-500" />
+          <Sun className="w-2.5 h-2.5 text-yellow-500" />
         )}
       </div>
     </button>
