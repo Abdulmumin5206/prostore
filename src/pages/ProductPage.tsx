@@ -58,6 +58,7 @@ const ProductPage: React.FC = () => {
   const [nasiyaPlans, setNasiyaPlans] = useState<number[]>([6, 12, 24]);
   const [activeTab, setActiveTab] = useState<'description' | 'characteristics' | 'nasiya'>('description');
   const [discount, setDiscount] = useState<number>(10); // Adding discount state with default 10%
+  const [activeSkuAttrs, setActiveSkuAttrs] = useState<Array<{ color?: string; storage?: string; ram?: string }>>([])
 
   // Favorites (persisted locally)
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -233,6 +234,35 @@ const ProductPage: React.FC = () => {
           model: r0.model,
           variant: r0.variant,
         };
+
+        // Also fetch all SKUs (including inactive) to build full option lists and availability
+        try {
+          const { data: allSkus } = await supabase
+            .from('product_skus')
+            .select('attributes, is_active')
+            .eq('product_id', r0.product_id)
+          const allColors = new Set<string>(detail.colors)
+          const allStorages = new Set<string>(detail.storage)
+          const allRams = new Set<string>(detail.ramOptions)
+          const activeAttrs: Array<{ color?: string; storage?: string; ram?: string }> = []
+          for (const row of (allSkus as any[] || [])) {
+            const attrs = (row as any).attributes || {}
+            if (typeof attrs.color === 'string' && attrs.color) allColors.add(attrs.color)
+            if (typeof attrs.storage === 'string' && attrs.storage) allStorages.add(attrs.storage)
+            if (typeof attrs.ram === 'string' && attrs.ram) allRams.add(attrs.ram)
+            if ((row as any).is_active) {
+              activeAttrs.push({
+                color: typeof attrs.color === 'string' ? attrs.color : undefined,
+                storage: typeof attrs.storage === 'string' ? attrs.storage : undefined,
+                ram: typeof attrs.ram === 'string' ? attrs.ram : undefined,
+              })
+            }
+          }
+          detail.colors = Array.from(allColors)
+          detail.storage = Array.from(allStorages)
+          detail.ramOptions = Array.from(allRams)
+          setActiveSkuAttrs(activeAttrs)
+        } catch {}
 
         // Prefer model-level content when available (automatic across products of same model)
         try {
@@ -880,11 +910,18 @@ const ProductPage: React.FC = () => {
                           return (
                             <button
                               key={color + index}
-                              onClick={() => { setSelectedColor(index); setSelectedImage(0); }}
+                              onClick={() => { 
+                                const disabled = activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => a.color === color) : false;
+                                if (disabled) return; 
+                                setSelectedColor(index); setSelectedImage(0); 
+                              }}
+                              disabled={activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => a.color === color) : false}
                               className={`px-4 py-2 rounded-lg border transition-all ${
-                                selectedColor === index 
-                                  ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
-                                  : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                                (activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => a.color === color) : false)
+                                  ? 'opacity-40 cursor-not-allowed border-gray-200 dark:border-gray-800 text-gray-400'
+                                  : (selectedColor === index 
+                                      ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]'
+                                      : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300')
                               }`}
                               aria-label={`Select color ${label}`}
                             >
@@ -909,12 +946,37 @@ const ProductPage: React.FC = () => {
                               {product.ramOptions.map((option, index) => (
                                 <button
                                   key={option + index}
-                                  onClick={() => setSelectedRam(index)}
-                                  className={`px-4 py-2 rounded-lg border transition-all ${
-                                    selectedRam === index 
-                                      ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
-                                      : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
-                                  }`}
+                                  onClick={() => { 
+                                    const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                                    const currentStorage = product.storage && product.storage.length > 0 ? product.storage[selectedStorage] : undefined;
+                                    const disabled = activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                      (currentColor ? a.color === currentColor : true) &&
+                                      (currentStorage ? a.storage === currentStorage : true) &&
+                                      a.ram === option
+                                    ) : false;
+                                    if (disabled) return;
+                                    setSelectedRam(index)
+                                  }}
+                                  disabled={(() => { 
+                                    const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                                    const currentStorage = product.storage && product.storage.length > 0 ? product.storage[selectedStorage] : undefined;
+                                    return activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                      (currentColor ? a.color === currentColor : true) &&
+                                      (currentStorage ? a.storage === currentStorage : true) &&
+                                      a.ram === option
+                                    ) : false;
+                                  })()}
+                                  className={`px-4 py-2 rounded-lg border transition-all ${(() => { 
+                                    const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                                    const currentStorage = product.storage && product.storage.length > 0 ? product.storage[selectedStorage] : undefined;
+                                    const isDisabled = activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                      (currentColor ? a.color === currentColor : true) &&
+                                      (currentStorage ? a.storage === currentStorage : true) &&
+                                      a.ram === option
+                                    ) : false;
+                                    if (isDisabled) return 'opacity-40 cursor-not-allowed border-gray-200 dark:border-gray-800 text-gray-400';
+                                    return selectedRam === index ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300';
+                                  })()}`}
                                 >
                                   <div className="text-sm font-medium">{option}</div>
                                 </button>
@@ -931,12 +993,37 @@ const ProductPage: React.FC = () => {
                         {product.storage.map((option, index) => (
                           <button
                             key={option + index}
-                            onClick={() => setSelectedStorage(index)}
-                            className={`px-4 py-2 rounded-lg border transition-all ${
-                              selectedStorage === index 
-                                ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' 
-                                : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
-                            }`}
+                            onClick={() => { 
+                              const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                              const currentRam = product.ramOptions && product.ramOptions.length > 0 ? product.ramOptions[selectedRam] : undefined;
+                              const disabled = activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                (currentColor ? a.color === currentColor : true) &&
+                                a.storage === option &&
+                                (currentRam ? a.ram === currentRam : true)
+                              ) : false;
+                              if (disabled) return;
+                              setSelectedStorage(index)
+                            }}
+                            disabled={(() => { 
+                              const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                              const currentRam = product.ramOptions && product.ramOptions.length > 0 ? product.ramOptions[selectedRam] : undefined;
+                              return activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                (currentColor ? a.color === currentColor : true) &&
+                                a.storage === option &&
+                                (currentRam ? a.ram === currentRam : true)
+                              ) : false;
+                            })()}
+                            className={`px-4 py-2 rounded-lg border transition-all ${(() => { 
+                              const currentColor = product.colors && product.colors.length > 0 ? product.colors[selectedColor] : undefined;
+                              const currentRam = product.ramOptions && product.ramOptions.length > 0 ? product.ramOptions[selectedRam] : undefined;
+                              const isDisabled = activeSkuAttrs.length > 0 ? !activeSkuAttrs.some(a => 
+                                (currentColor ? a.color === currentColor : true) &&
+                                a.storage === option &&
+                                (currentRam ? a.ram === currentRam : true)
+                              ) : false;
+                              if (isDisabled) return 'opacity-40 cursor-not-allowed border-gray-200 dark:border-gray-800 text-gray-400';
+                              return selectedStorage === index ? 'border-[#0071e3] bg-[#0071e3]/10 dark:bg-[#0071e3]/10 text-[#0071e3]' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300';
+                            })()}`}
                           >
                             <div className="text-sm font-medium">{option}</div>
                           </button>

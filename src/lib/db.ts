@@ -726,3 +726,102 @@ export async function deleteVariant(variantId: string): Promise<void> {
   const { error } = await supabase.from('product_variants').delete().eq('id', variantId)
   if (error) throw error
 } 
+
+// Admin: per‑SKU management helpers
+export type AdminSku = {
+  id: string
+  skuCode?: string | null
+  isActive: boolean
+  condition: 'new' | 'second_hand'
+  attributes: Record<string, any>
+  basePrice: number | null
+  discountPercent: number | null
+  discountAmount: number | null
+  currency: string | null
+  quantity: number | null
+  effectivePrice: number | null
+}
+
+export async function listSkusForProduct(productId: string): Promise<AdminSku[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+  const { data, error } = await supabase
+    .from('product_skus')
+    .select(`
+      id,
+      sku_code,
+      is_active,
+      condition,
+      attributes,
+      sku_prices(base_price, discount_percent, discount_amount, currency),
+      sku_inventory(quantity)
+    `)
+    .eq('product_id', productId)
+    .order('is_active', { ascending: false })
+  if (error) throw error
+  return (data as any[]).map((row: any): AdminSku => {
+    const p = row.sku_prices || {}
+    const base: number | null = p?.base_price != null ? Number(p.base_price) : null
+    let effective: number | null = base
+    if (base != null) {
+      if (p?.discount_amount != null) effective = base - Number(p.discount_amount)
+      else if (p?.discount_percent != null) effective = base * (1 - Number(p.discount_percent) / 100)
+    }
+    return {
+      id: row.id,
+      skuCode: row.sku_code ?? null,
+      isActive: !!row.is_active,
+      condition: row.condition,
+      attributes: (row.attributes && typeof row.attributes === 'object') ? row.attributes : {},
+      basePrice: base,
+      discountPercent: p?.discount_percent != null ? Number(p.discount_percent) : null,
+      discountAmount: p?.discount_amount != null ? Number(p.discount_amount) : null,
+      currency: p?.currency ?? 'USD',
+      quantity: row.sku_inventory?.quantity != null ? Number(row.sku_inventory.quantity) : null,
+      effectivePrice: effective,
+    }
+  })
+}
+
+export async function updateSkuPrice(skuId: string, price: { base_price: number; discount_percent?: number | null; discount_amount?: number | null; currency?: string }): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const payload: any = {
+    sku_id: skuId,
+    base_price: price.base_price,
+    currency: price.currency ?? 'USD',
+    discount_percent: price.discount_percent != null ? price.discount_percent : null,
+    discount_amount: price.discount_amount != null ? price.discount_amount : null,
+  }
+  const { error } = await supabase.from('sku_prices').upsert(payload, { onConflict: 'sku_id' })
+  if (error) throw error
+}
+
+export async function updateSkuInventory(skuId: string, quantity: number): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const payload = { sku_id: skuId, quantity }
+  const { error } = await supabase.from('sku_inventory').upsert(payload, { onConflict: 'sku_id' })
+  if (error) throw error
+}
+
+export async function setInventoryForSkusByAttribute(params: { productId: string; attribute: 'color' | 'storage'; value: string; quantity: number }): Promise<number> {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Supabase not configured')
+  const { productId, attribute, value, quantity } = params
+  // Find matching SKUs by JSON attribute
+  const { data, error } = await supabase
+    .from('product_skus')
+    .select('id, sku_inventory(quantity)')
+    .eq('product_id', productId)
+    .contains('attributes', { [attribute]: value })
+  if (error) throw error
+  const rows = (data as any[]) || []
+  if (rows.length === 0) return 0
+  // Upsert inventory for each
+  let updated = 0
+  for (const r of rows) {
+    const { error: upErr } = await supabase
+      .from('sku_inventory')
+      .upsert({ sku_id: r.id, quantity }, { onConflict: 'sku_id' })
+    if (upErr) throw upErr
+    updated += 1
+  }
+  return updated
+} 

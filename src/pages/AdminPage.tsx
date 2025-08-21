@@ -22,11 +22,13 @@ import {
   Search as SearchIcon,
 } from 'lucide-react'
 import OptimizedImage from '../components/OptimizedImage'
+import AdminActiveProducts from '../components/admin/AdminActiveProducts'
 
 const navItems = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'add-product', label: 'Add Product', icon: Plus },
   { key: 'catalog', label: 'Products', icon: Package },
+  { key: 'active-products', label: 'Active Products', icon: CheckCircle2 },
   { key: 'catalog-manager', label: 'Catalog Manager', icon: Package },
   { key: 'orders', label: 'Orders', icon: ShoppingCart },
   { key: 'customers', label: 'Customers', icon: Users },
@@ -295,6 +297,17 @@ const AdminPage: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {active === 'active-products' && (
+            <section className="rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10">
+                <h2 className="text-sm font-semibold">Active Products</h2>
+              </div>
+              <div className="p-3 sm:p-4">
+                <AdminActiveProducts />
               </div>
             </section>
           )}
