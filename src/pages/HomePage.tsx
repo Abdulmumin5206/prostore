@@ -109,92 +109,94 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {/* Hero Carousel Section */}
-      <section 
-        className="relative h-[70vh] overflow-hidden"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Carousel Container */}
-        <div className="relative h-full">
-          {heroSlides.map((slide, index) => {
-            // Calculate position for each slide
-            let position = index - currentSlide;
-            if (position < 0 && Math.abs(position) > Math.floor(heroSlides.length / 2)) {
-              position += heroSlides.length;
-            } else if (position > 0 && position > Math.floor(heroSlides.length / 2)) {
-              position -= heroSlides.length;
-            }
-            
-            return (
-              <div
-                key={slide.id}
-                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                  position === 0 
-                    ? 'opacity-100 translate-x-0 z-10' 
-                    : position < 0 
-                      ? 'opacity-0 -translate-x-full z-0' 
-                      : 'opacity-0 translate-x-full z-0'
-                }`}
-                aria-hidden={position !== 0}
-              >
-                {/* Static Image */}
-                <div className="relative h-full">
-                  <img
-                    src={slide.image}
-                    alt={`Slide ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    loading={index === currentSlide ? "eager" : "lazy"}
-                  />
+      <div className="max-w-laptop mx-auto px-section-x mt-3">
+        <section 
+          className="relative h-[70vh] overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Carousel Container */}
+          <div className="relative h-full">
+            {heroSlides.map((slide, index) => {
+              // Calculate position for each slide
+              let position = index - currentSlide;
+              if (position < 0 && Math.abs(position) > Math.floor(heroSlides.length / 2)) {
+                position += heroSlides.length;
+              } else if (position > 0 && position > Math.floor(heroSlides.length / 2)) {
+                position -= heroSlides.length;
+              }
+              
+              return (
+                <div
+                  key={slide.id}
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                    position === 0 
+                      ? 'opacity-100 translate-x-0 z-10' 
+                      : position < 0 
+                        ? 'opacity-0 -translate-x-full z-0' 
+                        : 'opacity-0 translate-x-full z-0'
+                  }`}
+                  aria-hidden={position !== 0}
+                >
+                  {/* Static Image */}
+                  <div className="relative h-full">
+                    <img
+                      src={slide.image}
+                      alt={`Slide ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      loading={index === currentSlide ? "eager" : "lazy"}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          disabled={isTransitioning}
-          className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
-          aria-label="Previous slide"
-        >
-          <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            disabled={isTransitioning}
+            className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
+            aria-label="Previous slide"
+          >
+            <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        <button
-          onClick={nextSlide}
-          disabled={isTransitioning}
-          className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
-          aria-label="Next slide"
-        >
-          <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+          <button
+            onClick={nextSlide}
+            disabled={isTransitioning}
+            className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 z-20 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100 cursor-pointer'}`}
+            aria-label="Next slide"
+          >
+            <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
 
-        {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-          {heroSlides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              disabled={isTransitioning}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                currentSlide === index 
-                  ? 'bg-white dark:bg-white scale-110 shadow-lg' 
-                  : 'bg-white/30 dark:bg-gray-600 hover:bg-white/75 dark:hover:bg-gray-400'
-              } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={currentSlide === index ? 'true' : 'false'}
-            />
-          ))}
-        </div>
-      </section>
+          {/* Slide Indicators */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+            {heroSlides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                disabled={isTransitioning}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  currentSlide === index 
+                    ? 'bg-white dark:bg-white scale-110 shadow-lg' 
+                    : 'bg-white/30 dark:bg-gray-600 hover:bg-white/75 dark:hover:bg-gray-400'
+                } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                aria-label={`Go to slide ${index + 1}`}
+                aria-current={currentSlide === index ? 'true' : 'false'}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
       
       {/* iPhone Categories Section */}
       <IPhoneCategoriesSection />
