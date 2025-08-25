@@ -430,8 +430,8 @@ const NavDropdown: React.FC<NavDropdownProps> = ({ name, isVisible, onNavigate }
 	return (
 		<div 
 			ref={dropdownRef}
-			className="absolute left-0 w-full bg-white dark:bg-gray-900 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 overflow-hidden transition-all duration-300 ease-out"
-			style={{ top: '48px', marginTop: '-1px', height: isVisible ? `${contentHeight}px` : '0px', opacity: isVisible ? 1 : 0, pointerEvents: isVisible ? 'auto' : 'none' }}
+			className="absolute left-0 w-full bg-white dark:bg-gray-900 backdrop-blur-md overflow-hidden transition-all duration-300 ease-out"
+			style={{ top: '48px', height: isVisible ? `${contentHeight}px` : '0px', opacity: isVisible ? 1 : 0, pointerEvents: isVisible ? 'auto' : 'none' }}
 		>
 			<div ref={contentRef} className="max-w-laptop mx-auto px-section-x pt-3 pb-5 transition-opacity duration-200">
 				{cardGrids[displayedName] ? (

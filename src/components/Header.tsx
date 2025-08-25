@@ -129,7 +129,7 @@ const Header = () => {
 					stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'relative'
 				}`}
 				onMouseLeave={handleHeaderMouseLeave}
-				style={{ borderBottom: isDropdownVisible ? 'none' : undefined }}
+				style={{ borderBottom: 'none' }}
 			>
 				<div className="max-w-laptop mx-auto px-section-x">
 					<nav className="relative h-12">
