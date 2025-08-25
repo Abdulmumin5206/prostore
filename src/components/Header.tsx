@@ -125,7 +125,7 @@ const Header = () => {
 		<>
 			<header 
 				ref={headerRef}
-				className={`bg-black dark:bg-black text-white w-full z-50 ${
+				className={`bg-white dark:bg-black text-black dark:text-white w-full z-50 ${
 					stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'relative'
 				}`}
 				onMouseLeave={handleHeaderMouseLeave}
@@ -146,7 +146,7 @@ const Header = () => {
 									<Link
 										to={item.href}
 										className={`transition-colors duration-200 ${
-											location.pathname === item.href ? 'text-white dark:text-gray-100' : 'text-gray-300 dark:text-gray-400'
+											location.pathname === item.href ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'
 										}`}
 										onClick={closeDropdownNow}
 									>
@@ -154,7 +154,7 @@ const Header = () => {
 											size="xs" 
 											weight={activeDropdown === item.name ? "medium" : "normal"} 
 											color="inherit"
-											className="hover:text-gray-300 dark:hover:text-gray-200"
+											className="hover:text-gray-800 dark:hover:text-gray-200"
 										>
 											{item.name}
 										</Text>
@@ -175,7 +175,7 @@ const Header = () => {
 							<ThemeToggle />
 							<Link
 								to="/cart"
-								className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+								className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
 								onClick={closeDropdownNow}
 								aria-label="Cart"
 							>
@@ -185,14 +185,14 @@ const Header = () => {
 								<div className="flex items-center space-x-3">
 									<Link
 										to="/admin"
-										className="text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+										className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
 										onClick={closeDropdownNow}
 									>
 										<User className="h-4 w-4" />
 									</Link>
 									<button
 										onClick={signOut}
-										className="text-xs text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+										className="text-xs text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
 									>
 										Sign Out
 									</button>
@@ -201,14 +201,14 @@ const Header = () => {
 								<div className="flex items-center space-x-3">
 									<Link
 										to="/signin"
-										className="text-xs text-gray-300 dark:text-gray-400 hover:text-white dark:hover:text-gray-100 transition-colors duration-200"
+										className="text-xs text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
 										onClick={closeDropdownNow}
 									>
 										Sign In
 									</Link>
 									<Link
 										to="/signup"
-										className="text-xs bg-white text-black px-3 py-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
+										className="text-xs bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors duration-200"
 										onClick={closeDropdownNow}
 									>
 										Sign Up

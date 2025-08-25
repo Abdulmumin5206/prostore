@@ -12,8 +12,7 @@ const NavOverlay: React.FC<NavOverlayProps> = ({ isVisible, onClick }) => {
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       style={{ 
-        top: '48px', 
-        marginTop: '-1px',
+        top: '80px', 
         background: 'rgba(0, 0, 0, 0.2)',
         backdropFilter: 'blur(5px)'
       }}

@@ -13,7 +13,7 @@ const TopUtilityBar: React.FC = () => {
 	}, [language]);
 
 	return (
-		<div id="top-utility-bar" className="bg-white text-gray-700 w-full border-b border-gray-200">
+		<div id="top-utility-bar" className="bg-white dark:bg-black text-gray-700 dark:text-gray-300 w-full">
 			<div className="max-w-laptop mx-auto px-section-x">
 				<div className="h-8 flex items-center justify-between text-[11px] leading-none">
 					{/* Language selector */}
