@@ -8,6 +8,8 @@ import IPhonePage from './pages/iPhonePage';
 import ProductsPage from './pages/ProductsPage';
 import SignUpPage from './pages/SignUpPage';
 import SignInPage from './pages/SignInPage';
+import CategoriesPage from './pages/CategoriesPage';
+import AccountPage from './pages/AccountPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import TypographyGuide from './components/TypographyGuide';
@@ -35,6 +37,8 @@ function App() {
               {/* All other routes use the main layout */}
               <Route element={<MainLayout />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/account" element={<AccountPage />} />
                 {/* Auth routes */}
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />

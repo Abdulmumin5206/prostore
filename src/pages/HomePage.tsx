@@ -41,6 +41,92 @@ const HomePage = () => {
     }
   ];
 
+  // Mobile-only carousel state (infinite with side peeks)
+  const [mCurrentIndex, setMCurrentIndex] = useState(1); // start at first real slide (after leading clone)
+  const [mIsTransitioning, setMIsTransitioning] = useState(false);
+  const mAutoPlayRef = useRef<number | null>(null);
+  const mTouchStart = useRef<number | null>(null);
+  const mTouchEnd = useRef<number | null>(null);
+  const mContainerRef = useRef<HTMLDivElement>(null);
+  const [mContainerWidth, setMContainerWidth] = useState(0);
+  const mGap = 12; // px gap between cards
+  const mSlideFraction = 0.86; // show small portions of left/right cards
+
+  useEffect(() => {
+    const handleResize = () => {
+      setMContainerWidth(mContainerRef.current?.offsetWidth || 0);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const mSlidesWithClones: HeroSlide[] = [
+    heroSlides[heroSlides.length - 1],
+    ...heroSlides,
+    heroSlides[0]
+  ];
+
+  const mSlideWidth = Math.max(0, mContainerWidth * mSlideFraction);
+  const mOffsetToCenter = (mContainerWidth - mSlideWidth) / 2;
+  const mTranslateX = -(mCurrentIndex * (mSlideWidth + mGap)) + mOffsetToCenter;
+
+  const handleMNext = () => {
+    if (mIsTransitioning) return;
+    setMIsTransitioning(true);
+    setMCurrentIndex(prev => prev + 1);
+  };
+
+  const handleMPrev = () => {
+    if (mIsTransitioning) return;
+    setMIsTransitioning(true);
+    setMCurrentIndex(prev => prev - 1);
+  };
+
+  const handleMTransitionEnd = () => {
+    // Seamless loop: jump without transition when reaching clones
+    if (mCurrentIndex === 0) {
+      setMIsTransitioning(false);
+      setMCurrentIndex(heroSlides.length);
+      return;
+    }
+    if (mCurrentIndex === heroSlides.length + 1) {
+      setMIsTransitioning(false);
+      setMCurrentIndex(1);
+      return;
+    }
+    setMIsTransitioning(false);
+  };
+
+  // Simple auto-play for mobile carousel (slide movement only)
+  useEffect(() => {
+    mAutoPlayRef.current = window.setTimeout(() => {
+      handleMNext();
+    }, 4000);
+    return () => {
+      if (mAutoPlayRef.current) clearTimeout(mAutoPlayRef.current);
+    };
+  }, [mCurrentIndex, mContainerWidth]);
+
+  // Touch handlers for mobile slider
+  const onMobileTouchStart = (e: React.TouchEvent) => {
+    mTouchEnd.current = null;
+    mTouchStart.current = e.targetTouches[0].clientX;
+  };
+
+  const onMobileTouchMove = (e: React.TouchEvent) => {
+    mTouchEnd.current = e.targetTouches[0].clientX;
+  };
+
+  const onMobileTouchEnd = () => {
+    if (!mTouchStart.current || !mTouchEnd.current || mIsTransitioning) return;
+    const distance = mTouchStart.current - mTouchEnd.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) handleMNext();
+    if (isRightSwipe) handleMPrev();
+  };
+
   const nextSlide = () => {
     if (isTransitioning) return;
     setIsTransitioning(true);
@@ -108,10 +194,46 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
+      {/* Mobile Hero Carousel (infinite with side peeks) */}
+      <section className="block md:hidden w-full mt-3">
+        <div
+          className="w-full overflow-hidden"
+          ref={mContainerRef}
+          onTouchStart={onMobileTouchStart}
+          onTouchMove={onMobileTouchMove}
+          onTouchEnd={onMobileTouchEnd}
+        >
+          <div
+            className="flex items-stretch"
+            style={{
+              gap: `${mGap}px`,
+              transform: `translateX(${mTranslateX}px)`,
+              transition: mIsTransitioning ? 'transform 500ms ease-in-out' : 'none'
+            }}
+            onTransitionEnd={handleMTransitionEnd}
+          >
+            {mSlidesWithClones.map((slide, idx) => (
+              <div
+                key={`m-${idx}-${slide.id}`}
+                className="flex-none overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                style={{ width: `${mSlideWidth}px`, height: '28vh' }}
+              >
+                <img
+                  src={slide.image}
+                  alt={`Slide ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                  loading={idx === mCurrentIndex ? 'eager' : 'lazy'}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hero Carousel Section */}
       <div className="max-w-laptop mx-auto px-section-x mt-3">
         <section 
-          className="relative h-[28vh] md:h-[70vh] overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+          className="hidden md:block relative h-[28vh] md:h-[70vh] overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onTouchStart={onTouchStart}

@@ -350,7 +350,7 @@ const storeCards: StoreCard[] = [
 	},
 ];
 
-type NavCard = {
+export type NavCard = {
 	title: string;
 	href: string;
 	imagePath: string;
@@ -395,7 +395,7 @@ const accessoriesCards: NavCard[] = [
 	{ title: 'Watch Accessories', href: '/products?category=Accessories&subcategory=Watch', imagePath: '/header/accesoires/watch-card-40-acc-202503.jpg' },
 ];
 
-const cardGrids: Record<string, NavCard[]> = {
+export const cardGrids: Record<string, NavCard[]> = {
 	Store: storeCards,
 	Mac: macCards,
 	iPad: iPadCards,

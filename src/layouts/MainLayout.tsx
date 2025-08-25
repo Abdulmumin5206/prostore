@@ -4,6 +4,7 @@ import TopPromotionalSection from '../components/TopPromotionalSection'
 import TopUtilityBar from '../components/TopUtilityBar'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import MobileBottomBar from '../components/MobileBottomBar'
 
 const MainLayout: React.FC = () => {
   const location = useLocation()
@@ -16,12 +17,15 @@ const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300 overflow-x-hidden flex flex-col">
       <TopPromotionalSection />
-      <TopUtilityBar />
-      <Header />
-      <main className="flex-1">
+      <div className="hidden md:block">
+        <TopUtilityBar />
+        <Header />
+      </div>
+      <main className="flex-1 pb-14 md:pb-0">
         <Outlet />
       </main>
       <Footer />
+      <MobileBottomBar />
     </div>
   )
 }
