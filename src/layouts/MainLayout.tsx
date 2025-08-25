@@ -14,9 +14,12 @@ const MainLayout: React.FC = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [location.pathname, location.search])
 
+  // Only show promotional banner on home page
+  const isHomePage = location.pathname === '/'
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black transition-colors duration-300 overflow-x-hidden flex flex-col">
-      <TopPromotionalSection />
+      {isHomePage && <TopPromotionalSection />}
       <div className="hidden md:block">
         <TopUtilityBar />
         <Header />

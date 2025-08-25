@@ -13,6 +13,21 @@ header {
   z-index: 50;
 }
 
+/* Smooth header transitions for sticky behavior */
+header.header-transition {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition-property: transform, box-shadow, background-color;
+}
+
+/* Smooth shadow transition for sticky header */
+header.sticky {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+}
+
+header.sticky.dark {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+}
+
 /* Smooth transitions */
 @keyframes fadeInDown {
   from {

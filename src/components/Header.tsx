@@ -20,6 +20,7 @@ const Header = () => {
 	const navDropdownRef = useRef<HTMLDivElement>(null);
 	const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const [stickyOffset, setStickyOffset] = useState<number>(40);
+	const [lastScrollY, setLastScrollY] = useState<number>(0);
 	
 	// Measure banner + utility bar heights to determine sticky threshold
 	useEffect(() => {
@@ -35,15 +36,28 @@ const Header = () => {
 		return () => window.removeEventListener('resize', recalcOffset);
 	}, []);
 	
-	// Handle scroll events with throttling
+	// Handle scroll events with throttling and smooth transitions
 	useEffect(() => {
 		let ticking = false;
 		
 		const handleScroll = () => {
 			if (!ticking) {
 				window.requestAnimationFrame(() => {
-					// Make header sticky when scrolling past top banner + utility bar unless disabled
-					setIsSticky(stickyEnabled && window.scrollY > stickyOffset);
+					const currentScrollY = window.scrollY;
+					const bufferZone = 5; // Add small buffer to prevent jittery behavior
+					
+					// Make header sticky when scrolling past threshold, with buffer zone
+					if (stickyEnabled) {
+						if (currentScrollY > stickyOffset + bufferZone && !isSticky) {
+							setIsSticky(true);
+						} else if (currentScrollY <= stickyOffset - bufferZone && isSticky) {
+							setIsSticky(false);
+						}
+					} else if (isSticky) {
+						setIsSticky(false);
+					}
+					
+					setLastScrollY(currentScrollY);
 					ticking = false;
 				});
 				ticking = true;
@@ -56,7 +70,7 @@ const Header = () => {
 		return () => {
 			window.removeEventListener('scroll', handleScroll);
 		};
-	}, [stickyEnabled, stickyOffset]);
+	}, [stickyEnabled, stickyOffset, isSticky]);
 
 	// Close dropdown when navigating to a different page
 	useEffect(() => {
@@ -125,7 +139,7 @@ const Header = () => {
 		<>
 			<header 
 				ref={headerRef}
-				className={`bg-white dark:bg-black text-black dark:text-white w-full z-50 ${
+				className={`bg-white dark:bg-black text-black dark:text-white w-full z-50 transition-all duration-300 ease-out ${
 					stickyEnabled && isSticky ? 'fixed top-0 shadow-md' : 'relative'
 				}`}
 				onMouseLeave={handleHeaderMouseLeave}
